@@ -47,7 +47,8 @@ export {
 export {
   findLatestPriceByModel,
   findAllLatestPrices,
-  createModelPrice
+  createModelPrice,
+  hasAnyPriceRecords
 } from './model-price';
 
 // Statistics related exports

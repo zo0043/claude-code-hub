@@ -6,6 +6,7 @@ import {
   findLatestPriceByModel,
   createModelPrice,
   findAllLatestPrices,
+  hasAnyPriceRecords,
 } from "@/repository/model-price";
 import type {
   PriceTableJson,
@@ -129,8 +130,14 @@ export async function getModelPrices(): Promise<ModelPrice[]> {
  */
 export async function hasPriceTable(): Promise<boolean> {
   try {
-    const prices = await getModelPrices();
-    return prices.length > 0;
+    const session = await getSession();
+
+    if (session && session.user.role === "admin") {
+      const prices = await getModelPrices();
+      return prices.length > 0;
+    }
+
+    return await hasAnyPriceRecords();
   } catch (error) {
     console.error("检查价格表失败:", error);
     return false;
