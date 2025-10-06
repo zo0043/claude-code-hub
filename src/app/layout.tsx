@@ -1,11 +1,28 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { AppProviders } from "./providers";
+import { getSystemSettings } from "@/repository/system-config";
 
-export const metadata: Metadata = {
-  title: "Claude Code Hub",
-  description: "Claude Code Hub",
-};
+const FALLBACK_TITLE = "Claude Code Hub";
+
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const settings = await getSystemSettings();
+    const title = settings.siteTitle?.trim() || FALLBACK_TITLE;
+
+    return {
+      title,
+      description: title,
+    };
+  } catch (error) {
+    console.error("Failed to load system settings for metadata:", error);
+    return {
+      title: FALLBACK_TITLE,
+      description: FALLBACK_TITLE,
+    };
+  }
+}
 
 export default function RootLayout({
   children,
@@ -15,8 +32,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        {children}
-        <Toaster />
+        <AppProviders>
+          {children}
+          <Toaster />
+        </AppProviders>
       </body>
     </html>
   );

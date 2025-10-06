@@ -6,7 +6,6 @@ export interface MessageRequest {
   providerId: number;
   userId: number;
   key: string;
-  message: Record<string, unknown>; // JSON 类型
   durationMs?: number;
   costUsd?: number; // 单次请求费用（美元）
   createdAt: Date;
@@ -21,7 +20,6 @@ export interface CreateMessageRequestData {
   provider_id: number;
   user_id: number;
   key: string;
-  message: Record<string, unknown>;
   duration_ms?: number;
   cost_usd?: number; // 单次请求费用（美元）
 }

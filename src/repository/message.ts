@@ -17,7 +17,6 @@ export async function createMessageRequest(data: CreateMessageRequestData): Prom
     providerId: data.provider_id,
     userId: data.user_id,
     key: data.key,
-    message: data.message,
     durationMs: data.duration_ms,
     costUsd: data.cost_usd?.toString(),
   };
@@ -27,7 +26,6 @@ export async function createMessageRequest(data: CreateMessageRequestData): Prom
     providerId: messageRequest.providerId,
     userId: messageRequest.userId,
     key: messageRequest.key,
-    message: messageRequest.message,
     durationMs: messageRequest.durationMs,
     costUsd: messageRequest.costUsd,
     createdAt: messageRequest.createdAt,
@@ -74,7 +72,6 @@ export async function findLatestMessageRequestByKey(key: string): Promise<Messag
       providerId: messageRequest.providerId,
       userId: messageRequest.userId,
       key: messageRequest.key,
-      message: messageRequest.message,
       durationMs: messageRequest.durationMs,
       costUsd: messageRequest.costUsd,
       createdAt: messageRequest.createdAt,

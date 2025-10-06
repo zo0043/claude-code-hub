@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     ports:
       - "35432:5432"
+    env_file:
+      - ./.env.local
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
@@ -17,22 +19,6 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-
-  app:
-    image: zsio/claude-code-hub:latest
-    container_name: claude-code-hub-app
-    depends_on:
-      postgres:
-        condition: service_healthy
-    env_file:
-      - ./.env
-    environment:
-      NODE_ENV: production
-      PORT: 23000
-      DSN: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-claude_code_hub}
-    ports:
-      - "23000:23000"
-    restart: unless-stopped
 
 volumes:
   postgres_data:

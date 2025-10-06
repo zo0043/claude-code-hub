@@ -1,7 +1,13 @@
 "use server";
 
 import { getSession } from "@/lib/auth";
-import { getUserStatisticsFromDB, getActiveUsersFromDB } from "@/repository/statistics";
+import {
+  getUserStatisticsFromDB,
+  getActiveUsersFromDB,
+  getKeyStatisticsFromDB,
+  getActiveKeysForUserFromDB,
+} from "@/repository/statistics";
+import { getSystemSettings } from "@/repository/system-config";
 import type {
   TimeRange,
   UserStatisticsData,
@@ -9,6 +15,8 @@ import type {
   DatabaseUser,
   ChartDataItem,
   StatisticsUser,
+  DatabaseKeyStatRow,
+  DatabaseKey,
 } from "@/types/statistics";
 import { TIME_RANGE_OPTIONS, DEFAULT_TIME_RANGE } from "@/types/statistics";
 import type { ActionResult } from "./types";
@@ -16,7 +24,7 @@ import type { ActionResult } from "./types";
 /**
  * 生成图表数据使用的用户键，避免名称碰撞
  */
-const createUserDataKey = (userId: number): string => `user-${userId}`;
+const createDataKey = (prefix: string, id: number): string => `${prefix}-${id}`;
 
 /**
  * 获取用户统计数据，用于图表展示
@@ -39,15 +47,28 @@ export async function getUserStatistics(
       throw new Error(`Invalid time range: ${timeRange}`);
     }
 
-    const [statsData, users] = await Promise.all([
-      getUserStatisticsFromDB(timeRange),
-      getActiveUsersFromDB()
-    ]);
+    const settings = await getSystemSettings();
+    const isAdmin = session.user.role === 'admin';
+    const mode: 'users' | 'keys' = isAdmin || settings.allowGlobalUsageView
+      ? 'users'
+      : 'keys';
+
+    const prefix = mode === 'users' ? 'user' : 'key';
+
+    const [statsData, entities] = mode === 'users'
+      ? await Promise.all([
+          getUserStatisticsFromDB(timeRange),
+          getActiveUsersFromDB(),
+        ]) as [DatabaseStatRow[], DatabaseUser[]]
+      : await Promise.all([
+          getKeyStatisticsFromDB(session.user.id, timeRange),
+          getActiveKeysForUserFromDB(session.user.id),
+        ]) as [DatabaseKeyStatRow[], DatabaseKey[]];
 
     // 将数据转换为适合图表的格式
     const dataByDate = new Map<string, ChartDataItem>();
 
-    statsData.forEach((row: DatabaseStatRow) => {
+    statsData.forEach((row) => {
       // 根据分辨率格式化日期
       let dateStr: string;
       if (rangeConfig.resolution === 'hour') {
@@ -66,26 +87,29 @@ export async function getUserStatistics(
       }
 
       const dateData = dataByDate.get(dateStr)!;
-      const userKey = createUserDataKey(row.user_id);
+
+      const entityId = 'user_id' in row ? row.user_id : row.key_id;
+      const entityKey = createDataKey(prefix, entityId);
 
       // 安全地处理大数值，防止精度问题
       const cost = row.total_cost ? parseFloat(row.total_cost.toString()) : 0;
       const calls = row.api_calls || 0;
 
       // 为每个用户创建消费和调用次数的键
-      dateData[`${userKey}_cost`] = cost;
-      dateData[`${userKey}_calls`] = calls;
+      dateData[`${entityKey}_cost`] = cost;
+      dateData[`${entityKey}_calls`] = calls;
     });
 
     const result: UserStatisticsData = {
       chartData: Array.from(dataByDate.values()),
-      users: users.map((u: DatabaseUser): StatisticsUser => ({
-        id: u.id,
-        name: u.name || `User${u.id}`,
-        dataKey: createUserDataKey(u.id),
+      users: entities.map((entity): StatisticsUser => ({
+        id: entity.id,
+        name: entity.name || (mode === 'users' ? `User${entity.id}` : `Key${entity.id}`),
+        dataKey: createDataKey(prefix, entity.id),
       })),
       timeRange,
-      resolution: rangeConfig.resolution
+      resolution: rangeConfig.resolution,
+      mode,
     };
 
     return {

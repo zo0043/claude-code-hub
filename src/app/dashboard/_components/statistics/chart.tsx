@@ -199,6 +199,12 @@ export function UserStatisticsChart({ data, onTimeRangeChange, loading = false }
     }
   }
 
+  const getAggregationLabel = () => {
+    return data.mode === 'keys'
+      ? '仅显示您名下各密钥的使用统计'
+      : '展示所有用户的使用统计'
+  }
+
   return (
     <Card className="gap-0 py-0">
       <CardHeader
@@ -215,7 +221,7 @@ export function UserStatisticsChart({ data, onTimeRangeChange, loading = false }
             )}
           </div>
           <CardDescription>
-            {getTimeRangeDescription()}
+            {getTimeRangeDescription()} · {getAggregationLabel()}
           </CardDescription>
         </div>
         {/* 时间范围选择器 */}

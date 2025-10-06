@@ -1,0 +1,22 @@
+"use server";
+
+import { getSession } from "@/lib/auth";
+import { ProxyStatusTracker } from "@/lib/proxy-status-tracker";
+import type { ProxyStatusResponse } from "@/types/proxy-status";
+import type { ActionResult } from "./types";
+
+export async function getProxyStatus(): Promise<ActionResult<ProxyStatusResponse>> {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return { ok: false, error: "未授权，请先登录" };
+    }
+
+    const tracker = ProxyStatusTracker.getInstance();
+    const status = await tracker.getAllUsersStatus();
+    return { ok: true, data: status };
+  } catch (error) {
+    console.error("获取代理状态失败:", error);
+    return { ok: false, error: "获取代理状态失败" };
+  }
+}

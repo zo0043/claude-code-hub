@@ -178,4 +178,15 @@ export const UpdateProviderSchema = z
   })
   .refine((obj) => Object.keys(obj).length > 0, { message: "更新内容为空" });
 
+/**
+ * 系统设置更新数据验证schema
+ */
+export const UpdateSystemSettingsSchema = z.object({
+  siteTitle: z
+    .string()
+    .min(1, "站点标题不能为空")
+    .max(128, "站点标题不能超过128个字符"),
+  allowGlobalUsageView: z.boolean(),
+});
+
 // 导出类型推断

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ListPlus, Copy, CheckCircle } from "lucide-react";
@@ -9,6 +9,63 @@ import type { UserDisplay } from "@/types/user";
 import type { User } from "@/types/user";
 import { FormErrorBoundary } from "@/components/form-error-boundary";
 import { formatCurrency } from "@/lib/utils/currency";
+import { useQuery } from "@tanstack/react-query";
+import { getProxyStatus } from "@/actions/proxy-status";
+import type { ProxyStatusResponse } from "@/types/proxy-status";
+
+const PROXY_STATUS_REFRESH_INTERVAL = 2000;
+
+async function fetchProxyStatus(): Promise<ProxyStatusResponse> {
+  const result = await getProxyStatus();
+  if (result.ok) {
+    if (result.data) {
+      return result.data;
+    }
+    throw new Error("获取代理状态失败");
+  }
+  throw new Error(result.error || "获取代理状态失败");
+}
+
+function formatRelativeTime(timestamp: number): string {
+  const diff = Date.now() - timestamp;
+  if (diff <= 0) {
+    return "刚刚";
+  }
+
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 5) {
+    return "刚刚";
+  }
+  if (seconds < 60) {
+    return `${seconds}s前`;
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) {
+    return `${minutes}分钟前`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `${hours}小时前`;
+  }
+
+  const days = Math.floor(hours / 24);
+  if (days < 7) {
+    return `${days}天前`;
+  }
+
+  return new Date(timestamp).toLocaleDateString("zh-CN");
+}
+
+function StatusSpinner() {
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-block h-3 w-3 animate-spin rounded-full border border-muted-foreground/70 border-t-transparent"
+    />
+  );
+}
 
 interface KeyListHeaderProps {
   activeUser: UserDisplay | null;
@@ -21,6 +78,95 @@ export function KeyListHeader({ activeUser, currentUser }: KeyListHeaderProps) {
   const [copied, setCopied] = useState(false);
 
   const totalTodayUsage = activeUser?.keys.reduce((sum, key) => sum + (key.todayUsage ?? 0), 0) ?? 0;
+
+  const proxyStatusEnabled = Boolean(activeUser);
+  const {
+    data: proxyStatus,
+    error: proxyStatusError,
+    isLoading: proxyStatusLoading,
+    isFetching: proxyStatusRefreshing,
+  } = useQuery<ProxyStatusResponse, Error>({
+    queryKey: ["proxy-status"],
+    queryFn: fetchProxyStatus,
+    refetchInterval: PROXY_STATUS_REFRESH_INTERVAL,
+    enabled: proxyStatusEnabled,
+  });
+
+  const activeUserStatus = useMemo(() => {
+    if (!proxyStatus || !activeUser) {
+      return null;
+    }
+    return proxyStatus.users.find((user) => user.userId === activeUser.id) ?? null;
+  }, [proxyStatus, activeUser]);
+
+  const proxyStatusContent = useMemo(() => {
+    if (!proxyStatusEnabled) {
+      return null;
+    }
+
+    if (proxyStatusLoading) {
+      return (
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <span>代理状态加载中</span>
+          <StatusSpinner />
+        </div>
+      );
+    }
+
+    if (proxyStatusError) {
+      return (
+        <div className="text-xs text-destructive">
+          代理状态获取失败
+        </div>
+      );
+    }
+
+    if (!activeUserStatus) {
+      return (
+        <div className="text-xs text-muted-foreground">
+          暂无代理状态
+        </div>
+      );
+    }
+
+    const activeProviders = Array.from(new Set(
+      activeUserStatus.activeRequests.map((request) => request.providerName)
+    ));
+
+    return (
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1">
+          <span>活跃请求</span>
+          <span className="font-medium text-foreground">{activeUserStatus.activeCount}</span>
+          {activeProviders.length > 0 && (
+            <span className="text-muted-foreground">
+              （{activeProviders.join("、")}）
+            </span>
+          )}
+          {proxyStatusRefreshing && <StatusSpinner />}
+        </div>
+        <div className="flex items-center gap-1">
+          <span>最近请求</span>
+          <span className="text-foreground">
+            {activeUserStatus.lastRequest
+              ? `${activeUserStatus.lastRequest.providerName} / ${activeUserStatus.lastRequest.model}`
+              : "暂无记录"}
+          </span>
+          {activeUserStatus.lastRequest && (
+            <span className="text-muted-foreground">
+              · {formatRelativeTime(activeUserStatus.lastRequest.endTime)}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }, [
+    proxyStatusEnabled,
+    proxyStatusLoading,
+    proxyStatusError,
+    activeUserStatus,
+    proxyStatusRefreshing,
+  ]);
 
   const handleKeyCreated = (result: { generatedKey: string; name: string }) => {
     setOpenAdd(false); // 关闭表单dialog
@@ -56,9 +202,13 @@ export function KeyListHeader({ activeUser, currentUser }: KeyListHeaderProps) {
             <span>{activeUser ? activeUser.name : "-"}</span>
             {activeUser && <UserActions user={activeUser} currentUser={currentUser} />}
           </div>
-          <div className="mt-1 space-y-1">
-            <div className="text-xs text-muted-foreground">
-              今日用量 {activeUser ? formatCurrency(totalTodayUsage) : "-"} /  {activeUser ? formatCurrency(activeUser.dailyQuota) : "-"}
+          <div className="mt-1">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <div>
+                今日用量 {activeUser ? formatCurrency(totalTodayUsage) : "-"} / {" "}
+                {activeUser ? formatCurrency(activeUser.dailyQuota) : "-"}
+              </div>
+              {proxyStatusContent}
             </div>
           </div>
         </div>

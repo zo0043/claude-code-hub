@@ -6,6 +6,7 @@ import { ProxyMessageService } from "./proxy/message-service";
 import { ProxyForwarder } from "./proxy/forwarder";
 import { ProxyResponseHandler } from "./proxy/response-handler";
 import { ProxyErrorHandler } from "./proxy/error-handler";
+import { ProxyStatusTracker } from "@/lib/proxy-status-tracker";
 
 export async function handleProxyRequest(c: Context): Promise<Response> {
   const session = await ProxySession.fromContext(c);
@@ -22,6 +23,20 @@ export async function handleProxyRequest(c: Context): Promise<Response> {
     }
 
     await ProxyMessageService.ensureContext(session);
+
+    // 记录请求开始
+    if (session.messageContext && session.provider) {
+      const tracker = ProxyStatusTracker.getInstance();
+      tracker.startRequest({
+        userId: session.messageContext.user.id,
+        userName: session.messageContext.user.name,
+        requestId: session.messageContext.id,
+        keyName: session.messageContext.key.name,
+        providerId: session.provider.id,
+        providerName: session.provider.name,
+        model: session.request.model || "unknown",
+      });
+    }
 
     const response = await ProxyForwarder.send(session);
     return await ProxyResponseHandler.dispatch(session, response);

@@ -4,6 +4,7 @@ import { parseSSEData } from "@/lib/utils/sse";
 import { calculateRequestCost } from "@/lib/utils/cost-calculation";
 import type { ProxySession } from "./session";
 import { ProxyLogger } from "./logger";
+import { ProxyStatusTracker } from "@/lib/proxy-status-tracker";
 
 export type UsageMetrics = {
   input_tokens?: number;
@@ -59,6 +60,10 @@ export class ProxyResponseHandler {
         if (messageContext) {
           const duration = Date.now() - session.startTime;
           await updateMessageRequestDuration(messageContext.id, duration);
+
+          // 记录请求结束
+          const tracker = ProxyStatusTracker.getInstance();
+          tracker.endRequest(messageContext.user.id, messageContext.id);
         }
 
         await ProxyLogger.logNonStream(session, provider, responseLogContent);
@@ -107,6 +112,10 @@ export class ProxyResponseHandler {
 
         const duration = Date.now() - session.startTime;
         await updateMessageRequestDuration(messageContext.id, duration);
+
+        // 记录请求结束
+        const tracker = ProxyStatusTracker.getInstance();
+        tracker.endRequest(messageContext.user.id, messageContext.id);
 
         for (const event of parsedEvents) {
           if (event.event === "message_delta" && typeof event.data === "object" && event.data !== null) {

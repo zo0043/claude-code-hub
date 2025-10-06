@@ -3,6 +3,7 @@ import type { Key } from "@/types/key";
 import type { Provider } from "@/types/provider";
 import type { MessageRequest } from "@/types/message";
 import type { ModelPrice } from "@/types/model-price";
+import type { SystemSettings } from "@/types/system-config";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function toUser(dbUser: any): User {
@@ -58,5 +59,16 @@ export function toModelPrice(dbPrice: any): ModelPrice {
     ...dbPrice,
     createdAt: dbPrice?.createdAt ? new Date(dbPrice.createdAt) : new Date(),
     updatedAt: dbPrice?.updatedAt ? new Date(dbPrice.updatedAt) : new Date(),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toSystemSettings(dbSettings: any): SystemSettings {
+  return {
+    id: dbSettings?.id ?? 0,
+    siteTitle: dbSettings?.siteTitle ?? "Claude Code Hub",
+    allowGlobalUsageView: dbSettings?.allowGlobalUsageView ?? true,
+    createdAt: dbSettings?.createdAt ? new Date(dbSettings.createdAt) : new Date(),
+    updatedAt: dbSettings?.updatedAt ? new Date(dbSettings.updatedAt) : new Date(),
   };
 }

@@ -1,9 +1,11 @@
 import type { Context } from "hono";
 import type { Provider } from "@/types/provider";
 import type { User } from "@/types/user";
+import type { Key } from "@/types/key";
 
 export interface AuthState {
   user: User | null;
+  key: Key | null;
   apiKey: string | null;
   success: boolean;
 }
@@ -11,6 +13,7 @@ export interface AuthState {
 export interface MessageContext {
   id: number;
   user: User;
+  key: Key;
   apiKey: string;
 }
 

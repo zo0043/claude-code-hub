@@ -79,7 +79,6 @@ export const messageRequest = pgTable('message_request', {
   providerId: integer('provider_id').notNull(),
   userId: integer('user_id').notNull(),
   key: varchar('key').notNull(),
-  message: jsonb('message').notNull(),
   durationMs: integer('duration_ms'),
   costUsd: numeric('cost_usd', { precision: 10, scale: 8 }).default('0'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
@@ -112,6 +111,15 @@ export const modelPrices = pgTable('model_prices', {
   modelPricesModelNameIdx: index('idx_model_prices_model_name').on(table.modelName),
   modelPricesCreatedAtIdx: index('idx_model_prices_created_at').on(table.createdAt.desc()),
 }));
+
+// System Settings table
+export const systemSettings = pgTable('system_settings', {
+  id: serial('id').primaryKey(),
+  siteTitle: varchar('site_title', { length: 128 }).notNull().default('Claude Code Hub'),
+  allowGlobalUsageView: boolean('allow_global_usage_view').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({

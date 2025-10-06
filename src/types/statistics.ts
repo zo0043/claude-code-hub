@@ -48,6 +48,19 @@ export interface DatabaseUser {
   name: string;
 }
 
+export interface DatabaseKeyStatRow {
+  key_id: number;
+  key_name: string;
+  date: string;
+  api_calls: number;
+  total_cost: number;
+}
+
+export interface DatabaseKey {
+  id: number;
+  name: string;
+}
+
 export interface StatisticsUser {
   id: number;
   name: string;
@@ -59,4 +72,5 @@ export interface UserStatisticsData {
   users: StatisticsUser[];
   timeRange: TimeRange;
   resolution: 'hour' | 'day';
+  mode: 'users' | 'keys';
 }

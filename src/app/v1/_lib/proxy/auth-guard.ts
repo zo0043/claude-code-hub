@@ -30,24 +30,24 @@ export class ProxyAuthenticator {
     );
 
     if (providedKeys.length === 0) {
-      return { user: null, apiKey: null, success: false };
+      return { user: null, key: null, apiKey: null, success: false };
     }
 
     const [firstKey] = providedKeys;
     const hasMismatch = providedKeys.some((key) => key !== firstKey);
 
     if (hasMismatch) {
-      return { user: null, apiKey: null, success: false };
+      return { user: null, key: null, apiKey: null, success: false };
     }
 
     const apiKey = firstKey;
     const authResult = await validateApiKeyAndGetUser(apiKey);
 
     if (!authResult) {
-      return { user: null, apiKey, success: false };
+      return { user: null, key: null, apiKey, success: false };
     }
 
-    return { user: authResult.user, apiKey, success: true };
+    return { user: authResult.user, key: authResult.key, apiKey, success: true };
   }
 
   private static extractKeyFromAuthorization(authHeader?: string): string | null {
