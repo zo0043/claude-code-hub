@@ -84,7 +84,6 @@ export function KeyListHeader({ activeUser, currentUser }: KeyListHeaderProps) {
     data: proxyStatus,
     error: proxyStatusError,
     isLoading: proxyStatusLoading,
-    isFetching: proxyStatusRefreshing,
   } = useQuery<ProxyStatusResponse, Error>({
     queryKey: ["proxy-status"],
     queryFn: fetchProxyStatus,
@@ -143,7 +142,6 @@ export function KeyListHeader({ activeUser, currentUser }: KeyListHeaderProps) {
               （{activeProviders.join("、")}）
             </span>
           )}
-          {proxyStatusRefreshing && <StatusSpinner />}
         </div>
         <div className="flex items-center gap-1">
           <span>最近请求</span>
@@ -165,7 +163,6 @@ export function KeyListHeader({ activeUser, currentUser }: KeyListHeaderProps) {
     proxyStatusLoading,
     proxyStatusError,
     activeUserStatus,
-    proxyStatusRefreshing,
   ]);
 
   const handleKeyCreated = (result: { generatedKey: string; name: string }) => {

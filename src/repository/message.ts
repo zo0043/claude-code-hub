@@ -17,6 +17,7 @@ export async function createMessageRequest(data: CreateMessageRequestData): Prom
     providerId: data.provider_id,
     userId: data.user_id,
     key: data.key,
+    model: data.model,
     durationMs: data.duration_ms,
     costUsd: data.cost_usd?.toString(),
   };
@@ -26,6 +27,7 @@ export async function createMessageRequest(data: CreateMessageRequestData): Prom
     providerId: messageRequest.providerId,
     userId: messageRequest.userId,
     key: messageRequest.key,
+    model: messageRequest.model,
     durationMs: messageRequest.durationMs,
     costUsd: messageRequest.costUsd,
     createdAt: messageRequest.createdAt,

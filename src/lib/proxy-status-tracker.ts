@@ -1,35 +1,57 @@
 import { db } from "@/drizzle/db";
-import { messageRequest, providers, keys } from "@/drizzle/schema";
-import { eq, isNull, and, desc } from "drizzle-orm";
-import type {
-  ActiveRequest,
-  LastRequest,
-  UserProxyStatus,
-  ProxyStatusResponse,
-} from "@/types/proxy-status";
+import { messageRequest, providers, keys, users } from "@/drizzle/schema";
+import { and, eq, isNull } from "drizzle-orm";
+import { sql } from "drizzle-orm";
+import type { ProxyStatusResponse } from "@/types/proxy-status";
+
+type ActiveRequestRow = {
+  requestId: number;
+  userId: number;
+  keyString: string;
+  keyName: string | null;
+  providerId: number;
+  providerName: string;
+  model: string | null;
+  createdAt: Date | string | null;
+};
+
+type LastRequestRow = {
+  userId: number;
+  requestId: number;
+  keyString: string;
+  keyName: string | null;
+  providerId: number;
+  providerName: string;
+  model: string | null;
+  endTime: Date | string | null;
+};
+
+function toTimestamp(value: Date | string | number | null | undefined): number | null {
+  if (value == null) {
+    return null;
+  }
+  if (value instanceof Date) {
+    return value.getTime();
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Date.parse(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return null;
+}
 
 /**
  * 代理状态追踪器
- * 使用单例模式管理所有用户的代理请求状态
- *
- * 职责:
- * - 追踪当前活跃的代理请求
- * - 记录用户最后一次请求信息
- * - 提供查询接口给前端展示
+ * 当前实现基于数据库数据聚合，确保多运行时环境下的一致性
  */
 export class ProxyStatusTracker {
   private static instance: ProxyStatusTracker | null = null;
 
-  /** 内存存储：userId -> UserProxyStatus */
-  private statusMap: Map<number, UserProxyStatus>;
-
-  private constructor() {
-    this.statusMap = new Map();
-  }
-
-  /**
-   * 获取单例实例
-   */
   static getInstance(): ProxyStatusTracker {
     if (!ProxyStatusTracker.instance) {
       ProxyStatusTracker.instance = new ProxyStatusTracker();
@@ -37,10 +59,6 @@ export class ProxyStatusTracker {
     return ProxyStatusTracker.instance;
   }
 
-  /**
-   * 开始一个代理请求
-   * 在 ProxyMessageService.ensureContext 之后调用
-   */
   startRequest(params: {
     userId: number;
     userName: string;
@@ -50,178 +68,131 @@ export class ProxyStatusTracker {
     providerName: string;
     model: string;
   }): void {
-    const userStatus = this.ensureUserStatus(params.userId, params.userName);
-
-    const activeRequest: ActiveRequest = {
-      requestId: params.requestId,
-      keyName: params.keyName,
-      providerId: params.providerId,
-      providerName: params.providerName,
-      model: params.model,
-      startTime: Date.now(),
-    };
-
-    userStatus.activeRequests.set(params.requestId, activeRequest);
+    void params;
   }
 
-  /**
-   * 结束一个代理请求
-   * 在 ProxyResponseHandler 或 ProxyErrorHandler 中调用
-   */
   endRequest(userId: number, requestId: number): void {
-    const userStatus = this.statusMap.get(userId);
-    if (!userStatus) {
-      return;
-    }
-
-    const activeRequest = userStatus.activeRequests.get(requestId);
-    if (!activeRequest) {
-      return;
-    }
-
-    // 从活跃列表中移除
-    userStatus.activeRequests.delete(requestId);
-
-    // 更新最后一次请求
-    userStatus.lastRequest = {
-      requestId: activeRequest.requestId,
-      keyName: activeRequest.keyName,
-      providerId: activeRequest.providerId,
-      providerName: activeRequest.providerName,
-      model: activeRequest.model,
-      endTime: Date.now(),
-    };
+    void userId;
+    void requestId;
   }
 
-  /**
-   * 获取所有用户的代理状态
-   * 用于 API 端点返回给前端
-   */
   async getAllUsersStatus(): Promise<ProxyStatusResponse> {
     const now = Date.now();
-    const users: ProxyStatusResponse["users"] = [];
 
-    for (const [userId, userStatus] of this.statusMap) {
-      // 如果没有活跃请求且没有最后一次请求记录，且未从数据库加载过，则尝试加载
-      if (
-        userStatus.activeRequests.size === 0 &&
-        !userStatus.lastRequest &&
-        !userStatus.dbLoaded
-      ) {
-        const lastRequest = await this.loadLastRequestFromDB(userId);
-        if (lastRequest) {
-          userStatus.lastRequest = lastRequest;
-        }
-        userStatus.dbLoaded = true; // 标记已加载，避免重复查询
+    const [dbUsers, activeRequestRows, lastRequestRows] = await Promise.all([
+      db
+        .select({
+          id: users.id,
+          name: users.name,
+        })
+        .from(users)
+        .where(isNull(users.deletedAt)),
+      this.loadActiveRequests(),
+      this.loadLastRequests(),
+    ]);
+
+    const activeMap = new Map<number, ProxyStatusResponse["users"][number]["activeRequests"]>();
+    for (const row of activeRequestRows) {
+      const list = activeMap.get(row.userId) ?? [];
+      const startTime = toTimestamp(row.createdAt) ?? now;
+      list.push({
+        requestId: row.requestId,
+        keyName: row.keyName || row.keyString,
+        providerId: row.providerId,
+        providerName: row.providerName,
+        model: row.model || "unknown",
+        startTime,
+        duration: now - startTime,
+      });
+      activeMap.set(row.userId, list);
+    }
+
+    const lastMap = new Map<number, LastRequestRow>();
+    for (const row of lastRequestRows) {
+      if (!lastMap.has(row.userId)) {
+        lastMap.set(row.userId, row);
       }
+    }
 
-      // 构建活跃请求列表
-      const activeRequests = Array.from(
-        userStatus.activeRequests.values()
-      ).map((req) => ({
-        requestId: req.requestId,
-        keyName: req.keyName,
-        providerId: req.providerId,
-        providerName: req.providerName,
-        model: req.model,
-        startTime: req.startTime,
-        duration: now - req.startTime,
-      }));
+    const usersStatus = dbUsers.map((dbUser) => {
+      const activeRequests = activeMap.get(dbUser.id) ?? [];
+      const lastRow = lastMap.get(dbUser.id);
 
-      // 构建最后一次请求信息
-      const lastRequest = userStatus.lastRequest
-        ? {
-            requestId: userStatus.lastRequest.requestId,
-            keyName: userStatus.lastRequest.keyName,
-            providerId: userStatus.lastRequest.providerId,
-            providerName: userStatus.lastRequest.providerName,
-            model: userStatus.lastRequest.model,
-            endTime: userStatus.lastRequest.endTime,
-            elapsed: now - userStatus.lastRequest.endTime,
-          }
+      const lastRequest = lastRow
+        ? (() => {
+            const endTime = toTimestamp(lastRow.endTime) ?? now;
+            return {
+            requestId: lastRow.requestId,
+            keyName: lastRow.keyName || lastRow.keyString,
+            providerId: lastRow.providerId,
+            providerName: lastRow.providerName,
+            model: lastRow.model || "unknown",
+            endTime,
+            elapsed: now - endTime,
+          };
+          })()
         : null;
 
-      users.push({
-        userId,
-        userName: userStatus.userName,
-        activeCount: userStatus.activeRequests.size,
+      return {
+        userId: dbUser.id,
+        userName: dbUser.name,
+        activeCount: activeRequests.length,
         activeRequests,
         lastRequest,
-      });
-    }
-
-    return { users };
-  }
-
-  /**
-   * 确保用户状态存在（私有方法）
-   */
-  private ensureUserStatus(
-    userId: number,
-    userName: string
-  ): UserProxyStatus {
-    let userStatus = this.statusMap.get(userId);
-
-    if (!userStatus) {
-      userStatus = {
-        userId,
-        userName,
-        activeRequests: new Map(),
-        lastRequest: null,
-        dbLoaded: false,
       };
-      this.statusMap.set(userId, userStatus);
-    }
+    });
 
-    return userStatus;
+    return { users: usersStatus };
   }
 
-  /**
-   * 从数据库加载用户最后一次请求（私有方法）
-   * 只在内存中没有记录时调用（比如程序重启后）
-   */
-  private async loadLastRequestFromDB(
-    userId: number
-  ): Promise<LastRequest | null> {
-    const [result] = await db
+  private async loadActiveRequests(): Promise<ActiveRequestRow[]> {
+    const rows = await db
       .select({
         requestId: messageRequest.id,
+        userId: messageRequest.userId,
         keyString: messageRequest.key,
         keyName: keys.name,
-        providerId: messageRequest.providerId,
+        providerId: providers.id,
         providerName: providers.name,
-        updatedAt: messageRequest.updatedAt,
+        model: messageRequest.model,
+        createdAt: messageRequest.createdAt,
       })
       .from(messageRequest)
       .innerJoin(providers, eq(messageRequest.providerId, providers.id))
-      .innerJoin(
+      .leftJoin(
         keys,
-        and(
-          eq(keys.key, messageRequest.key),
-          isNull(keys.deletedAt)
-        )
+        and(eq(keys.key, messageRequest.key), isNull(keys.deletedAt))
       )
       .where(
         and(
-          eq(messageRequest.userId, userId),
           isNull(messageRequest.deletedAt),
+          isNull(messageRequest.durationMs),
           isNull(providers.deletedAt)
         )
-      )
-      .orderBy(desc(messageRequest.updatedAt))
-      .limit(1);
+      );
 
-    if (!result) {
-      return null;
-    }
+    return rows as ActiveRequestRow[];
+  }
 
-    return {
-      requestId: result.requestId,
-      keyName: result.keyName || result.keyString,
-      providerId: result.providerId,
-      providerName: result.providerName,
-      model: "unknown",
-      endTime: result.updatedAt?.getTime() || Date.now(),
-    };
+  private async loadLastRequests(): Promise<LastRequestRow[]> {
+    const query = sql<LastRequestRow>`
+      SELECT DISTINCT ON (mr.user_id)
+        mr.user_id AS "userId",
+        mr.id AS "requestId",
+        mr.key AS "keyString",
+        k.name AS "keyName",
+        mr.provider_id AS "providerId",
+        p.name AS "providerName",
+        mr.model AS "model",
+        mr.updated_at AS "endTime"
+      FROM message_request mr
+      JOIN providers p ON mr.provider_id = p.id AND p.deleted_at IS NULL
+      LEFT JOIN keys k ON k.key = mr.key AND k.deleted_at IS NULL
+      WHERE mr.deleted_at IS NULL
+      ORDER BY mr.user_id, mr.updated_at DESC
+    `;
+
+    const result = await db.execute(query);
+    return Array.from(result) as unknown as LastRequestRow[];
   }
 }

@@ -79,6 +79,7 @@ export const messageRequest = pgTable('message_request', {
   providerId: integer('provider_id').notNull(),
   userId: integer('user_id').notNull(),
   key: varchar('key').notNull(),
+  model: varchar('model', { length: 128 }),
   durationMs: integer('duration_ms'),
   costUsd: numeric('cost_usd', { precision: 10, scale: 8 }).default('0'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),

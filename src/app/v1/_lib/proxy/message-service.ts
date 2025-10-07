@@ -14,7 +14,8 @@ export class ProxyMessageService {
     const messageRequest = await createMessageRequest({
       provider_id: provider.id,
       user_id: authState.user.id,
-      key: authState.apiKey
+      key: authState.apiKey,
+      model: session.request.model ?? undefined
     });
 
     session.setMessageContext({
