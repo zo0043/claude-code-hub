@@ -123,7 +123,19 @@ docker compose logs -f
    确保两个容器都是 `healthy` 或 `running` 状态
 
 
-### 环境变量说明
+### 环境变量配置
+
+在项目根目录创建 `.env` 文件：
+
+```bash
+# 管理员登录令牌（必须修改为强密码）
+ADMIN_TOKEN=!!!change-me-to-a-strong-password!!!
+
+# 数据库配置（可选，已有默认值）
+DB_USER=postgres
+DB_PASSWORD=!!!change-me!!!
+DB_NAME=claude_code_hub
+```
 
 <details>
 <summary><b>📝 完整环境变量配置说明</b></summary>
@@ -135,12 +147,6 @@ docker compose logs -f
 | `DB_PASSWORD` | ❌ | `postgres` | 数据库密码（生产环境建议修改） |
 | `DB_NAME` | ❌ | `claude_code_hub` | 数据库名称 |
 | `AUTO_MIGRATE` | ❌ | `true` | 启动时自动执行数据库迁移 |
-
-**生产环境安全建议**：
-- ⚠️ 必须修改 `ADMIN_TOKEN` 为强密码（≥20 字符，包含大小写字母、数字、特殊符号）
-- ⚠️ 建议修改 `DB_PASSWORD` 为强密码
-- 🔒 如果暴露到公网，建议配置反向代理（Nginx）+ HTTPS
-- 🔒 限制数据库端口 `35432` 的外部访问
 
 </details>
 

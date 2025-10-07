@@ -354,6 +354,18 @@ export function UserStatisticsChart({ data, onTimeRangeChange, loading = false }
               content={({ active, payload, label }) => {
                 if (!active || !payload || !payload.length) return null
 
+                const filteredPayload = payload.filter(entry => {
+                  const value =
+                    typeof entry.value === "number"
+                      ? entry.value
+                      : Number(entry.value ?? 0)
+                  return !Number.isNaN(value) && value !== 0
+                })
+
+                if (!filteredPayload.length) {
+                  return <div className="hidden" />
+                }
+
                 return (
                   <div className="rounded-lg border bg-background p-3 shadow-sm min-w-[200px]">
                     <div className="grid gap-2">
@@ -361,12 +373,12 @@ export function UserStatisticsChart({ data, onTimeRangeChange, loading = false }
                         {formatTooltipDate(label)}
                       </div>
                       <div className="grid gap-1.5">
-                        {payload
-                          .sort((a, b) => (b.value as number) - (a.value as number))
+                        {[...filteredPayload]
+                          .sort((a, b) => (Number(b.value ?? 0) || 0) - (Number(a.value ?? 0) || 0))
                           .map((entry, index) => {
                           const baseKey = entry.dataKey?.toString().replace(`_${activeChart}`, '') || ''
                           const displayUser = userMap.get(baseKey)
-                          const value = entry.value as number
+                          const value = typeof entry.value === "number" ? entry.value : Number(entry.value ?? 0)
                           const color = entry.color
 
                           return (
