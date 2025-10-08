@@ -106,8 +106,6 @@ jobs:
         cache-to: type=gha,mode=max
         build-args: |
           APP_VERSION=${{ github.ref_name }}
-          GITHUB_OWNER=${{ github.repository_owner }}
-          GITHUB_REPO=${{ github.event.repository.name }}
 
     - name: 📦 Image pushed successfully
       run: |
