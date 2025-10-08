@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { cn, Decimal, formatCurrency, toDecimal } from "@/lib/utils";
 import {
   ChartConfig,
   ChartContainer,
@@ -91,21 +91,45 @@ export function UserStatisticsChart({ data, onTimeRangeChange, loading = false }
     return new Map(data.users.map((user) => [user.dataKey, user]))
   }, [data.users])
 
+  const numericChartData = React.useMemo(() => {
+    return data.chartData.map((day) => {
+      const normalized: Record<string, string | number> = { ...day };
+
+      data.users.forEach((user) => {
+        const costKey = `${user.dataKey}_cost`;
+        const costDecimal = toDecimal(day[costKey]);
+        normalized[costKey] = costDecimal
+          ? Number(costDecimal.toDecimalPlaces(6).toString())
+          : 0;
+
+        const callsKey = `${user.dataKey}_calls`;
+        const callsValue = day[callsKey];
+        normalized[callsKey] = typeof callsValue === "number" ? callsValue : Number(callsValue ?? 0);
+      });
+
+      return normalized;
+    });
+  }, [data.chartData, data.users]);
+
   // 计算每个用户的总数据
   const userTotals = React.useMemo(() => {
-    const totals: Record<string, { cost: number; calls: number }> = {}
+    const totals: Record<string, { cost: Decimal; calls: number }> = {}
 
     data.users.forEach(user => {
-      totals[user.dataKey] = { cost: 0, calls: 0 }
+      totals[user.dataKey] = { cost: new Decimal(0), calls: 0 }
     })
 
     data.chartData.forEach(day => {
       data.users.forEach(user => {
-        const costValue = day[`${user.dataKey}_cost`]
+        const costValue = toDecimal(day[`${user.dataKey}_cost`])
         const callsValue = day[`${user.dataKey}_calls`]
 
-        totals[user.dataKey].cost += typeof costValue === 'number' ? costValue : 0
-        totals[user.dataKey].calls += typeof callsValue === 'number' ? callsValue : 0
+        if (costValue) {
+          const current = totals[user.dataKey]
+          current.cost = current.cost.plus(costValue)
+        }
+
+        totals[user.dataKey].calls += typeof callsValue === 'number' ? callsValue : Number(callsValue ?? 0)
       })
     })
 
@@ -118,14 +142,23 @@ export function UserStatisticsChart({ data, onTimeRangeChange, loading = false }
       .sort((a, b) => {
         const totalsA = userTotals[a.user.dataKey]
         const totalsB = userTotals[b.user.dataKey]
-        const valueA = totalsA ? totalsA[activeChart] : 0
-        const valueB = totalsB ? totalsB[activeChart] : 0
-
-        if (valueA === valueB) {
+        if (!totalsA && !totalsB) {
           return a.index - b.index
         }
 
-        return valueB - valueA
+        if (!totalsA) return 1
+        if (!totalsB) return -1
+
+        if (activeChart === "cost") {
+          const result = totalsB.cost.comparedTo(totalsA.cost)
+          return result !== 0 ? result : a.index - b.index
+        }
+
+        if (totalsB.calls === totalsA.calls) {
+          return a.index - b.index
+        }
+
+        return totalsB.calls - totalsA.calls
       })
   }, [data.users, userTotals, activeChart])
 
@@ -133,11 +166,11 @@ export function UserStatisticsChart({ data, onTimeRangeChange, loading = false }
   const totals = React.useMemo(() => {
     const costTotal = data.chartData.reduce((sum, day) => {
       const dayTotal = data.users.reduce((daySum, user) => {
-        const costValue = day[`${user.dataKey}_cost`]
-        return daySum + (typeof costValue === 'number' ? costValue : 0);
-      }, 0)
-      return sum + dayTotal
-    }, 0)
+        const costValue = toDecimal(day[`${user.dataKey}_cost`])
+        return costValue ? daySum.plus(costValue) : daySum
+      }, new Decimal(0))
+      return sum.plus(dayTotal)
+    }, new Decimal(0))
 
     const callsTotal = data.chartData.reduce((sum, day) => {
       const dayTotal = data.users.reduce((daySum, user) => {
@@ -245,7 +278,7 @@ export function UserStatisticsChart({ data, onTimeRangeChange, loading = false }
                 总消费金额
               </span>
               <span className="text-lg leading-none font-bold sm:text-3xl">
-                ${totals.cost.toFixed(2)}
+                {formatCurrency(totals.cost)}
               </span>
             </button>
             <button
@@ -275,7 +308,7 @@ export function UserStatisticsChart({ data, onTimeRangeChange, loading = false }
               总消费金额
             </span>
             <span className="text-lg leading-none font-bold sm:text-xl">
-              ${totals.cost.toFixed(2)}
+              {formatCurrency(totals.cost)}
             </span>
           </button>
           <button
@@ -298,7 +331,7 @@ export function UserStatisticsChart({ data, onTimeRangeChange, loading = false }
           className="aspect-auto h-[280px] w-full"
         >
           <AreaChart
-            data={data.chartData}
+            data={numericChartData}
             margin={{
               left: 12,
               right: 12,
@@ -344,9 +377,9 @@ export function UserStatisticsChart({ data, onTimeRangeChange, loading = false }
               tickMargin={8}
               tickFormatter={(value) => {
                 if (activeChart === "cost") {
-                  return `$${value}`
+                  return formatCurrency(value)
                 }
-                return value.toString()
+                return Number(value).toLocaleString()
               }}
             />
             <ChartTooltip
@@ -363,7 +396,13 @@ export function UserStatisticsChart({ data, onTimeRangeChange, loading = false }
                 })
 
                 if (!filteredPayload.length) {
-                  return <div className="hidden" />
+                  return (
+                    <div className="rounded-lg border bg-background p-3 shadow-sm min-w-[200px]">
+                      <div className="font-medium text-center">
+                        {formatTooltipDate(label)}
+                      </div>
+                    </div>
+                  )
                 }
 
                 return (
@@ -392,7 +431,7 @@ export function UserStatisticsChart({ data, onTimeRangeChange, loading = false }
                               </div>
                               <span className="ml-auto font-mono flex-shrink-0">
                                 {activeChart === "cost"
-                                  ? `$${value.toFixed(2)}`
+                                  ? formatCurrency(value)
                                   : value.toLocaleString()
                                 }
                               </span>
@@ -425,7 +464,7 @@ export function UserStatisticsChart({ data, onTimeRangeChange, loading = false }
                   <div className="flex flex-wrap justify-center gap-1">
                     {sortedLegendUsers.map(({ user, index }) => {
                       const color = getUserColor(index)
-                      const userTotal = userTotals[user.dataKey] ?? { cost: 0, calls: 0 }
+                      const userTotal = userTotals[user.dataKey] ?? { cost: new Decimal(0), calls: 0 }
 
                       return (
                         <div
@@ -446,7 +485,7 @@ export function UserStatisticsChart({ data, onTimeRangeChange, loading = false }
                           {/* 下方：数据值 */}
                           <div className="text-xs font-bold text-foreground">
                             {activeChart === "cost"
-                              ? `$${userTotal.cost.toFixed(2)}`
+                              ? formatCurrency(userTotal.cost)
                               : userTotal.calls.toLocaleString()
                             }
                           </div>

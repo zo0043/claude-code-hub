@@ -20,6 +20,7 @@ import type {
 } from "@/types/statistics";
 import { TIME_RANGE_OPTIONS, DEFAULT_TIME_RANGE } from "@/types/statistics";
 import type { ActionResult } from "./types";
+import { formatCostForStorage } from "@/lib/utils/currency";
 
 /**
  * 生成图表数据使用的用户键，避免名称碰撞
@@ -92,7 +93,7 @@ export async function getUserStatistics(
       const entityKey = createDataKey(prefix, entityId);
 
       // 安全地处理大数值，防止精度问题
-      const cost = row.total_cost ? parseFloat(row.total_cost.toString()) : 0;
+      const cost = formatCostForStorage(row.total_cost) ?? formatCostForStorage(0)!;
       const calls = row.api_calls || 0;
 
       // 为每个用户创建消费和调用次数的键

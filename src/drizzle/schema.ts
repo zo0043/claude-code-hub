@@ -81,7 +81,7 @@ export const messageRequest = pgTable('message_request', {
   key: varchar('key').notNull(),
   model: varchar('model', { length: 128 }),
   durationMs: integer('duration_ms'),
-  costUsd: numeric('cost_usd', { precision: 10, scale: 8 }).default('0'),
+  costUsd: numeric('cost_usd', { precision: 21, scale: 15 }).default('0'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),

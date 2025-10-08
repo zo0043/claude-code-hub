@@ -54,7 +54,7 @@ export async function checkDatabaseConnection(retries = 30, delay = 2000): Promi
       console.log('✅ Database connection established');
       return true;
     } catch (error) {
-      console.log(`⏳ Waiting for database... (${i + 1}/${retries})`);
+      console.error(`⏳ Waiting for database... (${i + 1}/${retries})`, error);
       if (i < retries - 1) {
         await new Promise(resolve => setTimeout(resolve, delay));
       }

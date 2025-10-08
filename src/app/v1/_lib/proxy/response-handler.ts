@@ -186,7 +186,7 @@ async function updateRequestCostFromUsage(
   const priceData = await findLatestPriceByModel(modelName);
   if (priceData?.priceData) {
     const cost = calculateRequestCost(usage, priceData.priceData);
-    if (cost > 0) {
+    if (cost.gt(0)) {
       await updateMessageRequestCost(messageId, cost);
     }
   }

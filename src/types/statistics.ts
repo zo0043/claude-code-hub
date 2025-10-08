@@ -40,7 +40,7 @@ export interface DatabaseStatRow {
   user_name: string;
   date: string;
   api_calls: number;
-  total_cost: number;
+  total_cost: string | number | null;
 }
 
 export interface DatabaseUser {
@@ -53,7 +53,7 @@ export interface DatabaseKeyStatRow {
   key_name: string;
   date: string;
   api_calls: number;
-  total_cost: number;
+  total_cost: string | number | null;
 }
 
 export interface DatabaseKey {

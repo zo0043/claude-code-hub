@@ -4,6 +4,7 @@ import type { Provider } from "@/types/provider";
 import type { MessageRequest } from "@/types/message";
 import type { ModelPrice } from "@/types/model-price";
 import type { SystemSettings } from "@/types/system-config";
+import { formatCostForStorage } from "@/lib/utils/currency";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function toUser(dbUser: any): User {
@@ -49,7 +50,10 @@ export function toMessageRequest(dbMessage: any): MessageRequest {
     ...dbMessage,
     createdAt: dbMessage?.createdAt ? new Date(dbMessage.createdAt) : new Date(),
     updatedAt: dbMessage?.updatedAt ? new Date(dbMessage.updatedAt) : new Date(),
-    costUsd: dbMessage?.costUsd != null ? parseFloat(dbMessage.costUsd) : undefined,
+    costUsd: (() => {
+      const formatted = formatCostForStorage(dbMessage?.costUsd);
+      return formatted ?? undefined;
+    })(),
   };
 }
 
