@@ -4,6 +4,7 @@ import type { AuthSession } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { DashboardNav, type DashboardNavItem } from "./dashboard-nav";
 import { UserMenu } from "./user-menu";
+import { VersionUpdateNotifier } from "@/components/customs/version-update-notifier";
 
 interface DashboardHeaderProps {
   session: AuthSession | null;
@@ -13,6 +14,7 @@ const NAV_ITEMS: (DashboardNavItem & { adminOnly?: boolean })[] = [
   { href: "/dashboard", label: "仪表盘" },
   { href: "/usage-doc", label: "文档" },
   { href: "/settings", label: "系统设置", adminOnly: true },
+  { href: "https://github.com/zsio/claude-code-hub/issues", label: "反馈问题", external: true },
 ];
 
 export function DashboardHeader({ session }: DashboardHeaderProps) {
@@ -24,6 +26,7 @@ export function DashboardHeader({ session }: DashboardHeaderProps) {
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-6">
         <DashboardNav items={items} />
         <div className="flex items-center gap-3">
+          {session && <VersionUpdateNotifier />}
           {session ? (
             <UserMenu user={session.user} />
           ) : (

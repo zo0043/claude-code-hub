@@ -12,7 +12,18 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --froze
 
 FROM deps AS build
 COPY . .
+
+# 接收构建参数
+ARG APP_VERSION=dev
+ARG GITHUB_OWNER
+ARG GITHUB_REPO
+
+# 设置为环境变量供 Next.js 使用
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_APP_VERSION=$APP_VERSION
+ENV NEXT_PUBLIC_GITHUB_OWNER=$GITHUB_OWNER
+ENV NEXT_PUBLIC_GITHUB_REPO=$GITHUB_REPO
+
 RUN pnpm run build
 
 FROM node:22-slim AS runner
