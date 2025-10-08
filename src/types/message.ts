@@ -1,3 +1,5 @@
+import type { Numeric } from "decimal.js-light";
+
 /**
  * 消息请求数据库实体类型
  */
@@ -8,7 +10,7 @@ export interface MessageRequest {
   key: string;
   model?: string;
   durationMs?: number;
-  costUsd?: number; // 单次请求费用（美元）
+  costUsd?: string; // 单次请求费用（美元），保持高精度字符串表示
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date;
@@ -23,7 +25,7 @@ export interface CreateMessageRequestData {
   key: string;
   model?: string;
   duration_ms?: number;
-  cost_usd?: number; // 单次请求费用（美元）
+  cost_usd?: Numeric; // 单次请求费用（美元），支持高精度
 }
 
 /**

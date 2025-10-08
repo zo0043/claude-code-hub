@@ -5,8 +5,17 @@
 // 样式相关
 export { cn } from './cn';
 
-// 货币格式化
-export { formatCurrency } from './currency';
+// 货币与金额工具
+export {
+  Decimal,
+  COST_SCALE,
+  formatCurrency,
+  formatCostForStorage,
+  toCostDecimal,
+  toDecimal,
+  costToNumber,
+  sumCosts
+} from './currency';
 
 // 成本计算
 export { calculateRequestCost } from './cost-calculation';

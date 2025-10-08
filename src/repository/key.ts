@@ -6,6 +6,7 @@ import { eq, isNull, and, or, gt, gte, lt, count, sum } from "drizzle-orm";
 import type { Key, CreateKeyData, UpdateKeyData } from "@/types/key";
 import type { User } from "@/types/user";
 import { toKey, toUser } from "./_shared/transformers";
+import { Decimal, toCostDecimal } from "@/lib/utils/currency";
 
 export async function findKeyById(id: number): Promise<Key | null> {
   const [key] = await db
@@ -163,12 +164,8 @@ export async function findKeyUsageToday(userId: number): Promise<Array<{ keyId: 
   return rows.map((row) => ({
     keyId: row.keyId,
     totalCost: (() => {
-      const rawCost = row.totalCost;
-      if (rawCost === null || rawCost === undefined) {
-        return 0;
-      }
-      const costNumber = typeof rawCost === "number" ? rawCost : Number(rawCost);
-      return Number.isFinite(costNumber) ? costNumber : 0;
+      const costDecimal = toCostDecimal(row.totalCost) ?? new Decimal(0);
+      return costDecimal.toDecimalPlaces(6).toNumber();
     })()
   }));
 }

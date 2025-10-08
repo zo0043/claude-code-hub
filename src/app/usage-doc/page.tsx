@@ -266,10 +266,7 @@ export default function UsageDocPage() {
     <div className="relative flex gap-8">
       {/* 左侧主文档 */}
       <div className="flex-1">
-        {/* 背景装饰 */}
-        <div className="absolute inset-0 -z-10 mx-auto max-w-7xl">
-          <div className="absolute left-1/2 top-0 -translate-x-1/2 w-[200%] h-48 bg-gradient-to-b from-primary/5 to-transparent rounded-[100%] blur-3xl" />
-        </div>
+        
 
         {/* 文档容器 */}
         <div className="relative bg-card rounded-xl shadow-sm border p-8 md:p-12">
@@ -277,10 +274,6 @@ export default function UsageDocPage() {
           <UsageDocContent origin={serviceOrigin} />
         </div>
 
-        {/* 页脚信息 */}
-        <div className="mt-12 text-center text-sm text-muted-foreground">
-          <p>文档持续更新中 • 最后更新: {new Date().toLocaleDateString('zh-CN')}</p>
-        </div>
       </div>
 
       {/* 右侧目录导航 */}

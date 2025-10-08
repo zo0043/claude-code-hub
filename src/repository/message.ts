@@ -8,18 +8,20 @@ import type {
   CreateMessageRequestData
 } from "@/types/message";
 import { toMessageRequest } from "./_shared/transformers";
+import { formatCostForStorage } from "@/lib/utils/currency";
 
 /**
  * 创建消息请求记录
  */
 export async function createMessageRequest(data: CreateMessageRequestData): Promise<MessageRequest> {
+  const formattedCost = formatCostForStorage(data.cost_usd);
   const dbData = {
     providerId: data.provider_id,
     userId: data.user_id,
     key: data.key,
     model: data.model,
     durationMs: data.duration_ms,
-    costUsd: data.cost_usd?.toString(),
+    costUsd: formattedCost ?? undefined,
   };
 
   const [result] = await db.insert(messageRequest).values(dbData).returning({
@@ -54,11 +56,16 @@ export async function updateMessageRequestDuration(id: number, durationMs: numbe
 /**
  * 更新消息请求的费用
  */
-export async function updateMessageRequestCost(id: number, costUsd: number): Promise<void> {
+export async function updateMessageRequestCost(id: number, costUsd: CreateMessageRequestData["cost_usd"]): Promise<void> {
+  const formattedCost = formatCostForStorage(costUsd);
+  if (!formattedCost) {
+    return;
+  }
+
   await db
     .update(messageRequest)
     .set({
-      costUsd: costUsd.toString(),
+      costUsd: formattedCost,
       updatedAt: new Date()
     })
     .where(eq(messageRequest.id, id));
