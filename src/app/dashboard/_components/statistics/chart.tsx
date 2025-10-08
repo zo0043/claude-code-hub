@@ -56,14 +56,13 @@ const getUserColor = (index: number) =>
 export interface UserStatisticsChartProps {
   data: UserStatisticsData;
   onTimeRangeChange?: (timeRange: TimeRange) => void;
-  loading?: boolean;
 }
 
 /**
  * 用户统计图表组件
  * 展示用户的消费金额和API调用次数
  */
-export function UserStatisticsChart({ data, onTimeRangeChange, loading = false }: UserStatisticsChartProps) {
+export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsChartProps) {
   const [activeChart, setActiveChart] = React.useState<"cost" | "calls">("cost")
 
   // 动态生成图表配置
@@ -247,12 +246,7 @@ export function UserStatisticsChart({ data, onTimeRangeChange, loading = false }
         )}
       >
         <div className="flex flex-1 flex-col justify-center gap-1 px-6 pt-4 pb-3 lg:!py-0">
-          <div className="flex items-center gap-2">
-            <CardTitle>使用统计</CardTitle>
-            {loading && (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-orange-600 border-t-transparent" />
-            )}
-          </div>
+          <CardTitle>使用统计</CardTitle>
           <CardDescription>
             {getTimeRangeDescription()} · {getAggregationLabel()}
           </CardDescription>
@@ -262,7 +256,6 @@ export function UserStatisticsChart({ data, onTimeRangeChange, loading = false }
           <TimeRangeSelector
             value={data.timeRange}
             onChange={onTimeRangeChange}
-            disabled={loading}
             className="border-t lg:border-t-0"
           />
         )}
