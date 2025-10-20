@@ -4,7 +4,7 @@ import type { ProxySession } from "./session";
 
 export class ProxyForwarder {
   static async send(session: ProxySession): Promise<Response> {
-    if (!session.provider || !session.authState) {
+    if (!session.provider || !session.authState?.success) {
       throw new Error("代理上下文缺少供应商或鉴权信息");
     }
 
@@ -24,14 +24,9 @@ export class ProxyForwarder {
   }
 
   private static buildHeaders(session: ProxySession): Headers {
-    const authState = session.authState;
-    const provider = session.provider;
+    const provider = session.provider!;
+    const outboundKey = provider.key;
 
-    if (!authState || !provider) {
-      return new Headers(session.headers);
-    }
-
-    const outboundKey = authState.success ? provider.key : "000";
     const headerProcessor = HeaderProcessor.createForProxy({
       blacklist: [],
       overrides: {
