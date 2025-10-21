@@ -138,6 +138,111 @@ function UsageDocContent({ origin }: UsageDocContentProps) {
           <CodeBlock language="bash" code={`claude`} />
           <p>现在您可以开始使用 Claude Code 辅助开发了！</p>
         </div>
+
+        <div className="space-y-4">
+          <h3 id="codex-api" className={headingClasses.h3}>
+            🤖 使用 Codex API (OpenAI Compatible)
+          </h3>
+
+          <p>
+            本服务同时支持 OpenAI Chat Completions API 格式，可用于 Cursor、Continue.dev 等工具或任何支持 OpenAI API 的客户端。
+          </p>
+
+          <div className="space-y-3">
+            <h4 className={headingClasses.h4}>API 端点</h4>
+            <ul className="list-disc space-y-2 pl-6">
+              <li>
+                <strong>Base URL</strong>: <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">{resolvedOrigin}/v1</code>
+              </li>
+              <li>
+                <strong>端点</strong>: <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">/v1/chat/completions</code>
+              </li>
+              <li>
+                <strong>格式</strong>: OpenAI Chat Completions API 兼容
+              </li>
+            </ul>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className={headingClasses.h4}>Python SDK 示例</h4>
+            <p>使用 OpenAI Python 包：</p>
+            <CodeBlock
+              language="python"
+              code={`from openai import OpenAI
+
+client = OpenAI(
+    api_key="your-api-key-here",
+    base_url="${resolvedOrigin}/v1"
+)
+
+response = client.chat.completions.create(
+    model="gpt-5-codex",
+    messages=[{"role": "user", "content": "Hello!"}],
+    stream=False
+)
+
+print(response.choices[0].message.content)`}
+            />
+          </div>
+
+          <div className="space-y-3">
+            <h4 className={headingClasses.h4}>JavaScript SDK 示例</h4>
+            <p>使用 OpenAI npm 包：</p>
+            <CodeBlock
+              language="javascript"
+              code={`import OpenAI from 'openai';
+
+const client = new OpenAI({
+    apiKey: 'your-api-key-here',
+    baseURL: '${resolvedOrigin}/v1'
+});
+
+const response = await client.chat.completions.create({
+    model: 'gpt-5-codex',
+    messages: [{ role: 'user', content: 'Hello!' }],
+    stream: false
+});
+
+console.log(response.choices[0].message.content);`}
+            />
+          </div>
+
+          <div className="space-y-3">
+            <h4 className={headingClasses.h4}>cURL 示例</h4>
+            <p>使用原始 HTTP 请求：</p>
+            <CodeBlock
+              language="bash"
+              code={`curl ${resolvedOrigin}/v1/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer your-api-key-here" \\
+  -d '{
+    "model": "gpt-5-codex",
+    "messages": [{"role": "user", "content": "Hello!"}],
+    "stream": false
+  }'`}
+            />
+          </div>
+
+          <div className="space-y-3">
+            <h4 className={headingClasses.h4}>重要说明</h4>
+            <blockquote className="space-y-2 rounded-lg border-l-2 border-primary/50 bg-muted/40 px-4 py-3">
+              <ul className="list-disc space-y-2 pl-4">
+                <li>
+                  <strong className="text-foreground">API 密钥</strong>：与 Claude Code 使用相同的密钥，从控制台获取
+                </li>
+                <li>
+                  <strong className="text-foreground">模型名称</strong>：需与供应商配置的模型名称或 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">model_redirects</code> 映射匹配
+                </li>
+                <li>
+                  <strong className="text-foreground">流式响应</strong>：支持设置 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">stream: true</code> 启用流式输出
+                </li>
+                <li>
+                  <strong className="text-foreground">会话复用</strong>：系统会在 5 分钟内自动复用同一供应商，优化响应速度
+                </li>
+              </ul>
+            </blockquote>
+          </div>
+        </div>
       </section>
 
       <hr className="border-border/60" />

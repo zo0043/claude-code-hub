@@ -15,7 +15,7 @@ export function AddProviderDialog() {
           <ServerCog className="h-4 w-4" /> 新增服务商
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <FormErrorBoundary>
           <ProviderForm mode="create" onSuccess={() => setOpen(false)} />
         </FormErrorBoundary>

@@ -105,7 +105,7 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
                     <Edit className="h-3.5 w-3.5" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
                   <FormErrorBoundary>
                     <ProviderForm mode="edit" provider={item} onSuccess={() => setOpenEdit(false)} />
                   </FormErrorBoundary>

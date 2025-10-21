@@ -116,7 +116,7 @@ export async function uploadPriceTable(
 }
 
 /**
- * 获取所有模型的最新价格，仅包含 claude 系列
+ * 获取所有模型的最新价格（包含 Claude 和 OpenAI 等所有模型）
  */
 export async function getModelPrices(): Promise<ModelPrice[]> {
   try {
