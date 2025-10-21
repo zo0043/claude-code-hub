@@ -8,7 +8,6 @@ import type {
   SSEEvent,
   ResponseCreatedEvent,
   OutputTextDeltaEvent,
-  ResponseCompletedEvent,
   ReasoningSummaryTextDeltaEvent,
   ReasoningSummaryTextDoneEvent,
   ReasoningSummaryPartDoneEvent,
@@ -32,8 +31,11 @@ export class StreamTransformer {
     event: SSEEvent
   ): ChatCompletionChunk | ChatCompletionChunk[] | null {
     // 懒初始化：从任何事件中提取 ID
-    if (!this.chunkId && (event.data as any)?.item_id) {
-      this.chunkId = this.convertItemId((event.data as any).item_id);
+    if (!this.chunkId && typeof event.data === 'object' && event.data !== null && 'item_id' in event.data) {
+      const itemId = (event.data as { item_id?: string }).item_id;
+      if (itemId) {
+        this.chunkId = this.convertItemId(itemId);
+      }
     }
 
     switch (event.event) {
@@ -59,7 +61,7 @@ export class StreamTransformer {
         );
 
       case 'response.completed':
-        return this.handleCompleted(event.data as ResponseCompletedEvent);
+        return this.handleCompleted();
 
       case 'response.failed':
         this.resetAfterCompletion();
@@ -154,9 +156,7 @@ export class StreamTransformer {
    * 返回结束 chunk
    * 如果还在 reasoning 中（没有 message），需要先关闭 </think> 标签
    */
-  private handleCompleted(
-    data: ResponseCompletedEvent
-  ): ChatCompletionChunk | ChatCompletionChunk[] {
+  private handleCompleted(): ChatCompletionChunk | ChatCompletionChunk[] {
     const chunks: ChatCompletionChunk[] = [];
 
     // 如果还在 reasoning 中（只有思考没有回复），先关闭标签

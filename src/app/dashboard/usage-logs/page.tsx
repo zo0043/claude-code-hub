@@ -18,7 +18,7 @@ export default async function UsageLogsPage() {
         title="使用记录"
         description="查看详细的 API 调用日志，包括费用、Token 使用、上游决策链等信息"
       >
-        <UsageLogsTable currentUser={session.user} />
+        <UsageLogsTable />
       </Section>
     </div>
   );

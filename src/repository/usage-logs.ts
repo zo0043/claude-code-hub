@@ -2,7 +2,7 @@
 
 import { db } from "@/drizzle/db";
 import { messageRequest, users, keys as keysTable, providers } from "@/drizzle/schema";
-import { and, eq, isNull, gte, lte, desc, sql, inArray } from "drizzle-orm";
+import { and, eq, isNull, gte, lte, desc, sql } from "drizzle-orm";
 
 export interface UsageLogFilters {
   userId?: number;

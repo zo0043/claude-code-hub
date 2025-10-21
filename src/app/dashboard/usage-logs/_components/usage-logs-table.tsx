@@ -14,14 +14,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { MessageRequest } from "@/types/message";
-import type { User } from "@/types/user";
 import { ProviderChainDisplay } from "./provider-chain-display";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
-
-interface UsageLogsTableProps {
-  currentUser: User;
-}
 
 interface UsageLogsResponse {
   logs: MessageRequest[];
@@ -64,7 +59,7 @@ async function fetchUsageLogs(params: {
   return response.json();
 }
 
-export function UsageLogsTable({ currentUser }: UsageLogsTableProps) {
+export function UsageLogsTable() {
   const [page, setPage] = React.useState(1);
   const [pageSize] = React.useState(50);
   const [modelFilter, setModelFilter] = React.useState("");

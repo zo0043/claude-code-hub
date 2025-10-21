@@ -32,6 +32,7 @@
 - **👥 多租户** - 完整的用户体系，细粒度权限控制和配额管理
 - **🔑 密钥管理** - API Key 生成、轮换、过期管理
 - **📊 实时监控** - 请求统计、成本追踪、性能分析、可视化报表
+- **🤖 Codex 支持** - 兼容 OpenAI Chat Completions API，支持 Codex 模型智能路由
 - **🎨 现代 UI** - 基于 Shadcn UI 的响应式管理面板，深色模式
 - **🚀 生产就绪** - Docker 一键部署、自动数据库迁移、健康检查
 
@@ -258,6 +259,56 @@ docker compose down -v
 用户使用生成的密钥调用服务：
 查看 `http://localhost:23000/usage-doc`
 
+#### 🤖 Codex API（OpenAI 兼容端点）
+
+本服务支持 OpenAI Chat Completions API 格式，可直接对接 Codex 类型的供应商：
+
+**端点**：`POST /v1/chat/completions`
+
+**请求示例**：
+```bash
+curl -X POST http://localhost:23000/v1/chat/completions \
+  -H "Authorization: Bearer sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-5-codex",
+    "messages": [
+      {"role": "user", "content": "写一个快速排序算法"}
+    ],
+    "stream": true
+  }'
+```
+
+**支持的参数**：
+- `model` - 模型名称（可通过供应商配置进行重定向）
+- `messages` - 对话消息数组
+- `stream` - 是否启用流式输出（默认 false）
+- `max_tokens` - 最大输出 token 数
+- `temperature` - 温度参数（0-2）
+- `top_p` - 核采样参数
+- `reasoning` - 推理配置（Codex 专用）
+
+**供应商配置**：
+1. 在"供应商管理"中添加 Codex 类型供应商
+2. 设置"供应商类型"为 `Codex (OpenAI 推理模型)`
+3. 配置"模型重定向"映射（可选）：
+   ```json
+   {
+     "gpt-5": "gpt-5-codex",
+     "gpt-4": "gpt-4-turbo"
+   }
+   ```
+
+**工作流程**：
+- 请求自动转换为 Response API 格式
+- 根据供应商类型智能路由（仅选择 Codex 类型供应商）
+- 响应自动转换回 OpenAI 格式
+
+**价格管理**：
+- 支持为 OpenAI 格式模型（如 `gpt-5-codex`）单独配置价格
+- 在"价格管理"中添加对应模型的输入/输出 token 单价
+- 系统自动按 token 计费
+
 
 ### 5️⃣ 监控和统计
 
@@ -272,9 +323,15 @@ docker compose down -v
 
 进入 **设置 → 价格管理**，配置各模型的计费单价：
 
-- 支持按模型配置输入/输出 Token 单价
+- 支持按模型配置输入/输出 Token 单价（包括 Claude 和 OpenAI 格式模型）
+- 支持缓存 Token 单独定价（`cache_creation_input_tokens`、`cache_read_input_tokens`）
 - 自动计算请求成本
 - 导出成本报表
+
+**OpenAI 模型价格配置示例**：
+- 模型名称：`gpt-5-codex`
+- 输入价格（USD/M tokens）：`0.003`
+- 输出价格（USD/M tokens）：`0.006`
 
 ## 🛠️ 常见问题
 

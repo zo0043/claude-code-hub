@@ -1,12 +1,16 @@
 import { Hono } from "hono";
 import { handle } from "hono/vercel";
 import { handleProxyRequest } from "@/app/v1/_lib/proxy-handler";
+import { handleChatCompletions } from "@/app/v1/_lib/codex/chat-completions-handler";
 
 export const runtime = "nodejs";
 
 const app = new Hono().basePath("/v1");
 
-// 所有请求都通过代理处理器处理
+// OpenAI Compatible API 路由（优先匹配）
+app.post("/chat/completions", handleChatCompletions);
+
+// Claude API 和其他所有请求（fallback）
 app.all("*", handleProxyRequest);
 
 export const GET = handle(app);

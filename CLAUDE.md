@@ -71,14 +71,87 @@ src/
 6. **ProxyResponseHandler** - 处理响应（支持 SSE 流式）
 7. **ProxyErrorHandler** - 统一错误处理
 
+### Codex 支持架构
+
+#### OpenAI Compatible API 实现
+
+本系统支持 OpenAI Chat Completions API 格式，可直接对接 Codex 类型供应商。核心组件位于 `src/app/v1/_lib/codex/`：
+
+**请求流程**：
+```
+客户端 (OpenAI 格式)
+  → /v1/chat/completions 端点
+  → RequestTransformer (OpenAI → Response API)
+  → 复用现有代理流程 (认证、限流、路由)
+  → ProxyForwarder 转发到 Codex 供应商
+  → ResponseTransformer (Response API → OpenAI)
+  → 客户端 (OpenAI 格式)
+```
+
+**核心组件**：
+
+1. **RequestTransformer** (`transformers/request.ts`)
+   - 转换 OpenAI Chat Completion 请求为 Response API 格式
+   - 处理 `messages` → `input` 转换
+   - 支持 `reasoning`、`max_tokens`、`temperature` 等参数映射
+
+2. **ResponseTransformer** (`transformers/response.ts`)
+   - 转换 Response API 响应为 OpenAI 格式
+   - 映射 `content` → `choices[].message.content`
+   - 处理 `usage` 统计信息
+
+3. **StreamTransformer** (`transformers/stream.ts`)
+   - 处理 SSE 流式响应转换
+   - `message_start` → 初始 chunk
+   - `content_block_delta` → 增量内容 chunk
+   - `message_delta` → usage 统计 chunk
+
+4. **ChatCompletionsHandler** (`chat-completions-handler.ts`)
+   - 统一入口，处理 `/v1/chat/completions` 请求
+   - 标记 `originalFormat = 'openai'`（用于响应转换）
+   - 调用 `ProxyProviderResolver` 时指定供应商类型为 `'codex'`
+
+**供应商隔离机制**：
+
+- 数据库字段：`providers.provider_type` (`'claude'` | `'codex'`)
+- 路由策略：OpenAI 请求仅选择 `provider_type = 'codex'` 的供应商
+- Claude 请求仅选择 `provider_type = 'claude'` 的供应商（默认）
+
+**模型重定向**：
+
+- 数据库字段：`providers.model_redirects` (JSONB)
+- 示例配置：`{"gpt-5": "gpt-5-codex", "gpt-4": "gpt-4-turbo"}`
+- ModelRedirector 在转发前自动重写模型名称
+
+**会话粘性**：
+
+- OpenAI 请求通过 `conversation_id` 识别会话
+- Session 5 分钟内复用同一供应商（利用上下文缓存）
+- Redis key: `session:{conversationId}:provider`
+
+**价格管理**：
+
+- 支持为 OpenAI 格式模型单独配置价格（如 `gpt-5-codex`）
+- 价格表 `model_prices` 同时支持 Claude 和 OpenAI 模型
+- 自动按 `usage.input_tokens` 和 `usage.output_tokens` 计费
+
 ### 数据库 Schema
 
 核心表 (`src/drizzle/schema.ts`)：
 - **users** - 用户表 (RPM 限制、每日额度)
 - **keys** - API 密钥表
 - **providers** - 上游供应商表 (URL、权重、流量限制)
+  - `provider_type` - 供应商类型 (`'claude'` | `'codex'`)，默认 `'claude'`
+  - `model_redirects` - 模型重定向映射 (JSONB)，如 `{"gpt-5": "gpt-5-codex"}`
 - **message_request** - 请求日志表 (成本追踪)
+  - `api_type` - API 类型 (`'chat'` | `'codex'`)，用于区分不同的请求格式
+  - `status_code` - HTTP 状态码
+  - `input_tokens`, `output_tokens` - Token 使用统计
+  - `cache_creation_input_tokens`, `cache_read_input_tokens` - 缓存 Token 统计
+  - `provider_chain` - 供应商调用链 (JSON)，记录重试和降级路径
 - **model_prices** - 模型价格表
+  - 支持 Claude 模型（如 `claude-sonnet-4-5`）和 OpenAI 模型（如 `gpt-5-codex`）
+  - 独立配置输入/输出/缓存 Token 单价
 
 ### 环境配置
 

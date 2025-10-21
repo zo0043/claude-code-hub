@@ -29,6 +29,8 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
       priority: provider.priority,
       costMultiplier: provider.costMultiplier,
       groupTag: provider.groupTag,
+      providerType: provider.providerType,
+      modelRedirects: provider.modelRedirects,
       limit5hUsd: provider.limit5hUsd,
       limitWeeklyUsd: provider.limitWeeklyUsd,
       limitMonthlyUsd: provider.limitMonthlyUsd,
@@ -56,6 +58,8 @@ export async function addProvider(data: {
   priority?: number;
   cost_multiplier?: number;
   group_tag?: string | null;
+  provider_type?: string;
+  model_redirects?: Record<string, string> | null;
   limit_5h_usd?: number | null;
   limit_weekly_usd?: number | null;
   limit_monthly_usd?: number | null;
@@ -105,6 +109,8 @@ export async function editProvider(
     priority?: number;
     cost_multiplier?: number;
     group_tag?: string | null;
+    provider_type?: string;
+    model_redirects?: Record<string, string> | null;
     limit_5h_usd?: number | null;
     limit_weekly_usd?: number | null;
     limit_monthly_usd?: number | null;

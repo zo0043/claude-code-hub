@@ -8,7 +8,7 @@ import { ProxyLogger } from "./logger";
 import { ProxyStatusTracker } from "@/lib/proxy-status-tracker";
 import { ResponseTransformer } from "../codex/transformers/response";
 import { StreamTransformer } from "../codex/transformers/stream";
-import type { ResponseResponse } from "../codex/types/response";
+import type { ResponseObject } from "../codex/types/response";
 
 export type UsageMetrics = {
   input_tokens?: number;
@@ -47,10 +47,10 @@ export class ProxyResponseHandler {
         // 克隆一份用于转换
         const responseForTransform = response.clone();
         const responseText = await responseForTransform.text();
-        const responseData = JSON.parse(responseText) as ResponseResponse;
+        const responseData = JSON.parse(responseText) as ResponseObject;
 
         // 转换为 OpenAI 格式
-        const openAIResponse = ResponseTransformer.toOpenAI(responseData);
+        const openAIResponse = ResponseTransformer.transform(responseData);
 
         console.debug('[ResponseHandler] Transformed Response API → OpenAI format (non-stream)');
 
@@ -137,7 +137,7 @@ export class ProxyResponseHandler {
 
     // ✅ 检查是否需要格式转换（OpenAI 请求 + Codex 供应商）
     const needsTransform = session.originalFormat === 'openai' && session.providerType === 'codex';
-    let processedStream = response.body;
+    let processedStream: ReadableStream<Uint8Array> = response.body;
 
     if (needsTransform) {
       console.debug('[ResponseHandler] Transforming Response API → OpenAI format (stream)');
@@ -157,17 +157,25 @@ export class ProxyResponseHandler {
                 const dataStr = line.slice(6).trim();
                 if (dataStr === '[DONE]') {
                   // 结束事件
-                  const finalChunk = streamTransformer.transformFinal();
-                  if (finalChunk) {
-                    controller.enqueue(new TextEncoder().encode(finalChunk));
-                  }
                   controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
                 } else {
                   try {
                     const event = JSON.parse(dataStr);
-                    const transformedChunk = streamTransformer.transform(event);
-                    if (transformedChunk) {
-                      controller.enqueue(new TextEncoder().encode(transformedChunk));
+                    const transformedChunks = streamTransformer.transform(event);
+
+                    // transformedChunks 可能是 null, single chunk, 或 array of chunks
+                    if (transformedChunks === null) {
+                      // 跳过此事件
+                    } else if (Array.isArray(transformedChunks)) {
+                      // 多个 chunks
+                      for (const transformedChunk of transformedChunks) {
+                        const chunkStr = `data: ${JSON.stringify(transformedChunk)}\n\n`;
+                        controller.enqueue(new TextEncoder().encode(chunkStr));
+                      }
+                    } else {
+                      // 单个 chunk
+                      const chunkStr = `data: ${JSON.stringify(transformedChunks)}\n\n`;
+                      controller.enqueue(new TextEncoder().encode(chunkStr));
                     }
                   } catch {
                     // 忽略解析错误的行
@@ -183,18 +191,10 @@ export class ProxyResponseHandler {
             // 出错时传递原始 chunk
             controller.enqueue(chunk);
           }
-        },
-        flush(controller) {
-          // 确保流结束时输出剩余内容
-          const streamTransformer = new StreamTransformer();
-          const finalChunk = streamTransformer.transformFinal();
-          if (finalChunk) {
-            controller.enqueue(new TextEncoder().encode(finalChunk));
-          }
         }
       });
 
-      processedStream = response.body.pipeThrough(transformStream);
+      processedStream = response.body.pipeThrough(transformStream) as ReadableStream<Uint8Array>;
     }
 
     const [clientStream, internalStream] = processedStream.tee();
