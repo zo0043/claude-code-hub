@@ -1,4 +1,4 @@
-import { updateMessageRequestDuration, updateMessageRequestCost } from "@/repository/message";
+import { updateMessageRequestDuration, updateMessageRequestCost, updateMessageRequestDetails } from "@/repository/message";
 import { findLatestPriceByModel } from "@/repository/model-price";
 import { parseSSEData } from "@/lib/utils/sse";
 import { calculateRequestCost } from "@/lib/utils/cost-calculation";
@@ -33,6 +33,7 @@ export class ProxyResponseHandler {
     }
 
     const responseForLog = response.clone();
+    const statusCode = response.status;
 
     void (async () => {
       try {
@@ -65,6 +66,16 @@ export class ProxyResponseHandler {
           const duration = Date.now() - session.startTime;
           await updateMessageRequestDuration(messageContext.id, duration);
 
+          // 保存扩展信息（status code, tokens, provider chain）
+          await updateMessageRequestDetails(messageContext.id, {
+            statusCode: statusCode,
+            inputTokens: usageMetrics?.input_tokens,
+            outputTokens: usageMetrics?.output_tokens,
+            cacheCreationInputTokens: usageMetrics?.cache_creation_input_tokens,
+            cacheReadInputTokens: usageMetrics?.cache_read_input_tokens,
+            providerChain: session.getProviderChain()
+          });
+
           // 记录请求结束
           const tracker = ProxyStatusTracker.getInstance();
           tracker.endRequest(messageContext.user.id, messageContext.id);
@@ -88,6 +99,7 @@ export class ProxyResponseHandler {
     }
 
     const [clientStream, internalStream] = response.body.tee();
+    const statusCode = response.status;
 
     void (async () => {
       const reader = internalStream.getReader();
@@ -134,6 +146,16 @@ export class ProxyResponseHandler {
 
         // 追踪消费到 Redis（用于限流）
         await trackCostToRedis(session, usageForCost);
+
+        // 保存扩展信息（status code, tokens, provider chain）
+        await updateMessageRequestDetails(messageContext.id, {
+          statusCode: statusCode,
+          inputTokens: usageForCost?.input_tokens,
+          outputTokens: usageForCost?.output_tokens,
+          cacheCreationInputTokens: usageForCost?.cache_creation_input_tokens,
+          cacheReadInputTokens: usageForCost?.cache_read_input_tokens,
+          providerChain: session.getProviderChain()
+        });
       } catch (error) {
         console.error("Failed to save SSE content:", error);
       } finally {

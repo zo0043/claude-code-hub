@@ -19,6 +19,9 @@ export class ProxyForwarder {
     // 智能重试循环
     while (attemptCount <= MAX_RETRY_ATTEMPTS) {
       try {
+        // 记录尝试的供应商到决策链
+        session.addProviderToChain(currentProvider);
+
         const response = await ProxyForwarder.doForward(session, currentProvider);
 
         // 成功：记录健康状态

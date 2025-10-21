@@ -2,7 +2,7 @@
 
 import { db } from "@/drizzle/db";
 import { messageRequest } from "@/drizzle/schema";
-import { eq, isNull, and, desc } from "drizzle-orm";
+import { eq, isNull, and, desc, sql } from "drizzle-orm";
 import type {
   MessageRequest,
   CreateMessageRequestData
@@ -72,6 +72,53 @@ export async function updateMessageRequestCost(id: number, costUsd: CreateMessag
 }
 
 /**
+ * 更新消息请求的扩展信息（status code, tokens, provider chain, error）
+ */
+export async function updateMessageRequestDetails(
+  id: number,
+  details: {
+    statusCode?: number;
+    inputTokens?: number;
+    outputTokens?: number;
+    cacheCreationInputTokens?: number;
+    cacheReadInputTokens?: number;
+    providerChain?: CreateMessageRequestData["provider_chain"];
+    errorMessage?: string;
+  }
+): Promise<void> {
+  const updateData: Record<string, unknown> = {
+    updatedAt: new Date()
+  };
+
+  if (details.statusCode !== undefined) {
+    updateData.statusCode = details.statusCode;
+  }
+  if (details.inputTokens !== undefined) {
+    updateData.inputTokens = details.inputTokens;
+  }
+  if (details.outputTokens !== undefined) {
+    updateData.outputTokens = details.outputTokens;
+  }
+  if (details.cacheCreationInputTokens !== undefined) {
+    updateData.cacheCreationInputTokens = details.cacheCreationInputTokens;
+  }
+  if (details.cacheReadInputTokens !== undefined) {
+    updateData.cacheReadInputTokens = details.cacheReadInputTokens;
+  }
+  if (details.providerChain !== undefined) {
+    updateData.providerChain = details.providerChain;
+  }
+  if (details.errorMessage !== undefined) {
+    updateData.errorMessage = details.errorMessage;
+  }
+
+  await db
+    .update(messageRequest)
+    .set(updateData)
+    .where(eq(messageRequest.id, id));
+}
+
+/**
  * 根据用户ID查询消息请求记录（分页）
  */
 export async function findLatestMessageRequestByKey(key: string): Promise<MessageRequest | null> {
@@ -97,4 +144,58 @@ export async function findLatestMessageRequestByKey(key: string): Promise<Messag
 
   if (!result) return null;
   return toMessageRequest(result);
+}
+
+/**
+ * 查询使用日志（支持分页、时间筛选、模型筛选）
+ */
+export async function findUsageLogs(params: {
+  userId?: number;
+  startDate?: Date;
+  endDate?: Date;
+  model?: string;
+  page?: number;
+  pageSize?: number;
+}): Promise<{ logs: MessageRequest[]; total: number }> {
+  const { userId, startDate, endDate, model, page = 1, pageSize = 50 } = params;
+
+  const conditions = [isNull(messageRequest.deletedAt)];
+
+  if (userId !== undefined) {
+    conditions.push(eq(messageRequest.userId, userId));
+  }
+
+  if (startDate) {
+    conditions.push(sql`${messageRequest.createdAt} >= ${startDate}`);
+  }
+
+  if (endDate) {
+    conditions.push(sql`${messageRequest.createdAt} <= ${endDate}`);
+  }
+
+  if (model) {
+    conditions.push(eq(messageRequest.model, model));
+  }
+
+  // 查询总数
+  const [countResult] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(messageRequest)
+    .where(and(...conditions));
+
+  const total = countResult?.count ?? 0;
+
+  // 查询分页数据
+  const offset = (page - 1) * pageSize;
+  const results = await db
+    .select()
+    .from(messageRequest)
+    .where(and(...conditions))
+    .orderBy(desc(messageRequest.createdAt))
+    .limit(pageSize)
+    .offset(offset);
+
+  const logs = results.map(toMessageRequest);
+
+  return { logs, total };
 }

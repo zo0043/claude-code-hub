@@ -2,6 +2,7 @@ import type { Context } from "hono";
 import type { Provider } from "@/types/provider";
 import type { User } from "@/types/user";
 import type { Key } from "@/types/key";
+import type { ProviderChainItem } from "@/types/message";
 
 export interface AuthState {
   user: User | null;
@@ -44,6 +45,9 @@ export class ProxySession {
   provider: Provider | null;
   messageContext: MessageContext | null;
 
+  // 上游决策链（记录尝试的供应商列表）
+  private providerChain: ProviderChainItem[];
+
   private constructor(init: {
     startTime: number;
     method: string;
@@ -62,6 +66,7 @@ export class ProxySession {
     this.authState = null;
     this.provider = null;
     this.messageContext = null;
+    this.providerChain = [];
   }
 
   static async fromContext(c: Context): Promise<ProxySession> {
@@ -99,6 +104,26 @@ export class ProxySession {
     if (context?.user) {
       this.userName = context.user.name;
     }
+  }
+
+  /**
+   * 添加供应商到决策链
+   */
+  addProviderToChain(provider: Provider): void {
+    // 避免重复添加同一个供应商
+    if (this.providerChain.length === 0 || this.providerChain[this.providerChain.length - 1].id !== provider.id) {
+      this.providerChain.push({
+        id: provider.id,
+        name: provider.name
+      });
+    }
+  }
+
+  /**
+   * 获取决策链
+   */
+  getProviderChain(): ProviderChainItem[] {
+    return this.providerChain;
   }
 
   shouldReuseProvider(): boolean {

@@ -106,6 +106,22 @@ export const messageRequest = pgTable('message_request', {
   model: varchar('model', { length: 128 }),
   durationMs: integer('duration_ms'),
   costUsd: numeric('cost_usd', { precision: 21, scale: 15 }).default('0'),
+
+  // 上游决策链（记录尝试的供应商列表）
+  providerChain: jsonb('provider_chain').$type<Array<{ id: number; name: string }>>(),
+
+  // HTTP 状态码
+  statusCode: integer('status_code'),
+
+  // Token 使用信息
+  inputTokens: integer('input_tokens'),
+  outputTokens: integer('output_tokens'),
+  cacheCreationInputTokens: integer('cache_creation_input_tokens'),
+  cacheReadInputTokens: integer('cache_read_input_tokens'),
+
+  // 错误信息
+  errorMessage: text('error_message'),
+
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),

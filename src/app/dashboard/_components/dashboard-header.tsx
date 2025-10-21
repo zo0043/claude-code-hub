@@ -12,6 +12,7 @@ interface DashboardHeaderProps {
 
 const NAV_ITEMS: (DashboardNavItem & { adminOnly?: boolean })[] = [
   { href: "/dashboard", label: "仪表盘" },
+  { href: "/dashboard/usage-logs", label: "使用记录" },
   { href: "/usage-doc", label: "文档" },
   { href: "/settings", label: "系统设置", adminOnly: true },
   { href: "https://github.com/zsio/claude-code-hub/issues", label: "反馈问题", external: true },
