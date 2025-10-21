@@ -2,7 +2,7 @@
 
 import { db } from "@/drizzle/db";
 import { providers } from "@/drizzle/schema";
-import { eq, isNull, and, desc } from "drizzle-orm";
+import { eq, isNull, and, desc, sql } from "drizzle-orm";
 import type { Provider, CreateProviderData, UpdateProviderData } from "@/types/provider";
 import { toProvider } from "./_shared/transformers";
 
@@ -193,4 +193,62 @@ export async function deleteProvider(id: number): Promise<boolean> {
     .returning({ id: providers.id });
 
   return result.length > 0;
+}
+
+/**
+ * 获取所有供应商的统计信息
+ * 包括：今天的总金额、今天的调用次数、最近一次调用时间和模型
+ */
+export async function getProviderStatistics(): Promise<
+  Array<{
+    id: number;
+    today_cost: string;
+    today_calls: number;
+    last_call_time: Date | null;
+    last_call_model: string | null;
+  }>
+> {
+  const query = sql`
+    WITH provider_stats AS (
+      SELECT
+        p.id,
+        COALESCE(
+          SUM(CASE WHEN DATE(mr.created_at) = CURRENT_DATE THEN mr.cost_usd ELSE 0 END),
+          0
+        ) AS today_cost,
+        COUNT(CASE WHEN DATE(mr.created_at) = CURRENT_DATE THEN 1 END)::integer AS today_calls
+      FROM providers p
+      LEFT JOIN message_request mr ON p.id = mr.provider_id
+        AND mr.deleted_at IS NULL
+      WHERE p.deleted_at IS NULL
+      GROUP BY p.id
+    ),
+    latest_call AS (
+      SELECT DISTINCT ON (provider_id)
+        provider_id,
+        created_at AS last_call_time,
+        model AS last_call_model
+      FROM message_request
+      WHERE deleted_at IS NULL
+      ORDER BY provider_id, created_at DESC
+    )
+    SELECT
+      ps.id,
+      ps.today_cost,
+      ps.today_calls,
+      lc.last_call_time,
+      lc.last_call_model
+    FROM provider_stats ps
+    LEFT JOIN latest_call lc ON ps.id = lc.provider_id
+    ORDER BY ps.id ASC
+  `;
+
+  const result = await db.execute(query);
+  return Array.from(result) as unknown as Array<{
+    id: number;
+    today_cost: string;
+    today_calls: number;
+    last_call_time: Date | null;
+    last_call_model: string | null;
+  }>;
 }

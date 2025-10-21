@@ -136,3 +136,21 @@ export function getAllHealthStatus(): Record<number, ProviderHealth> {
   });
   return status;
 }
+
+/**
+ * 手动重置熔断器（用于运维手动恢复）
+ */
+export function resetCircuit(providerId: number): void {
+  const health = getOrCreateHealth(providerId);
+
+  const oldState = health.circuitState;
+
+  // 重置所有状态
+  health.circuitState = 'closed';
+  health.failureCount = 0;
+  health.lastFailureTime = null;
+  health.circuitOpenUntil = null;
+  health.halfOpenSuccessCount = 0;
+
+  console.info(`[CircuitBreaker] Provider ${providerId} circuit manually reset from ${oldState} to closed`);
+}

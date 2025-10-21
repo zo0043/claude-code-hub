@@ -1,13 +1,13 @@
 'use server';
 
-import { findProviderList, createProvider, updateProvider, deleteProvider } from "@/repository/provider";
+import { findProviderList, createProvider, updateProvider, deleteProvider, getProviderStatistics } from "@/repository/provider";
 import { revalidatePath } from "next/cache";
 import { type ProviderDisplay } from "@/types/provider";
 import { maskKey } from "@/lib/utils/validation";
 import { getSession } from "@/lib/auth";
 import { CreateProviderSchema, UpdateProviderSchema } from "@/lib/validation/schemas";
 import type { ActionResult } from "./types";
-import { getAllHealthStatus } from "@/lib/circuit-breaker";
+import { getAllHealthStatus, resetCircuit } from "@/lib/circuit-breaker";
 
 // 获取服务商数据
 export async function getProviders(): Promise<ProviderDisplay[]> {
@@ -17,31 +17,49 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
       return [];
     }
 
-    const providers = await findProviderList();
-    
-    return providers.map(provider => ({
-      id: provider.id,
-      name: provider.name,
-      url: provider.url,
-      maskedKey: maskKey(provider.key),
-      isEnabled: provider.isEnabled,
-      weight: provider.weight,
-      priority: provider.priority,
-      costMultiplier: provider.costMultiplier,
-      groupTag: provider.groupTag,
-      providerType: provider.providerType,
-      modelRedirects: provider.modelRedirects,
-      limit5hUsd: provider.limit5hUsd,
-      limitWeeklyUsd: provider.limitWeeklyUsd,
-      limitMonthlyUsd: provider.limitMonthlyUsd,
-      limitConcurrentSessions: provider.limitConcurrentSessions,
-      tpm: provider.tpm,
-      rpm: provider.rpm,
-      rpd: provider.rpd,
-      cc: provider.cc,
-      createdAt: provider.createdAt.toISOString().split('T')[0],
-      updatedAt: provider.updatedAt.toISOString().split('T')[0],
-    }));
+    // 并行获取供应商列表和统计数据
+    const [providers, statistics] = await Promise.all([
+      findProviderList(),
+      getProviderStatistics().catch(() => []), // 统计查询失败时返回空数组
+    ]);
+
+    // 将统计数据按 provider_id 索引
+    const statsMap = new Map(
+      statistics.map(stat => [stat.id, stat])
+    );
+
+    return providers.map(provider => {
+      const stats = statsMap.get(provider.id);
+
+      return {
+        id: provider.id,
+        name: provider.name,
+        url: provider.url,
+        maskedKey: maskKey(provider.key),
+        isEnabled: provider.isEnabled,
+        weight: provider.weight,
+        priority: provider.priority,
+        costMultiplier: provider.costMultiplier,
+        groupTag: provider.groupTag,
+        providerType: provider.providerType,
+        modelRedirects: provider.modelRedirects,
+        limit5hUsd: provider.limit5hUsd,
+        limitWeeklyUsd: provider.limitWeeklyUsd,
+        limitMonthlyUsd: provider.limitMonthlyUsd,
+        limitConcurrentSessions: provider.limitConcurrentSessions,
+        tpm: provider.tpm,
+        rpm: provider.rpm,
+        rpd: provider.rpd,
+        cc: provider.cc,
+        createdAt: provider.createdAt.toISOString().split('T')[0],
+        updatedAt: provider.updatedAt.toISOString().split('T')[0],
+        // 统计数据（可能为空）
+        todayTotalCostUsd: stats?.today_cost,
+        todayCallCount: stats?.today_calls ?? 0,
+        lastCallTime: stats?.last_call_time?.toISOString() ?? null,
+        lastCallModel: stats?.last_call_model ?? null,
+      };
+    });
   } catch (error) {
     console.error("获取服务商数据失败:", error);
     return [];
@@ -194,5 +212,26 @@ export async function getProvidersHealthStatus() {
   } catch (error) {
     console.error('获取熔断器状态失败:', error);
     return {};
+  }
+}
+
+/**
+ * 手动重置供应商的熔断器状态
+ */
+export async function resetProviderCircuit(providerId: number): Promise<ActionResult> {
+  try {
+    const session = await getSession();
+    if (!session || session.user.role !== 'admin') {
+      return { ok: false, error: '无权限执行此操作' };
+    }
+
+    resetCircuit(providerId);
+    revalidatePath('/settings/providers');
+
+    return { ok: true };
+  } catch (error) {
+    console.error('重置熔断器失败:', error);
+    const message = error instanceof Error ? error.message : '重置熔断器失败';
+    return { ok: false, error: message };
   }
 }

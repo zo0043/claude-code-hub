@@ -1,9 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Globe, Key } from "lucide-react";
+import { Edit, Globe, Key, RotateCcw } from "lucide-react";
 import type { ProviderDisplay } from "@/types/provider";
 import type { User } from "@/types/user";
 import { ProviderForm } from "./forms/provider-form";
@@ -13,6 +13,18 @@ import { Slider } from "@/components/ui/slider";
 import { PROVIDER_LIMITS } from "@/lib/constants/provider.constants";
 import { FormErrorBoundary } from "@/components/form-error-boundary";
 import { useProviderEdit } from "./hooks/use-provider-edit";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { resetProviderCircuit } from "@/actions/providers";
+import { toast } from "sonner";
 
 interface ProviderListItemProps {
   item: ProviderDisplay;
@@ -28,6 +40,7 @@ interface ProviderListItemProps {
 
 export function ProviderListItem({ item, currentUser, healthStatus }: ProviderListItemProps) {
   const [openEdit, setOpenEdit] = useState(false);
+  const [resetPending, startResetTransition] = useTransition();
   const canEdit = currentUser?.role === 'admin';
 
   const {
@@ -64,6 +77,29 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
     handleConcurrentPopover,
   } = useProviderEdit(item, canEdit);
 
+  // 处理手动解除熔断
+  const handleResetCircuit = () => {
+    startResetTransition(async () => {
+      try {
+        const res = await resetProviderCircuit(item.id);
+        if (res.ok) {
+          toast.success('熔断器已重置', {
+            description: `供应商 "${item.name}" 的熔断状态已解除`,
+          });
+        } else {
+          toast.error('重置熔断器失败', {
+            description: res.error || '未知错误',
+          });
+        }
+      } catch (error) {
+        console.error('重置熔断器失败:', error);
+        toast.error('重置熔断器失败', {
+          description: '操作过程中出现异常',
+        });
+      }
+    });
+  };
+
   return (
     <div className="group relative h-full rounded-xl border border-border/70 bg-card p-4 shadow-sm transition-all duration-150 hover:shadow-md hover:border-border focus-within:ring-1 focus-within:ring-primary/20">
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -76,14 +112,50 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
 
             {/* ✅ 熔断器状态徽章 */}
             {healthStatus?.circuitState === 'open' && (
-              <Badge variant="destructive" className="text-xs h-5 px-2">
-                🔴 熔断中
-                {healthStatus.recoveryMinutes && healthStatus.recoveryMinutes > 0 && (
-                  <span className="ml-1 opacity-80">
-                    ({healthStatus.recoveryMinutes}分钟后重试)
-                  </span>
+              <>
+                <Badge variant="destructive" className="text-xs h-5 px-2">
+                  🔴 熔断中
+                  {healthStatus.recoveryMinutes && healthStatus.recoveryMinutes > 0 && (
+                    <span className="ml-1 opacity-80">
+                      ({healthStatus.recoveryMinutes}分钟后重试)
+                    </span>
+                  )}
+                </Badge>
+
+                {/* 手动解除熔断按钮 - 仅管理员可见 */}
+                {canEdit && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 p-0 text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                        disabled={resetPending}
+                        title="手动解除熔断"
+                      >
+                        <RotateCcw className={`h-3.5 w-3.5 ${resetPending ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>手动解除熔断</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          确定要手动解除供应商 &ldquo;{item.name}&rdquo; 的熔断状态吗？
+                          <br />
+                          <span className="text-destructive font-medium">请确保上游服务已恢复正常，否则可能导致请求持续失败。</span>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <div className="flex gap-2 justify-end">
+                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleResetCircuit}>
+                          确认解除
+                        </AlertDialogAction>
+                      </div>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 )}
-              </Badge>
+              </>
             )}
             {healthStatus?.circuitState === 'half-open' && (
               <Badge variant="secondary" className="text-xs h-5 px-2 border-yellow-500/50 bg-yellow-500/10 text-yellow-700">
@@ -124,6 +196,31 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
               onCheckedChange={handleToggle}
             />
           </div>
+        </div>
+      </div>
+
+      {/* 统计信息区域 */}
+      <div className="mt-2 pt-2 border-t border-border/30 space-y-1 text-[11px] text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-foreground/80">今日用量:</span>
+          <span className="tabular-nums">
+            ${(parseFloat(item.todayTotalCostUsd || '0')).toFixed(2)} ({item.todayCallCount ?? 0} 次调用)
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-foreground/80">最近调用:</span>
+          <span className="tabular-nums">
+            {item.lastCallTime
+              ? new Date(item.lastCallTime).toLocaleString('zh-CN', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })
+              : '-'}
+            {item.lastCallModel && item.lastCallTime ? ` - ${item.lastCallModel}` : ''}
+          </span>
         </div>
       </div>
 

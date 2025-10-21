@@ -65,6 +65,11 @@ export interface ProviderDisplay {
   cc: number | null;
   createdAt: string; // 格式化后的日期字符串
   updatedAt: string; // 格式化后的日期字符串
+  // 统计数据（可选）
+  todayTotalCostUsd?: string;
+  todayCallCount?: number;
+  lastCallTime?: string | null;
+  lastCallModel?: string | null;
 }
 
 export interface CreateProviderData {

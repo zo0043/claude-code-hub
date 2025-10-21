@@ -98,7 +98,18 @@ export class ProxyForwarder {
     }
 
     const processedHeaders = ProxyForwarder.buildHeaders(session, provider);
-    const proxyUrl = buildProxyUrl(provider.url, session.requestUrl);
+
+    // ✅ 根据请求格式动态选择转发路径
+    let forwardUrl = session.requestUrl;
+
+    // OpenAI Compatible 请求：自动替换为 Response API 端点
+    if (session.originalFormat === 'openai') {
+      forwardUrl = new URL(session.requestUrl);
+      forwardUrl.pathname = '/v1/responses';
+      console.debug(`[ProxyForwarder] Codex request: rewriting path ${session.requestUrl.pathname} → /v1/responses`);
+    }
+
+    const proxyUrl = buildProxyUrl(provider.url, forwardUrl);
 
     const hasBody = session.method !== "GET" && session.method !== "HEAD";
     const init: RequestInit = {
