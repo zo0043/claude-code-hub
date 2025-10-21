@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: zsio/claude-code-hub
+  IMAGE_NAME: ding113/claude-code-hub
 
 jobs:
   # PR 构建测试任务（不推送镜像）

@@ -7,16 +7,19 @@
 专为需要统一管理多个 AI 服务提供商的团队和企业设计
 
 [![Container Image](https://img.shields.io/badge/ghcr.io-ding113%2Fclaude--code--hub-181717?logo=github)](https://github.com/ding113/claude-code-hub/pkgs/container/claude-code-hub)
-[![License](https://img.shields.io/github/license/zsio/claude-code-hub)](LICENSE)
-[![GitHub Stars](https://img.shields.io/github/stars/zsio/claude-code-hub)](https://github.com/zsio/claude-code-hub/stargazers)
+[![License](https://img.shields.io/github/license/ding113/claude-code-hub)](LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/ding113/claude-code-hub)](https://github.com/ding113/claude-code-hub/stargazers)
 
 [功能特性](#-功能特性) •
 [快速部署](#-快速部署) •
 [使用指南](#-使用指南) •
-[路线图](#️-路线图) •
 [常见问题](#-常见问题)
 
 </div>
+
+> **💡 致谢**
+> 本项目基于 [zsio/claude-code-hub](https://github.com/zsio/claude-code-hub) 二次开发而来。
+> 感谢原作者 [@zsio](https://github.com/zsio) 的开源贡献!
 
 ---
 
@@ -272,22 +275,6 @@ docker compose down -v
 - 支持按模型配置输入/输出 Token 单价
 - 自动计算请求成本
 - 导出成本报表
-
-## 🗺️ 路线图
-
-查看项目的开发路线图和进度：
-
-<div align="center">
-
-**[📋 查看完整路线图](https://github.com/users/zsio/projects/3)**
-
-</div>
-
-### 近期计划
-
-我们在 [GitHub Projects](https://github.com/users/zsio/projects/3) 上维护详细的开发路线图，包括：
-
-欢迎在 [Issues](https://github.com/zsio/claude-code-hub/issues) 中提出您的功能建议！
 
 ## 🛠️ 常见问题
 
@@ -670,16 +657,16 @@ Retry-After: 3600
 
 如果这个项目对你有帮助，请给它一个 ⭐
 
-[![Star History Chart](https://api.star-history.com/svg?repos=zsio/claude-code-hub&type=Date)](https://star-history.com/#zsio/claude-code-hub&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=ding113/claude-code-hub&type=Date)](https://star-history.com/#ding113/claude-code-hub&Date)
 
 ## 📞 支持与反馈
 
 <div align="center">
 
-**[🐛 报告问题](https://github.com/zsio/claude-code-hub/issues)** •
-**[💡 功能建议](https://github.com/zsio/claude-code-hub/issues/new)** •
-**[📖 查看文档](https://github.com/zsio/claude-code-hub/wiki)**
+**[🐛 报告问题](https://github.com/ding113/claude-code-hub/issues)** •
+**[💡 功能建议](https://github.com/ding113/claude-code-hub/issues/new)** •
+**[📖 查看文档](https://github.com/ding113/claude-code-hub/wiki)**
 
-Made with ❤️ by [zsio](https://github.com/zsio)
+Based on [zsio/claude-code-hub](https://github.com/zsio/claude-code-hub) • Modified by [ding113](https://github.com/ding113)
 
 </div>

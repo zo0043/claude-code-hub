@@ -19,7 +19,7 @@
 在仓库设置中配置以下 Secrets：
 
 ```
-DOCKERHUB_USERNAME = zsio
+DOCKERHUB_USERNAME = ding113
 DOCKERHUB_TOKEN = <your-dockerhub-access-token>
 ```
 
@@ -110,16 +110,16 @@ git push origin 1.0.0
 
 ```bash
 # 最新版本
-docker pull zsio/claude-code-hub:latest
+docker pull ding113/claude-code-hub:latest
 
 # 特定版本
-docker pull zsio/claude-code-hub:1.0.0
+docker pull ding113/claude-code-hub:1.0.0
 
 # 运行容器
 docker run -d \
   -p 3000:3000 \
   --env-file .env \
-  zsio/claude-code-hub:latest
+  ding113/claude-code-hub:latest
 ```
 
 ## ⚠️ 注意事项
