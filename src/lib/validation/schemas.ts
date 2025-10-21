@@ -39,7 +39,7 @@ export const UpdateUserSchema = z.object({
     .max(64, "用户名不能超过64个字符")
     .optional(),
   note: z.string().max(200, "备注不能超过200个字符").optional(),
-  providerGroup: z.string().max(50, "供应商分组不能超过50个字符").optional(),
+  providerGroup: z.string().max(50, "供应商分组不能超过50个字符").nullable().optional(),
   rpm: z
     .coerce
     .number()
