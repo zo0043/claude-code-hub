@@ -53,9 +53,17 @@ export async function uploadPriceTable(
       return { ok: false, error: "价格表必须是一个JSON对象" };
     }
 
-    const entries = Object.entries(priceTable).filter(([modelName]) =>
-      typeof modelName === "string" && modelName.toLowerCase().startsWith("claude-")
-    );
+    // ✅ 扩展支持：Claude + OpenAI 模型
+    const entries = Object.entries(priceTable).filter(([modelName]) => {
+      if (typeof modelName !== "string") return false;
+      const lowerName = modelName.toLowerCase();
+      return (
+        lowerName.startsWith("claude-") ||
+        lowerName.startsWith("gpt-") ||
+        lowerName.startsWith("o1-") ||
+        lowerName.startsWith("o3-")  // OpenAI 推理模型
+      );
+    });
 
     const result: PriceUpdateResult = {
       added: [],

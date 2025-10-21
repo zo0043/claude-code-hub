@@ -7,6 +7,7 @@ import type { ProxySession } from "./session";
 import { ProxyLogger } from "./logger";
 import { ProxyStatusTracker } from "@/lib/proxy-status-tracker";
 import { ResponseTransformer } from "../codex/transformers/response";
+import { StreamTransformer } from "../codex/transformers/stream";
 import type { ResponseResponse } from "../codex/types/response";
 
 export type UsageMetrics = {
@@ -22,7 +23,7 @@ export class ProxyResponseHandler {
     const isSSE = contentType.includes("text/event-stream");
 
     if (!isSSE) {
-      return ProxyResponseHandler.handleNonStream(session, response);
+      return await ProxyResponseHandler.handleNonStream(session, response);
     }
 
     return await ProxyResponseHandler.handleStream(session, response);
@@ -134,7 +135,69 @@ export class ProxyResponseHandler {
       return response;
     }
 
-    const [clientStream, internalStream] = response.body.tee();
+    // ✅ 检查是否需要格式转换（OpenAI 请求 + Codex 供应商）
+    const needsTransform = session.originalFormat === 'openai' && session.providerType === 'codex';
+    let processedStream = response.body;
+
+    if (needsTransform) {
+      console.debug('[ResponseHandler] Transforming Response API → OpenAI format (stream)');
+
+      // 创建转换流
+      const streamTransformer = new StreamTransformer();
+      const transformStream = new TransformStream<Uint8Array, Uint8Array>({
+        transform(chunk, controller) {
+          try {
+            const decoder = new TextDecoder();
+            const text = decoder.decode(chunk, { stream: true });
+
+            // 解析并转换 SSE 事件
+            const lines = text.split('\n');
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const dataStr = line.slice(6).trim();
+                if (dataStr === '[DONE]') {
+                  // 结束事件
+                  const finalChunk = streamTransformer.transformFinal();
+                  if (finalChunk) {
+                    controller.enqueue(new TextEncoder().encode(finalChunk));
+                  }
+                  controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
+                } else {
+                  try {
+                    const event = JSON.parse(dataStr);
+                    const transformedChunk = streamTransformer.transform(event);
+                    if (transformedChunk) {
+                      controller.enqueue(new TextEncoder().encode(transformedChunk));
+                    }
+                  } catch {
+                    // 忽略解析错误的行
+                  }
+                }
+              } else if (line.trim() === '') {
+                // 保留空行（SSE 分隔符）
+                controller.enqueue(new TextEncoder().encode('\n'));
+              }
+            }
+          } catch (error) {
+            console.error('[ResponseHandler] Stream transform error:', error);
+            // 出错时传递原始 chunk
+            controller.enqueue(chunk);
+          }
+        },
+        flush(controller) {
+          // 确保流结束时输出剩余内容
+          const streamTransformer = new StreamTransformer();
+          const finalChunk = streamTransformer.transformFinal();
+          if (finalChunk) {
+            controller.enqueue(new TextEncoder().encode(finalChunk));
+          }
+        }
+      });
+
+      processedStream = response.body.pipeThrough(transformStream);
+    }
+
+    const [clientStream, internalStream] = processedStream.tee();
     const statusCode = response.status;
 
     void (async () => {
