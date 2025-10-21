@@ -15,6 +15,7 @@ export const CreateUserSchema = z.object({
       "用户名只能包含字母、数字、下划线和中文",
     ),
   note: z.string().max(200, "备注不能超过200个字符").optional().default(""),
+  providerGroup: z.string().max(50, "供应商分组不能超过50个字符").optional().default(""),
   rpm: z
     .coerce
     .number()
@@ -46,6 +47,7 @@ export const UpdateUserSchema = z.object({
     )
     .optional(),
   note: z.string().max(200, "备注不能超过200个字符").optional(),
+  providerGroup: z.string().max(50, "供应商分组不能超过50个字符").optional(),
   rpm: z
     .coerce
     .number()
@@ -75,6 +77,36 @@ export const KeyFormSchema = z.object({
     .optional()
     .default("")
     .transform((val) => (val === "" ? undefined : val)),
+  // 新增：金额限流配置
+  limit5hUsd: z
+    .coerce
+    .number()
+    .min(0, "5小时消费上限不能为负数")
+    .max(10000, "5小时消费上限不能超过10000美元")
+    .nullable()
+    .optional(),
+  limitWeeklyUsd: z
+    .coerce
+    .number()
+    .min(0, "周消费上限不能为负数")
+    .max(50000, "周消费上限不能超过50000美元")
+    .nullable()
+    .optional(),
+  limitMonthlyUsd: z
+    .coerce
+    .number()
+    .min(0, "月消费上限不能为负数")
+    .max(200000, "月消费上限不能超过200000美元")
+    .nullable()
+    .optional(),
+  limitConcurrentSessions: z
+    .coerce
+    .number()
+    .int("并发Session上限必须是整数")
+    .min(0, "并发Session上限不能为负数")
+    .max(1000, "并发Session上限不能超过1000")
+    .optional()
+    .default(0),
 });
 
 /**
@@ -102,34 +134,58 @@ export const CreateProviderSchema = z.object({
     .max(PROVIDER_LIMITS.WEIGHT.MAX)
     .optional()
     .default(PROVIDER_DEFAULTS.WEIGHT),
-  tpm: z
+  priority: z
     .number()
-    .int()
-    .min(PROVIDER_LIMITS.TPM.MIN)
-    .max(PROVIDER_LIMITS.TPM.MAX)
+    .int("优先级必须是整数")
+    .min(0, "优先级不能为负数")
+    .optional()
+    .default(0),
+  cost_per_mtok: z
+    .coerce
+    .number()
+    .min(0, "成本不能为负数")
     .nullable()
     .optional(),
-  rpm: z
-    .number()
-    .int()
-    .min(PROVIDER_LIMITS.RPM.MIN)
-    .max(PROVIDER_LIMITS.RPM.MAX)
+  group_tag: z
+    .string()
+    .max(50, "分组标签不能超过50个字符")
     .nullable()
     .optional(),
-  rpd: z
+  // 新增：金额限流配置
+  limit_5h_usd: z
+    .coerce
     .number()
-    .int()
-    .min(PROVIDER_LIMITS.RPD.MIN)
-    .max(PROVIDER_LIMITS.RPD.MAX)
+    .min(0, "5小时消费上限不能为负数")
+    .max(10000, "5小时消费上限不能超过10000美元")
     .nullable()
     .optional(),
-  cc: z
+  limit_weekly_usd: z
+    .coerce
     .number()
-    .int()
-    .min(PROVIDER_LIMITS.CC.MIN)
-    .max(PROVIDER_LIMITS.CC.MAX)
+    .min(0, "周消费上限不能为负数")
+    .max(50000, "周消费上限不能超过50000美元")
     .nullable()
     .optional(),
+  limit_monthly_usd: z
+    .coerce
+    .number()
+    .min(0, "月消费上限不能为负数")
+    .max(200000, "月消费上限不能超过200000美元")
+    .nullable()
+    .optional(),
+  limit_concurrent_sessions: z
+    .coerce
+    .number()
+    .int("并发Session上限必须是整数")
+    .min(0, "并发Session上限不能为负数")
+    .max(1000, "并发Session上限不能超过1000")
+    .optional()
+    .default(0),
+  // 废弃字段（保留向后兼容，不再验证范围）
+  tpm: z.number().int().nullable().optional(),
+  rpm: z.number().int().nullable().optional(),
+  rpd: z.number().int().nullable().optional(),
+  cc: z.number().int().nullable().optional(),
 });
 
 /**
@@ -147,34 +203,56 @@ export const UpdateProviderSchema = z
       .min(PROVIDER_LIMITS.WEIGHT.MIN)
       .max(PROVIDER_LIMITS.WEIGHT.MAX)
       .optional(),
-    tpm: z
+    priority: z
       .number()
-      .int()
-      .min(PROVIDER_LIMITS.TPM.MIN)
-      .max(PROVIDER_LIMITS.TPM.MAX)
+      .int("优先级必须是整数")
+      .min(0, "优先级不能为负数")
+      .optional(),
+    cost_per_mtok: z
+      .coerce
+      .number()
+      .min(0, "成本不能为负数")
       .nullable()
       .optional(),
-    rpm: z
-      .number()
-      .int()
-      .min(PROVIDER_LIMITS.RPM.MIN)
-      .max(PROVIDER_LIMITS.RPM.MAX)
+    group_tag: z
+      .string()
+      .max(50, "分组标签不能超过50个字符")
       .nullable()
       .optional(),
-    rpd: z
+    // 新增：金额限流配置
+    limit_5h_usd: z
+      .coerce
       .number()
-      .int()
-      .min(PROVIDER_LIMITS.RPD.MIN)
-      .max(PROVIDER_LIMITS.RPD.MAX)
+      .min(0, "5小时消费上限不能为负数")
+      .max(10000, "5小时消费上限不能超过10000美元")
       .nullable()
       .optional(),
-    cc: z
+    limit_weekly_usd: z
+      .coerce
       .number()
-      .int()
-      .min(PROVIDER_LIMITS.CC.MIN)
-      .max(PROVIDER_LIMITS.CC.MAX)
+      .min(0, "周消费上限不能为负数")
+      .max(50000, "周消费上限不能超过50000美元")
       .nullable()
       .optional(),
+    limit_monthly_usd: z
+      .coerce
+      .number()
+      .min(0, "月消费上限不能为负数")
+      .max(200000, "月消费上限不能超过200000美元")
+      .nullable()
+      .optional(),
+    limit_concurrent_sessions: z
+      .coerce
+      .number()
+      .int("并发Session上限必须是整数")
+      .min(0, "并发Session上限不能为负数")
+      .max(1000, "并发Session上限不能超过1000")
+      .optional(),
+    // 废弃字段（保留向后兼容，不再验证范围）
+    tpm: z.number().int().nullable().optional(),
+    rpm: z.number().int().nullable().optional(),
+    rpd: z.number().int().nullable().optional(),
+    cc: z.number().int().nullable().optional(),
   })
   .refine((obj) => Object.keys(obj).length > 0, { message: "更新内容为空" });
 

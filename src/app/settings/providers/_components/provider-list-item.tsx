@@ -9,7 +9,6 @@ import { ProviderForm } from "./forms/provider-form";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
-import { formatTpmDisplay } from "@/lib/utils/validation";
 import { PROVIDER_LIMITS } from "@/lib/constants/provider.constants";
 import { FormErrorBoundary } from "@/components/form-error-boundary";
 import { useProviderEdit } from "./hooks/use-provider-edit";
@@ -29,32 +28,32 @@ export function ProviderListItem({ item, currentUser }: ProviderListItemProps) {
     weight,
     setWeight,
     showWeight,
-    tpmInfinite,
-    setTpmInfinite,
-    tpmValue,
-    setTpmValue,
-    showTpm,
-    rpmInfinite,
-    setRpmInfinite,
-    rpmValue,
-    setRpmValue,
-    showRpm,
-    rpdInfinite,
-    setRpdInfinite,
-    rpdValue,
-    setRpdValue,
-    showRpd,
-    ccInfinite,
-    setCcInfinite,
-    ccValue,
-    setCcValue,
-    showCc,
+    limit5hInfinite,
+    setLimit5hInfinite,
+    limit5hValue,
+    setLimit5hValue,
+    show5hLimit,
+    limitWeeklyInfinite,
+    setLimitWeeklyInfinite,
+    limitWeeklyValue,
+    setLimitWeeklyValue,
+    showWeeklyLimit,
+    limitMonthlyInfinite,
+    setLimitMonthlyInfinite,
+    limitMonthlyValue,
+    setLimitMonthlyValue,
+    showMonthlyLimit,
+    concurrentInfinite,
+    setConcurrentInfinite,
+    concurrentValue,
+    setConcurrentValue,
+    showConcurrent,
     handleToggle,
     handleWeightPopover,
-    handleTpmPopover,
-    handleRpmPopover,
-    handleRpdPopover,
-    handleCcPopover,
+    handle5hLimitPopover,
+    handleWeeklyLimitPopover,
+    handleMonthlyLimitPopover,
+    handleConcurrentPopover,
   } = useProviderEdit(item, canEdit);
 
   return (
@@ -116,159 +115,19 @@ export function ProviderListItem({ item, currentUser }: ProviderListItemProps) {
           </div>
         </div>
 
-        {/* 下：5 个配置项（每个 20% 宽度）改为文本样式 */}
-        <div className="grid grid-cols-5 gap-2 text-[11px]">
+        {/* 路由配置 */}
+        <div className="grid grid-cols-4 gap-2 text-[11px] pb-2 border-b border-border/40">
+          {/* 优先级 */}
           <div className="min-w-0 text-center">
-            <div className="text-muted-foreground">TPM</div>
-            {canEdit ? (
-              <Popover open={showTpm} onOpenChange={handleTpmPopover}>
-                <PopoverTrigger asChild>
-                  <button type="button" className="w-full text-center font-medium tabular-nums truncate text-foreground hover:text-primary/80 transition-colors cursor-pointer">
-                    <span>{formatTpmDisplay(tpmValue, tpmInfinite)}</span>
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="center" side="bottom" sideOffset={6} className="w-72 p-3">
-                  <div className="mb-2 flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground">TPM（令牌/分）</span>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <span>无限</span>
-                      <Switch checked={tpmInfinite} onCheckedChange={setTpmInfinite} aria-label="TPM无限" />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Slider
-                      min={PROVIDER_LIMITS.TPM.MIN / 1000}
-                      max={PROVIDER_LIMITS.TPM.MAX / 1000}
-                      step={1}
-                      value={[Math.round(tpmValue / 1000)]}
-                      onValueChange={(v) => !tpmInfinite && setTpmValue(Math.round((v?.[0] ?? PROVIDER_LIMITS.TPM.MIN / 1000) * 1000))}
-                      disabled={tpmInfinite}
-                    />
-                    <span className="w-12 text-right text-xs font-medium">{formatTpmDisplay(tpmValue, tpmInfinite)}</span>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            ) : (
-              <div className="w-full text-center font-medium tabular-nums truncate text-foreground">
-                <span>{formatTpmDisplay(tpmValue, tpmInfinite)}</span>
-              </div>
-            )}
+            <div className="text-muted-foreground">优先级</div>
+            <div className="w-full text-center font-medium tabular-nums truncate text-foreground">
+              <span>{item.priority}</span>
+            </div>
           </div>
 
-          <div className="min-w-0 text-center">
-            <div className="text-muted-foreground">RPM</div>
-            {canEdit ? (
-              <Popover open={showRpm} onOpenChange={handleRpmPopover}>
-                <PopoverTrigger asChild>
-                  <button type="button" className="w-full text-center font-medium tabular-nums truncate text-foreground hover:text-primary/80 transition-colors cursor-pointer">
-                    <span>{rpmInfinite ? "∞" : rpmValue.toLocaleString()}</span>
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="center" side="bottom" sideOffset={6} className="w-72 p-3">
-                  <div className="mb-2 flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground">RPM（请求/分）</span>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <span>无限</span>
-                      <Switch checked={rpmInfinite} onCheckedChange={setRpmInfinite} aria-label="RPM无限" />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Slider
-                      min={PROVIDER_LIMITS.RPM.MIN}
-                      max={PROVIDER_LIMITS.RPM.MAX}
-                      step={1}
-                      value={[rpmInfinite ? PROVIDER_LIMITS.RPM.MIN : rpmValue]}
-                      onValueChange={(v) => !rpmInfinite && setRpmValue(v?.[0] ?? PROVIDER_LIMITS.RPM.MIN)}
-                      disabled={rpmInfinite}
-                    />
-                    <span className="w-12 text-right text-xs font-medium">{rpmInfinite ? "∞" : rpmValue.toLocaleString()}</span>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            ) : (
-              <div className="w-full text-center font-medium tabular-nums truncate text-foreground">
-                <span>{rpmInfinite ? "∞" : rpmValue.toLocaleString()}</span>
-              </div>
-            )}
-          </div>
-
-          <div className="min-w-0 text-center">
-            <div className="text-muted-foreground">RPD</div>
-            {canEdit ? (
-              <Popover open={showRpd} onOpenChange={handleRpdPopover}>
-                <PopoverTrigger asChild>
-                  <button type="button" className="w-full text-center font-medium tabular-nums truncate text-foreground hover:text-primary/80 transition-colors cursor-pointer">
-                    <span>{rpdInfinite ? "∞" : rpdValue.toLocaleString()}</span>
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="center" side="bottom" sideOffset={6} className="w-72 p-3">
-                  <div className="mb-2 flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground">RPD（请求/日）</span>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <span>无限</span>
-                      <Switch checked={rpdInfinite} onCheckedChange={setRpdInfinite} aria-label="RPD无限" />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Slider
-                      min={PROVIDER_LIMITS.RPD.MIN}
-                      max={PROVIDER_LIMITS.RPD.MAX}
-                      step={1}
-                      value={[rpdInfinite ? PROVIDER_LIMITS.RPD.MIN : rpdValue]}
-                      onValueChange={(v) => !rpdInfinite && setRpdValue(v?.[0] ?? PROVIDER_LIMITS.RPD.MIN)}
-                      disabled={rpdInfinite}
-                    />
-                    <span className="w-12 text-right text-xs font-medium">{rpdInfinite ? "∞" : rpdValue.toLocaleString()}</span>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            ) : (
-              <div className="w-full text-center font-medium tabular-nums truncate text-foreground">
-                <span>{rpdInfinite ? "∞" : rpdValue.toLocaleString()}</span>
-              </div>
-            )}
-          </div>
-
-          <div className="min-w-0 text-center">
-            <div className="text-muted-foreground">CC</div>
-            {canEdit ? (
-              <Popover open={showCc} onOpenChange={handleCcPopover}>
-                <PopoverTrigger asChild>
-                  <button type="button" className="w-full text-center font-medium tabular-nums truncate text-foreground hover:text-primary/80 transition-colors cursor-pointer">
-                    <span>{ccInfinite ? "∞" : ccValue.toLocaleString()}</span>
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="center" side="bottom" sideOffset={6} className="w-72 p-3">
-                  <div className="mb-2 flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground">CC（并发）</span>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <span>无限</span>
-                      <Switch checked={ccInfinite} onCheckedChange={setCcInfinite} aria-label="无限" />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Slider
-                      min={PROVIDER_LIMITS.CC.MIN}
-                      max={PROVIDER_LIMITS.CC.MAX}
-                      step={1}
-                      value={[ccInfinite ? PROVIDER_LIMITS.CC.MIN : ccValue]}
-                      onValueChange={(v) => !ccInfinite && setCcValue(v?.[0] ?? PROVIDER_LIMITS.CC.MIN)}
-                      disabled={ccInfinite}
-                    />
-                    <span className="w-12 text-right text-xs font-medium">{ccInfinite ? "∞" : ccValue.toLocaleString()}</span>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            ) : (
-              <div className="w-full text-center font-medium tabular-nums truncate text-foreground">
-                <span>{ccInfinite ? "∞" : ccValue.toLocaleString()}</span>
-              </div>
-            )}
-          </div>
-
+          {/* 权重 */}
           <div className="min-w-0 text-center">
             <div className="text-muted-foreground">权重</div>
-            {/* 权重编辑 - 仅管理员可编辑 */}
             {canEdit ? (
               <Popover open={showWeight} onOpenChange={handleWeightPopover}>
                 <PopoverTrigger asChild>
@@ -291,6 +150,177 @@ export function ProviderListItem({ item, currentUser }: ProviderListItemProps) {
             ) : (
               <div className="w-full text-center font-medium tabular-nums truncate text-foreground">
                 <span>{weight}</span>
+              </div>
+            )}
+          </div>
+
+          {/* 成本 */}
+          <div className="min-w-0 text-center">
+            <div className="text-muted-foreground">成本/M</div>
+            <div className="w-full text-center font-medium tabular-nums truncate text-foreground">
+              <span>{item.costPerMtok ? `$${item.costPerMtok.toFixed(4)}` : '-'}</span>
+            </div>
+          </div>
+
+          {/* 分组 */}
+          <div className="min-w-0 text-center">
+            <div className="text-muted-foreground">分组</div>
+            <div className="w-full text-center font-medium truncate text-foreground">
+              <span>{item.groupTag || '-'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 限流配置 */}
+        <div className="grid grid-cols-4 gap-2 text-[11px]">
+          {/* 5小时消费上限 */}
+          <div className="min-w-0 text-center">
+            <div className="text-muted-foreground">5h USD</div>
+            {canEdit ? (
+              <Popover open={show5hLimit} onOpenChange={handle5hLimitPopover}>
+                <PopoverTrigger asChild>
+                  <button type="button" className="w-full text-center font-medium tabular-nums truncate text-foreground hover:text-primary/80 transition-colors cursor-pointer">
+                    <span>{limit5hInfinite ? "∞" : `$${limit5hValue.toFixed(2)}`}</span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="center" side="bottom" sideOffset={6} className="w-72 p-3">
+                  <div className="mb-2 flex items-center justify-between text-[11px]">
+                    <span className="text-muted-foreground">5小时消费上限 (USD)</span>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <span>无限</span>
+                      <Switch checked={limit5hInfinite} onCheckedChange={setLimit5hInfinite} aria-label="无限" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Slider
+                      min={PROVIDER_LIMITS.LIMIT_5H_USD.MIN}
+                      max={PROVIDER_LIMITS.LIMIT_5H_USD.MAX}
+                      step={PROVIDER_LIMITS.LIMIT_5H_USD.STEP}
+                      value={[limit5hValue]}
+                      onValueChange={(v) => !limit5hInfinite && setLimit5hValue(v?.[0] ?? PROVIDER_LIMITS.LIMIT_5H_USD.MIN)}
+                      disabled={limit5hInfinite}
+                    />
+                    <span className="w-16 text-right text-xs font-medium">{limit5hInfinite ? "∞" : `$${limit5hValue.toFixed(2)}`}</span>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            ) : (
+              <div className="w-full text-center font-medium tabular-nums truncate text-foreground">
+                <span>{limit5hInfinite ? "∞" : `$${limit5hValue.toFixed(2)}`}</span>
+              </div>
+            )}
+          </div>
+
+          {/* 周消费上限 */}
+          <div className="min-w-0 text-center">
+            <div className="text-muted-foreground">Week USD</div>
+            {canEdit ? (
+              <Popover open={showWeeklyLimit} onOpenChange={handleWeeklyLimitPopover}>
+                <PopoverTrigger asChild>
+                  <button type="button" className="w-full text-center font-medium tabular-nums truncate text-foreground hover:text-primary/80 transition-colors cursor-pointer">
+                    <span>{limitWeeklyInfinite ? "∞" : `$${limitWeeklyValue.toFixed(2)}`}</span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="center" side="bottom" sideOffset={6} className="w-72 p-3">
+                  <div className="mb-2 flex items-center justify-between text-[11px]">
+                    <span className="text-muted-foreground">周消费上限 (USD)</span>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <span>无限</span>
+                      <Switch checked={limitWeeklyInfinite} onCheckedChange={setLimitWeeklyInfinite} aria-label="无限" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Slider
+                      min={PROVIDER_LIMITS.LIMIT_WEEKLY_USD.MIN}
+                      max={PROVIDER_LIMITS.LIMIT_WEEKLY_USD.MAX}
+                      step={PROVIDER_LIMITS.LIMIT_WEEKLY_USD.STEP}
+                      value={[limitWeeklyValue]}
+                      onValueChange={(v) => !limitWeeklyInfinite && setLimitWeeklyValue(v?.[0] ?? PROVIDER_LIMITS.LIMIT_WEEKLY_USD.MIN)}
+                      disabled={limitWeeklyInfinite}
+                    />
+                    <span className="w-16 text-right text-xs font-medium">{limitWeeklyInfinite ? "∞" : `$${limitWeeklyValue.toFixed(2)}`}</span>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            ) : (
+              <div className="w-full text-center font-medium tabular-nums truncate text-foreground">
+                <span>{limitWeeklyInfinite ? "∞" : `$${limitWeeklyValue.toFixed(2)}`}</span>
+              </div>
+            )}
+          </div>
+
+          {/* 月消费上限 */}
+          <div className="min-w-0 text-center">
+            <div className="text-muted-foreground">Mon USD</div>
+            {canEdit ? (
+              <Popover open={showMonthlyLimit} onOpenChange={handleMonthlyLimitPopover}>
+                <PopoverTrigger asChild>
+                  <button type="button" className="w-full text-center font-medium tabular-nums truncate text-foreground hover:text-primary/80 transition-colors cursor-pointer">
+                    <span>{limitMonthlyInfinite ? "∞" : `$${limitMonthlyValue.toFixed(2)}`}</span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="center" side="bottom" sideOffset={6} className="w-72 p-3">
+                  <div className="mb-2 flex items-center justify-between text-[11px]">
+                    <span className="text-muted-foreground">月消费上限 (USD)</span>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <span>无限</span>
+                      <Switch checked={limitMonthlyInfinite} onCheckedChange={setLimitMonthlyInfinite} aria-label="无限" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Slider
+                      min={PROVIDER_LIMITS.LIMIT_MONTHLY_USD.MIN}
+                      max={PROVIDER_LIMITS.LIMIT_MONTHLY_USD.MAX}
+                      step={PROVIDER_LIMITS.LIMIT_MONTHLY_USD.STEP}
+                      value={[limitMonthlyValue]}
+                      onValueChange={(v) => !limitMonthlyInfinite && setLimitMonthlyValue(v?.[0] ?? PROVIDER_LIMITS.LIMIT_MONTHLY_USD.MIN)}
+                      disabled={limitMonthlyInfinite}
+                    />
+                    <span className="w-16 text-right text-xs font-medium">{limitMonthlyInfinite ? "∞" : `$${limitMonthlyValue.toFixed(2)}`}</span>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            ) : (
+              <div className="w-full text-center font-medium tabular-nums truncate text-foreground">
+                <span>{limitMonthlyInfinite ? "∞" : `$${limitMonthlyValue.toFixed(2)}`}</span>
+              </div>
+            )}
+          </div>
+
+          {/* 并发Session上限 */}
+          <div className="min-w-0 text-center">
+            <div className="text-muted-foreground">并发</div>
+            {canEdit ? (
+              <Popover open={showConcurrent} onOpenChange={handleConcurrentPopover}>
+                <PopoverTrigger asChild>
+                  <button type="button" className="w-full text-center font-medium tabular-nums truncate text-foreground hover:text-primary/80 transition-colors cursor-pointer">
+                    <span>{concurrentInfinite ? "∞" : concurrentValue.toLocaleString()}</span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="center" side="bottom" sideOffset={6} className="w-72 p-3">
+                  <div className="mb-2 flex items-center justify-between text-[11px]">
+                    <span className="text-muted-foreground">并发Session上限</span>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <span>无限</span>
+                      <Switch checked={concurrentInfinite} onCheckedChange={setConcurrentInfinite} aria-label="无限" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Slider
+                      min={PROVIDER_LIMITS.CONCURRENT_SESSIONS.MIN}
+                      max={PROVIDER_LIMITS.CONCURRENT_SESSIONS.MAX}
+                      step={1}
+                      value={[concurrentValue]}
+                      onValueChange={(v) => !concurrentInfinite && setConcurrentValue(v?.[0] ?? PROVIDER_LIMITS.CONCURRENT_SESSIONS.MIN)}
+                      disabled={concurrentInfinite}
+                    />
+                    <span className="w-16 text-right text-xs font-medium">{concurrentInfinite ? "∞" : concurrentValue.toLocaleString()}</span>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            ) : (
+              <div className="w-full text-center font-medium tabular-nums truncate text-foreground">
+                <span>{concurrentInfinite ? "∞" : concurrentValue.toLocaleString()}</span>
               </div>
             )}
           </div>

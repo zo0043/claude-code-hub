@@ -25,6 +25,13 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
       maskedKey: maskKey(provider.key),
       isEnabled: provider.isEnabled,
       weight: provider.weight,
+      priority: provider.priority,
+      costPerMtok: provider.costPerMtok,
+      groupTag: provider.groupTag,
+      limit5hUsd: provider.limit5hUsd,
+      limitWeeklyUsd: provider.limitWeeklyUsd,
+      limitMonthlyUsd: provider.limitMonthlyUsd,
+      limitConcurrentSessions: provider.limitConcurrentSessions,
       tpm: provider.tpm,
       rpm: provider.rpm,
       rpd: provider.rpd,
@@ -45,6 +52,13 @@ export async function addProvider(data: {
   key: string;
   is_enabled?: boolean;
   weight?: number;
+  priority?: number;
+  cost_per_mtok?: number | null;
+  group_tag?: string | null;
+  limit_5h_usd?: number | null;
+  limit_weekly_usd?: number | null;
+  limit_monthly_usd?: number | null;
+  limit_concurrent_sessions?: number | null;
   tpm: number | null;
   rpm: number | null;
   rpd: number | null;
@@ -59,6 +73,10 @@ export async function addProvider(data: {
     const validated = CreateProviderSchema.parse(data);
     const payload = {
       ...validated,
+      limit_5h_usd: validated.limit_5h_usd ?? null,
+      limit_weekly_usd: validated.limit_weekly_usd ?? null,
+      limit_monthly_usd: validated.limit_monthly_usd ?? null,
+      limit_concurrent_sessions: validated.limit_concurrent_sessions ?? 0,
       tpm: validated.tpm ?? null,
       rpm: validated.rpm ?? null,
       rpd: validated.rpd ?? null,
@@ -83,6 +101,13 @@ export async function editProvider(
     key?: string;
     is_enabled?: boolean;
     weight?: number;
+    priority?: number;
+    cost_per_mtok?: number | null;
+    group_tag?: string | null;
+    limit_5h_usd?: number | null;
+    limit_weekly_usd?: number | null;
+    limit_monthly_usd?: number | null;
+    limit_concurrent_sessions?: number | null;
     tpm?: number | null;
     rpm?: number | null;
     rpd?: number | null;

@@ -7,6 +7,19 @@ export interface Provider {
   isEnabled: boolean;
   // 权重（0-100）
   weight: number;
+
+  // 新增：优先级和分组配置
+  priority: number;
+  costPerMtok: number | null;
+  groupTag: string | null;
+
+  // 新增：金额限流配置
+  limit5hUsd: number | null;
+  limitWeeklyUsd: number | null;
+  limitMonthlyUsd: number | null;
+  limitConcurrentSessions: number;
+
+  // 废弃（保留向后兼容，但不再使用）
   // TPM (Tokens Per Minute): 每分钟可处理的文本总量
   tpm: number | null;
   // RPM (Requests Per Minute): 每分钟可发起的API调用次数
@@ -15,6 +28,7 @@ export interface Provider {
   rpd: number | null;
   // CC (Concurrent Connections/Requests): 同一时刻能同时处理的请求数量
   cc: number | null;
+
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date;
@@ -28,6 +42,16 @@ export interface ProviderDisplay {
   maskedKey: string;
   isEnabled: boolean;
   weight: number;
+  // 新增：优先级和分组配置
+  priority: number;
+  costPerMtok: number | null;
+  groupTag: string | null;
+  // 新增：金额限流配置
+  limit5hUsd: number | null;
+  limitWeeklyUsd: number | null;
+  limitMonthlyUsd: number | null;
+  limitConcurrentSessions: number;
+  // 废弃字段（保留向后兼容）
   tpm: number | null;
   rpm: number | null;
   rpd: number | null;
@@ -44,6 +68,19 @@ export interface CreateProviderData {
   is_enabled?: boolean;
   // 权重（默认 1）
   weight?: number;
+
+  // 新增：优先级和分组配置
+  priority?: number;
+  cost_per_mtok?: number | null;
+  group_tag?: string | null;
+
+  // 新增：金额限流配置
+  limit_5h_usd?: number | null;
+  limit_weekly_usd?: number | null;
+  limit_monthly_usd?: number | null;
+  limit_concurrent_sessions?: number;
+
+  // 废弃字段（保留向后兼容）
   // TPM (Tokens Per Minute): 每分钟可处理的文本总量
   tpm: number | null;
   // RPM (Requests Per Minute): 每分钟可发起的API调用次数
@@ -62,6 +99,19 @@ export interface UpdateProviderData {
   is_enabled?: boolean;
   // 权重（0-100）
   weight?: number;
+
+  // 新增：优先级和分组配置
+  priority?: number;
+  cost_per_mtok?: number | null;
+  group_tag?: string | null;
+
+  // 新增：金额限流配置
+  limit_5h_usd?: number | null;
+  limit_weekly_usd?: number | null;
+  limit_monthly_usd?: number | null;
+  limit_concurrent_sessions?: number;
+
+  // 废弃字段（保留向后兼容）
   // TPM (Tokens Per Minute): 每分钟可处理的文本总量
   tpm?: number | null;
   // RPM (Requests Per Minute): 每分钟可发起的API调用次数

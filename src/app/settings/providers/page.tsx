@@ -22,7 +22,7 @@ export default async function SettingsProvidersPage() {
 
       <Section
         title="服务商管理"
-        description="（TPM/RPM/RPD/CC 功能尚未实现，近期即将更新）"
+        description="配置上游服务商的金额限流和并发限制，留空表示无限制。"
         actions={<AddProviderDialog />}
       >
         <ProviderManager providers={providers} currentUser={session?.user} />

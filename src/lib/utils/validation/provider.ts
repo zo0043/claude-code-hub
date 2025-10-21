@@ -30,15 +30,21 @@ export function clampIntInRange(value: number, min: number, max: number): number
 
 /**
  * 限制TPM值并取整到千位
+ * @deprecated TPM 字段已废弃，将在后续版本中移除
  */
 export function clampTpm(value: number): number {
-  const safeValue = Number.isNaN(value) ? PROVIDER_LIMITS.TPM.MIN : value;
-  const rounded = Math.round(safeValue / PROVIDER_LIMITS.TPM.STEP) * PROVIDER_LIMITS.TPM.STEP;
-  return clampIntInRange(rounded, PROVIDER_LIMITS.TPM.MIN, PROVIDER_LIMITS.TPM.MAX);
+  // 临时保留以兼容现有代码
+  const MIN = 1000;
+  const MAX = 10000000;
+  const STEP = 1000;
+  const safeValue = Number.isNaN(value) ? MIN : value;
+  const rounded = Math.round(safeValue / STEP) * STEP;
+  return clampIntInRange(rounded, MIN, MAX);
 }
 
 /**
  * 格式化TPM显示值
+ * @deprecated TPM 字段已废弃，将在后续版本中移除
  */
 export function formatTpmDisplay(value: number, infinite: boolean): string {
   if (infinite) return "∞";

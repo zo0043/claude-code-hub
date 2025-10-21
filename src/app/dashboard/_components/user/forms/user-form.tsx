@@ -16,6 +16,7 @@ interface UserFormProps {
     note?: string;
     rpm: number;
     dailyQuota: number;
+    providerGroup?: string | null;
   };
   onSuccess?: () => void;
 }
@@ -32,6 +33,7 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
       note: user?.note || '',
       rpm: user?.rpm || USER_DEFAULTS.RPM,
       dailyQuota: user?.dailyQuota || USER_DEFAULTS.DAILY_QUOTA,
+      providerGroup: user?.providerGroup || '',
     },
     onSubmit: async (data) => {
       startTransition(async () => {
@@ -43,6 +45,7 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
               note: data.note,
               rpm: data.rpm,
               dailyQuota: data.dailyQuota,
+              providerGroup: data.providerGroup || null,
             });
           } else {
             res = await addUser({
@@ -50,6 +53,7 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
               note: data.note,
               rpm: data.rpm,
               dailyQuota: data.dailyQuota,
+              providerGroup: data.providerGroup || null,
             });
           }
 
@@ -97,6 +101,14 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
         placeholder="请输入备注（可选）"
         description="用于描述用户的用途或备注信息"
         {...form.getFieldProps("note")}
+      />
+
+      <TextField
+        label="供应商分组"
+        maxLength={50}
+        placeholder="例如: premium, economy（可选）"
+        description="指定用户专属的供应商分组，留空则使用全局供应商池"
+        {...form.getFieldProps("providerGroup")}
       />
 
       <TextField

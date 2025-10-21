@@ -2,11 +2,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { editProvider } from "@/actions/providers";
 import type { ProviderDisplay } from "@/types/provider";
-import {
-  clampWeight,
-  clampIntInRange,
-  clampTpm,
-} from "@/lib/utils/validation";
+import { clampWeight } from "@/lib/utils/validation";
 import { PROVIDER_LIMITS } from "@/lib/constants/provider.constants";
 
 export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
@@ -19,38 +15,37 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
   const [weight, setWeight] = useState<number>(clampWeight(item.weight));
   const initialWeightRef = useRef<number>(item.weight);
 
-  // TPM 编辑
-  const [showTpm, setShowTpm] = useState(false);
-  const [tpmInfinite, setTpmInfinite] = useState<boolean>(item.tpm === null);
-  const [tpmValue, setTpmValue] = useState<number>(() => {
-    const base = item.tpm ?? PROVIDER_LIMITS.TPM.MIN;
-    return clampTpm(base);
+  // 5小时消费上限
+  const [show5hLimit, setShow5hLimit] = useState(false);
+  const [limit5hInfinite, setLimit5hInfinite] = useState<boolean>(item.limit5hUsd === null);
+  const [limit5hValue, setLimit5hValue] = useState<number>(() => {
+    return item.limit5hUsd ?? PROVIDER_LIMITS.LIMIT_5H_USD.MIN;
   });
-  const initialTpmRef = useRef<number | null>(item.tpm);
+  const initial5hRef = useRef<number | null>(item.limit5hUsd);
 
-  // RPM 编辑
-  const [showRpm, setShowRpm] = useState(false);
-  const [rpmInfinite, setRpmInfinite] = useState<boolean>(item.rpm === null);
-  const [rpmValue, setRpmValue] = useState<number>(() =>
-    clampIntInRange(item.rpm ?? PROVIDER_LIMITS.RPM.MIN, PROVIDER_LIMITS.RPM.MIN, PROVIDER_LIMITS.RPM.MAX)
-  );
-  const initialRpmRef = useRef<number | null>(item.rpm);
+  // 周消费上限
+  const [showWeeklyLimit, setShowWeeklyLimit] = useState(false);
+  const [limitWeeklyInfinite, setLimitWeeklyInfinite] = useState<boolean>(item.limitWeeklyUsd === null);
+  const [limitWeeklyValue, setLimitWeeklyValue] = useState<number>(() => {
+    return item.limitWeeklyUsd ?? PROVIDER_LIMITS.LIMIT_WEEKLY_USD.MIN;
+  });
+  const initialWeeklyRef = useRef<number | null>(item.limitWeeklyUsd);
 
-  // RPD 编辑
-  const [showRpd, setShowRpd] = useState(false);
-  const [rpdInfinite, setRpdInfinite] = useState<boolean>(item.rpd === null);
-  const [rpdValue, setRpdValue] = useState<number>(() =>
-    clampIntInRange(item.rpd ?? PROVIDER_LIMITS.RPD.MIN, PROVIDER_LIMITS.RPD.MIN, PROVIDER_LIMITS.RPD.MAX)
-  );
-  const initialRpdRef = useRef<number | null>(item.rpd);
+  // 月消费上限
+  const [showMonthlyLimit, setShowMonthlyLimit] = useState(false);
+  const [limitMonthlyInfinite, setLimitMonthlyInfinite] = useState<boolean>(item.limitMonthlyUsd === null);
+  const [limitMonthlyValue, setLimitMonthlyValue] = useState<number>(() => {
+    return item.limitMonthlyUsd ?? PROVIDER_LIMITS.LIMIT_MONTHLY_USD.MIN;
+  });
+  const initialMonthlyRef = useRef<number | null>(item.limitMonthlyUsd);
 
-  // CC 编辑
-  const [showCc, setShowCc] = useState(false);
-  const [ccInfinite, setCcInfinite] = useState<boolean>(item.cc === null);
-  const [ccValue, setCcValue] = useState<number>(() =>
-    clampIntInRange(item.cc ?? PROVIDER_LIMITS.CC.MIN, PROVIDER_LIMITS.CC.MIN, PROVIDER_LIMITS.CC.MAX)
-  );
-  const initialCcRef = useRef<number | null>(item.cc);
+  // 并发Session上限
+  const [showConcurrent, setShowConcurrent] = useState(false);
+  const [concurrentInfinite, setConcurrentInfinite] = useState<boolean>(item.limitConcurrentSessions === 0);
+  const [concurrentValue, setConcurrentValue] = useState<number>(() => {
+    return item.limitConcurrentSessions === 0 ? PROVIDER_LIMITS.CONCURRENT_SESSIONS.MIN : item.limitConcurrentSessions;
+  });
+  const initialConcurrentRef = useRef<number>(item.limitConcurrentSessions);
 
   // 切换启用状态
   const handleToggle = async (next: boolean) => {
@@ -96,94 +91,94 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
     }
   };
 
-  // TPM 编辑处理
-  const handleTpmPopover = (open: boolean) => {
+  // 5小时消费上限编辑处理
+  const handle5hLimitPopover = (open: boolean) => {
     if (!canEdit) return;
-    setShowTpm(open);
+    setShow5hLimit(open);
     if (open) {
-      initialTpmRef.current = item.tpm;
+      initial5hRef.current = item.limit5hUsd;
       return;
     }
 
-    const nextValue = tpmInfinite ? null : clampTpm(tpmValue);
-    if (nextValue !== initialTpmRef.current) {
-      editProvider(item.id, { tpm: nextValue }).then(res => {
+    const nextValue = limit5hInfinite ? null : Math.max(PROVIDER_LIMITS.LIMIT_5H_USD.MIN, limit5hValue);
+    if (nextValue !== initial5hRef.current) {
+      editProvider(item.id, { limit_5h_usd: nextValue }).then(res => {
         if (!res.ok) throw new Error(res.error);
       }).catch((e) => {
-        console.error("更新TPM失败", e);
-        const msg = e instanceof Error ? e.message : '更新TPM失败';
+        console.error("更新5小时消费上限失败", e);
+        const msg = e instanceof Error ? e.message : '更新5小时消费上限失败';
         toast.error(msg);
-        setTpmInfinite(initialTpmRef.current === null);
-        setTpmValue(clampTpm(initialTpmRef.current ?? PROVIDER_LIMITS.TPM.MIN));
+        setLimit5hInfinite(initial5hRef.current === null);
+        setLimit5hValue(initial5hRef.current ?? PROVIDER_LIMITS.LIMIT_5H_USD.MIN);
       });
     }
   };
 
-  // RPM 编辑处理
-  const handleRpmPopover = (open: boolean) => {
+  // 周消费上限编辑处理
+  const handleWeeklyLimitPopover = (open: boolean) => {
     if (!canEdit) return;
-    setShowRpm(open);
+    setShowWeeklyLimit(open);
     if (open) {
-      initialRpmRef.current = item.rpm;
+      initialWeeklyRef.current = item.limitWeeklyUsd;
       return;
     }
 
-    const nextValue = rpmInfinite ? null : clampIntInRange(rpmValue, PROVIDER_LIMITS.RPM.MIN, PROVIDER_LIMITS.RPM.MAX);
-    if (nextValue !== initialRpmRef.current) {
-      editProvider(item.id, { rpm: nextValue }).then(res => {
+    const nextValue = limitWeeklyInfinite ? null : Math.max(PROVIDER_LIMITS.LIMIT_WEEKLY_USD.MIN, limitWeeklyValue);
+    if (nextValue !== initialWeeklyRef.current) {
+      editProvider(item.id, { limit_weekly_usd: nextValue }).then(res => {
         if (!res.ok) throw new Error(res.error);
       }).catch((e) => {
-        console.error("更新RPM失败", e);
-        const msg = e instanceof Error ? e.message : '更新RPM失败';
+        console.error("更新周消费上限失败", e);
+        const msg = e instanceof Error ? e.message : '更新周消费上限失败';
         toast.error(msg);
-        setRpmInfinite(initialRpmRef.current === null);
-        setRpmValue(clampIntInRange(initialRpmRef.current ?? PROVIDER_LIMITS.RPM.MIN, PROVIDER_LIMITS.RPM.MIN, PROVIDER_LIMITS.RPM.MAX));
+        setLimitWeeklyInfinite(initialWeeklyRef.current === null);
+        setLimitWeeklyValue(initialWeeklyRef.current ?? PROVIDER_LIMITS.LIMIT_WEEKLY_USD.MIN);
       });
     }
   };
 
-  // RPD 编辑处理
-  const handleRpdPopover = (open: boolean) => {
+  // 月消费上限编辑处理
+  const handleMonthlyLimitPopover = (open: boolean) => {
     if (!canEdit) return;
-    setShowRpd(open);
+    setShowMonthlyLimit(open);
     if (open) {
-      initialRpdRef.current = item.rpd;
+      initialMonthlyRef.current = item.limitMonthlyUsd;
       return;
     }
 
-    const nextValue = rpdInfinite ? null : clampIntInRange(rpdValue, PROVIDER_LIMITS.RPD.MIN, PROVIDER_LIMITS.RPD.MAX);
-    if (nextValue !== initialRpdRef.current) {
-      editProvider(item.id, { rpd: nextValue }).then(res => {
+    const nextValue = limitMonthlyInfinite ? null : Math.max(PROVIDER_LIMITS.LIMIT_MONTHLY_USD.MIN, limitMonthlyValue);
+    if (nextValue !== initialMonthlyRef.current) {
+      editProvider(item.id, { limit_monthly_usd: nextValue }).then(res => {
         if (!res.ok) throw new Error(res.error);
       }).catch((e) => {
-        console.error("更新RPD失败", e);
-        const msg = e instanceof Error ? e.message : '更新RPD失败';
+        console.error("更新月消费上限失败", e);
+        const msg = e instanceof Error ? e.message : '更新月消费上限失败';
         toast.error(msg);
-        setRpdInfinite(initialRpdRef.current === null);
-        setRpdValue(clampIntInRange(initialRpdRef.current ?? PROVIDER_LIMITS.RPD.MIN, PROVIDER_LIMITS.RPD.MIN, PROVIDER_LIMITS.RPD.MAX));
+        setLimitMonthlyInfinite(initialMonthlyRef.current === null);
+        setLimitMonthlyValue(initialMonthlyRef.current ?? PROVIDER_LIMITS.LIMIT_MONTHLY_USD.MIN);
       });
     }
   };
 
-  // CC 编辑处理
-  const handleCcPopover = (open: boolean) => {
+  // 并发Session上限编辑处理
+  const handleConcurrentPopover = (open: boolean) => {
     if (!canEdit) return;
-    setShowCc(open);
+    setShowConcurrent(open);
     if (open) {
-      initialCcRef.current = item.cc;
+      initialConcurrentRef.current = item.limitConcurrentSessions;
       return;
     }
 
-    const nextValue = ccInfinite ? null : clampIntInRange(ccValue, PROVIDER_LIMITS.CC.MIN, PROVIDER_LIMITS.CC.MAX);
-    if (nextValue !== initialCcRef.current) {
-      editProvider(item.id, { cc: nextValue }).then(res => {
+    const nextValue = concurrentInfinite ? 0 : Math.max(PROVIDER_LIMITS.CONCURRENT_SESSIONS.MIN, concurrentValue);
+    if (nextValue !== initialConcurrentRef.current) {
+      editProvider(item.id, { limit_concurrent_sessions: nextValue }).then(res => {
         if (!res.ok) throw new Error(res.error);
       }).catch((e) => {
-        console.error("更新CC失败", e);
-        const msg = e instanceof Error ? e.message : '更新CC失败';
+        console.error("更新并发Session上限失败", e);
+        const msg = e instanceof Error ? e.message : '更新并发Session上限失败';
         toast.error(msg);
-        setCcInfinite(initialCcRef.current === null);
-        setCcValue(clampIntInRange(initialCcRef.current ?? PROVIDER_LIMITS.CC.MIN, PROVIDER_LIMITS.CC.MIN, PROVIDER_LIMITS.CC.MAX));
+        setConcurrentInfinite(initialConcurrentRef.current === 0);
+        setConcurrentValue(initialConcurrentRef.current === 0 ? PROVIDER_LIMITS.CONCURRENT_SESSIONS.MIN : initialConcurrentRef.current);
       });
     }
   };
@@ -195,33 +190,41 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
     weight,
     setWeight,
     showWeight,
-    tpmInfinite,
-    setTpmInfinite,
-    tpmValue,
-    setTpmValue,
-    showTpm,
-    rpmInfinite,
-    setRpmInfinite,
-    rpmValue,
-    setRpmValue,
-    showRpm,
-    rpdInfinite,
-    setRpdInfinite,
-    rpdValue,
-    setRpdValue,
-    showRpd,
-    ccInfinite,
-    setCcInfinite,
-    ccValue,
-    setCcValue,
-    showCc,
+
+    // 5小时消费上限
+    limit5hInfinite,
+    setLimit5hInfinite,
+    limit5hValue,
+    setLimit5hValue,
+    show5hLimit,
+
+    // 周消费上限
+    limitWeeklyInfinite,
+    setLimitWeeklyInfinite,
+    limitWeeklyValue,
+    setLimitWeeklyValue,
+    showWeeklyLimit,
+
+    // 月消费上限
+    limitMonthlyInfinite,
+    setLimitMonthlyInfinite,
+    limitMonthlyValue,
+    setLimitMonthlyValue,
+    showMonthlyLimit,
+
+    // 并发Session上限
+    concurrentInfinite,
+    setConcurrentInfinite,
+    concurrentValue,
+    setConcurrentValue,
+    showConcurrent,
 
     // 处理函数
     handleToggle,
     handleWeightPopover,
-    handleTpmPopover,
-    handleRpmPopover,
-    handleRpdPopover,
-    handleCcPopover,
+    handle5hLimitPopover,
+    handleWeeklyLimitPopover,
+    handleMonthlyLimitPopover,
+    handleConcurrentPopover,
   };
 }

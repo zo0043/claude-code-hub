@@ -118,29 +118,14 @@ export function EmailField(props: FormFieldProps) {
 /**
  * 数字字段组件
  */
-export function NumberField(props: Omit<FormFieldProps, 'value' | 'onChange'> & {
-  value: number | '';
-  onChange: (value: number | '') => void;
+export function NumberField(props: Omit<FormFieldProps, 'type'> & {
   min?: number;
   max?: number;
 }) {
-  const handleChange = (stringValue: string) => {
-    if (stringValue === '') {
-      props.onChange('');
-      return;
-    }
-    const numValue = parseFloat(stringValue);
-    if (!isNaN(numValue)) {
-      props.onChange(numValue);
-    }
-  };
-
   return (
     <FormField
       {...props}
       type="number"
-      value={props.value}
-      onChange={handleChange}
       min={props.min}
       max={props.max}
     />

@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 import { ProxySession } from "./proxy/session";
 import { ProxyAuthenticator } from "./proxy/auth-guard";
+import { ProxyRateLimitGuard } from "./proxy/rate-limit-guard";
 import { ProxyProviderResolver } from "./proxy/provider-selector";
 import { ProxyMessageService } from "./proxy/message-service";
 import { ProxyForwarder } from "./proxy/forwarder";
@@ -12,11 +13,19 @@ export async function handleProxyRequest(c: Context): Promise<Response> {
   const session = await ProxySession.fromContext(c);
 
   try {
+    // 1. 认证检查
     const unauthorized = await ProxyAuthenticator.ensure(session);
     if (unauthorized) {
       return unauthorized;
     }
 
+    // 2. 限流检查（新增）
+    const rateLimited = await ProxyRateLimitGuard.ensure(session);
+    if (rateLimited) {
+      return rateLimited;
+    }
+
+    // 3. 供应商选择
     const providerUnavailable = await ProxyProviderResolver.ensure(session);
     if (providerUnavailable) {
       return providerUnavailable;

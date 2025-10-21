@@ -8,6 +8,7 @@ export interface User {
   role: "admin" | "user";
   rpm: number; // 每分钟请求数限制
   dailyQuota: number; // 每日额度限制（美元）
+  providerGroup: string | null; // 供应商分组
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date;
@@ -21,6 +22,7 @@ export interface CreateUserData {
   description: string;
   rpm?: number; // 可选，有默认值
   dailyQuota?: number; // 可选，有默认值
+  providerGroup?: string | null; // 可选，供应商分组
 }
 
 /**
@@ -31,6 +33,7 @@ export interface UpdateUserData {
   description?: string;
   rpm?: number;
   dailyQuota?: number;
+  providerGroup?: string | null; // 可选，供应商分组
 }
 
 /**
@@ -59,6 +62,7 @@ export interface UserDisplay {
   role: "admin" | "user";
   rpm: number;
   dailyQuota: number;
+  providerGroup?: string | null;
   keys: UserKeyDisplay[];
 }
 

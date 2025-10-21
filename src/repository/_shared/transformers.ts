@@ -13,9 +13,10 @@ export function toUser(dbUser: any): User {
     description: dbUser?.description || "",
     role: (dbUser?.role as User["role"]) || "user",
     rpm: dbUser?.rpm || 60,
+    dailyQuota: dbUser?.dailyQuota ? parseFloat(dbUser.dailyQuota) : 0,
+    providerGroup: dbUser?.providerGroup ?? null,
     createdAt: dbUser?.createdAt ? new Date(dbUser.createdAt) : new Date(),
     updatedAt: dbUser?.updatedAt ? new Date(dbUser.updatedAt) : new Date(),
-    dailyQuota: dbUser?.dailyQuota ? parseFloat(dbUser.dailyQuota) : 0,
   };
 }
 
@@ -24,6 +25,10 @@ export function toKey(dbKey: any): Key {
   return {
     ...dbKey,
     isEnabled: dbKey?.isEnabled ?? true,
+    limit5hUsd: dbKey?.limit5hUsd ? parseFloat(dbKey.limit5hUsd) : null,
+    limitWeeklyUsd: dbKey?.limitWeeklyUsd ? parseFloat(dbKey.limitWeeklyUsd) : null,
+    limitMonthlyUsd: dbKey?.limitMonthlyUsd ? parseFloat(dbKey.limitMonthlyUsd) : null,
+    limitConcurrentSessions: dbKey?.limitConcurrentSessions ?? 0,
     createdAt: dbKey?.createdAt ? new Date(dbKey.createdAt) : new Date(),
     updatedAt: dbKey?.updatedAt ? new Date(dbKey.updatedAt) : new Date(),
   };
@@ -35,6 +40,13 @@ export function toProvider(dbProvider: any): Provider {
     ...dbProvider,
     isEnabled: dbProvider?.isEnabled ?? true,
     weight: dbProvider?.weight ?? 1,
+    priority: dbProvider?.priority ?? 0,
+    costPerMtok: dbProvider?.costPerMtok ? parseFloat(dbProvider.costPerMtok) : null,
+    groupTag: dbProvider?.groupTag ?? null,
+    limit5hUsd: dbProvider?.limit5hUsd ? parseFloat(dbProvider.limit5hUsd) : null,
+    limitWeeklyUsd: dbProvider?.limitWeeklyUsd ? parseFloat(dbProvider.limitWeeklyUsd) : null,
+    limitMonthlyUsd: dbProvider?.limitMonthlyUsd ? parseFloat(dbProvider.limitMonthlyUsd) : null,
+    limitConcurrentSessions: dbProvider?.limitConcurrentSessions ?? 0,
     tpm: dbProvider?.tpm ?? null,
     rpm: dbProvider?.rpm ?? null,
     rpd: dbProvider?.rpd ?? null,

@@ -59,6 +59,7 @@ export async function getUsers(): Promise<UserDisplay[]> {
             role: user.role,
             rpm: user.rpm,
             dailyQuota: user.dailyQuota,
+            providerGroup: user.providerGroup || undefined,
             keys: keys.map((key) => ({
               id: key.id,
               name: key.name,
@@ -90,6 +91,7 @@ export async function getUsers(): Promise<UserDisplay[]> {
             role: user.role,
             rpm: user.rpm,
             dailyQuota: user.dailyQuota,
+            providerGroup: user.providerGroup || undefined,
             keys: [],
           };
         }
@@ -107,6 +109,7 @@ export async function getUsers(): Promise<UserDisplay[]> {
 export async function addUser(data: {
   name: string;
   note?: string;
+  providerGroup?: string | null;
   rpm?: number;
   dailyQuota?: number;
 }): Promise<ActionResult> {
@@ -120,6 +123,7 @@ export async function addUser(data: {
     const validatedData = CreateUserSchema.parse({
       name: data.name,
       note: data.note || "",
+      providerGroup: data.providerGroup || "",
       rpm: data.rpm || USER_DEFAULTS.RPM,
       dailyQuota: data.dailyQuota || USER_DEFAULTS.DAILY_QUOTA,
     });
@@ -127,6 +131,7 @@ export async function addUser(data: {
     const newUser = await createUser({
       name: validatedData.name,
       description: validatedData.note || "",
+      providerGroup: validatedData.providerGroup || null,
       rpm: validatedData.rpm,
       dailyQuota: validatedData.dailyQuota,
     });
@@ -154,7 +159,7 @@ export async function addUser(data: {
 // 更新用户
 export async function editUser(
   userId: number,
-  data: { name?: string; note?: string; rpm?: number; dailyQuota?: number },
+  data: { name?: string; note?: string; providerGroup?: string | null; rpm?: number; dailyQuota?: number },
 ): Promise<ActionResult> {
   try {
     const session = await getSession();
@@ -167,6 +172,7 @@ export async function editUser(
     await updateUser(userId, {
       name: validatedData.name,
       description: validatedData.note,
+      providerGroup: validatedData.providerGroup,
       rpm: validatedData.rpm,
       dailyQuota: validatedData.dailyQuota,
     });

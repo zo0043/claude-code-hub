@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { addKey } from "@/actions/keys";
 import { DialogFormLayout } from "@/components/form/form-layout";
-import { TextField, DateField } from "@/components/form/form-field";
+import { TextField, DateField, NumberField } from "@/components/form/form-field";
 import { useZodForm } from "@/lib/hooks/use-zod-form";
 import { KeyFormSchema } from "@/lib/validation/schemas";
 
@@ -21,7 +21,11 @@ export function AddKeyForm({ userId, onSuccess }: AddKeyFormProps) {
     schema: KeyFormSchema,
     defaultValues: {
       name: '',
-      expiresAt: ''
+      expiresAt: '',
+      limit5hUsd: null,
+      limitWeeklyUsd: null,
+      limitMonthlyUsd: null,
+      limitConcurrentSessions: 0,
     },
     onSubmit: async (data) => {
       if (!userId) {
@@ -86,6 +90,42 @@ export function AddKeyForm({ userId, onSuccess }: AddKeyFormProps) {
         placeholder="选择过期时间"
         description="留空表示永不过期"
         {...form.getFieldProps('expiresAt')}
+      />
+
+      <NumberField
+        label="5小时消费上限 (USD)"
+        placeholder="留空表示无限制"
+        description="5小时内最大消费金额"
+        min={0}
+        step={0.01}
+        {...form.getFieldProps('limit5hUsd')}
+      />
+
+      <NumberField
+        label="周消费上限 (USD)"
+        placeholder="留空表示无限制"
+        description="每周最大消费金额"
+        min={0}
+        step={0.01}
+        {...form.getFieldProps('limitWeeklyUsd')}
+      />
+
+      <NumberField
+        label="月消费上限 (USD)"
+        placeholder="留空表示无限制"
+        description="每月最大消费金额"
+        min={0}
+        step={0.01}
+        {...form.getFieldProps('limitMonthlyUsd')}
+      />
+
+      <NumberField
+        label="并发 Session 上限"
+        placeholder="0 表示无限制"
+        description="同时运行的对话数量"
+        min={0}
+        step={1}
+        {...form.getFieldProps('limitConcurrentSessions')}
       />
     </DialogFormLayout>
   );

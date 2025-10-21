@@ -24,6 +24,7 @@ export async function validateKey(keyString: string): Promise<AuthSession | null
       role: 'admin',
       rpm: 0,
       dailyQuota: 0,
+      providerGroup: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -34,6 +35,10 @@ export async function validateKey(keyString: string): Promise<AuthSession | null
       name: 'ADMIN_TOKEN',
       key: keyString,
       isEnabled: true,
+      limit5hUsd: null,
+      limitWeeklyUsd: null,
+      limitMonthlyUsd: null,
+      limitConcurrentSessions: 0,
       createdAt: now,
       updatedAt: now,
     };

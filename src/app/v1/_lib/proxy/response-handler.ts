@@ -2,6 +2,7 @@ import { updateMessageRequestDuration, updateMessageRequestCost } from "@/reposi
 import { findLatestPriceByModel } from "@/repository/model-price";
 import { parseSSEData } from "@/lib/utils/sse";
 import { calculateRequestCost } from "@/lib/utils/cost-calculation";
+import { RateLimitService } from "@/lib/rate-limit";
 import type { ProxySession } from "./session";
 import { ProxyLogger } from "./logger";
 import { ProxyStatusTracker } from "@/lib/proxy-status-tracker";
@@ -55,6 +56,9 @@ export class ProxyResponseHandler {
         const messageContext = session.messageContext;
         if (usageRecord && usageMetrics && messageContext) {
           await updateRequestCostFromUsage(messageContext.id, session.request.model, usageMetrics);
+
+          // 追踪消费到 Redis（用于限流）
+          await trackCostToRedis(session, usageMetrics);
         }
 
         if (messageContext) {
@@ -127,6 +131,9 @@ export class ProxyResponseHandler {
         }
 
         await updateRequestCostFromUsage(messageContext.id, session.request.model, usageForCost);
+
+        // 追踪消费到 Redis（用于限流）
+        await trackCostToRedis(session, usageForCost);
       } catch (error) {
         console.error("Failed to save SSE content:", error);
       } finally {
@@ -190,4 +197,44 @@ async function updateRequestCostFromUsage(
       await updateMessageRequestCost(messageId, cost);
     }
   }
+}
+
+/**
+ * 追踪消费到 Redis（用于限流）
+ */
+async function trackCostToRedis(
+  session: ProxySession,
+  usage: UsageMetrics | null
+): Promise<void> {
+  if (!usage) return;
+
+  const messageContext = session.messageContext;
+  const provider = session.provider;
+  const key = session.authState?.key;
+
+  if (!messageContext || !provider || !key) return;
+
+  const modelName = session.request.model;
+  if (!modelName) return;
+
+  // 计算成本
+  const priceData = await findLatestPriceByModel(modelName);
+  if (!priceData?.priceData) return;
+
+  const cost = calculateRequestCost(usage, priceData.priceData);
+  if (cost.lte(0)) return;
+
+  // 获取 sessionId（优先使用 conversation_id）
+  const conversationId = typeof session.request.message === 'object' && session.request.message !== null
+    ? (session.request.message as Record<string, unknown>).conversation_id
+    : null;
+  const sessionId = typeof conversationId === 'string' ? conversationId : `msg_${messageContext.id}`;
+
+  // 追踪到 Redis
+  await RateLimitService.trackCost(
+    key.id,
+    provider.id,
+    sessionId,
+    parseFloat(cost.toString())
+  );
 }

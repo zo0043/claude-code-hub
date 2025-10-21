@@ -12,6 +12,7 @@ export async function createUser(userData: CreateUserData): Promise<User> {
     description: userData.description,
     rpmLimit: userData.rpm,
     dailyLimitUsd: userData.dailyQuota?.toString(),
+    providerGroup: userData.providerGroup,
   };
 
   const [user] = await db.insert(users).values(dbData).returning({
@@ -21,6 +22,7 @@ export async function createUser(userData: CreateUserData): Promise<User> {
     role: users.role,
     rpm: users.rpmLimit,
     dailyQuota: users.dailyLimitUsd,
+    providerGroup: users.providerGroup,
     createdAt: users.createdAt,
     updatedAt: users.updatedAt,
     deletedAt: users.deletedAt,
@@ -41,6 +43,7 @@ export async function findUserList(
       role: users.role,
       rpm: users.rpmLimit,
       dailyQuota: users.dailyLimitUsd,
+      providerGroup: users.providerGroup,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
       deletedAt: users.deletedAt,
@@ -66,6 +69,7 @@ export async function findUserById(id: number): Promise<User | null> {
       role: users.role,
       rpm: users.rpmLimit,
       dailyQuota: users.dailyLimitUsd,
+      providerGroup: users.providerGroup,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
       deletedAt: users.deletedAt,
@@ -91,6 +95,7 @@ export async function updateUser(
     description?: string;
     rpmLimit?: number;
     dailyLimitUsd?: string;
+    providerGroup?: string | null;
     updatedAt?: Date;
   }
 
@@ -101,6 +106,7 @@ export async function updateUser(
   if (userData.description !== undefined) dbData.description = userData.description;
   if (userData.rpm !== undefined) dbData.rpmLimit = userData.rpm;
   if (userData.dailyQuota !== undefined) dbData.dailyLimitUsd = userData.dailyQuota.toString();
+  if (userData.providerGroup !== undefined) dbData.providerGroup = userData.providerGroup;
 
   const [user] = await db
     .update(users)
@@ -113,6 +119,7 @@ export async function updateUser(
       role: users.role,
       rpm: users.rpmLimit,
       dailyQuota: users.dailyLimitUsd,
+      providerGroup: users.providerGroup,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
       deletedAt: users.deletedAt,

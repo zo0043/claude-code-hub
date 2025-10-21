@@ -17,6 +17,10 @@ export async function findKeyById(id: number): Promise<Key | null> {
       name: keys.name,
       isEnabled: keys.isEnabled,
       expiresAt: keys.expiresAt,
+      limit5hUsd: keys.limit5hUsd,
+      limitWeeklyUsd: keys.limitWeeklyUsd,
+      limitMonthlyUsd: keys.limitMonthlyUsd,
+      limitConcurrentSessions: keys.limitConcurrentSessions,
       createdAt: keys.createdAt,
       updatedAt: keys.updatedAt,
       deletedAt: keys.deletedAt,
@@ -37,6 +41,10 @@ export async function findKeyList(userId: number): Promise<Key[]> {
       name: keys.name,
       isEnabled: keys.isEnabled,
       expiresAt: keys.expiresAt,
+      limit5hUsd: keys.limit5hUsd,
+      limitWeeklyUsd: keys.limitWeeklyUsd,
+      limitMonthlyUsd: keys.limitMonthlyUsd,
+      limitConcurrentSessions: keys.limitConcurrentSessions,
       createdAt: keys.createdAt,
       updatedAt: keys.updatedAt,
       deletedAt: keys.deletedAt,
@@ -55,6 +63,10 @@ export async function createKey(keyData: CreateKeyData): Promise<Key> {
     name: keyData.name,
     isEnabled: keyData.is_enabled,
     expiresAt: keyData.expires_at,
+    limit5hUsd: keyData.limit_5h_usd != null ? keyData.limit_5h_usd.toString() : null,
+    limitWeeklyUsd: keyData.limit_weekly_usd != null ? keyData.limit_weekly_usd.toString() : null,
+    limitMonthlyUsd: keyData.limit_monthly_usd != null ? keyData.limit_monthly_usd.toString() : null,
+    limitConcurrentSessions: keyData.limit_concurrent_sessions,
   };
 
   const [key] = await db.insert(keys).values(dbData).returning({
@@ -64,6 +76,10 @@ export async function createKey(keyData: CreateKeyData): Promise<Key> {
     name: keys.name,
     isEnabled: keys.isEnabled,
     expiresAt: keys.expiresAt,
+    limit5hUsd: keys.limit5hUsd,
+    limitWeeklyUsd: keys.limitWeeklyUsd,
+    limitMonthlyUsd: keys.limitMonthlyUsd,
+    limitConcurrentSessions: keys.limitConcurrentSessions,
     createdAt: keys.createdAt,
     updatedAt: keys.updatedAt,
     deletedAt: keys.deletedAt,
@@ -87,6 +103,10 @@ export async function updateKey(
   if (keyData.name !== undefined) dbData.name = keyData.name;
   if (keyData.is_enabled !== undefined) dbData.isEnabled = keyData.is_enabled;
   if (keyData.expires_at !== undefined) dbData.expiresAt = keyData.expires_at;
+  if (keyData.limit_5h_usd !== undefined) dbData.limit5hUsd = keyData.limit_5h_usd != null ? keyData.limit_5h_usd.toString() : null;
+  if (keyData.limit_weekly_usd !== undefined) dbData.limitWeeklyUsd = keyData.limit_weekly_usd != null ? keyData.limit_weekly_usd.toString() : null;
+  if (keyData.limit_monthly_usd !== undefined) dbData.limitMonthlyUsd = keyData.limit_monthly_usd != null ? keyData.limit_monthly_usd.toString() : null;
+  if (keyData.limit_concurrent_sessions !== undefined) dbData.limitConcurrentSessions = keyData.limit_concurrent_sessions;
 
   const [key] = await db
     .update(keys)
@@ -99,6 +119,10 @@ export async function updateKey(
       name: keys.name,
       isEnabled: keys.isEnabled,
       expiresAt: keys.expiresAt,
+      limit5hUsd: keys.limit5hUsd,
+      limitWeeklyUsd: keys.limitWeeklyUsd,
+      limitMonthlyUsd: keys.limitMonthlyUsd,
+      limitConcurrentSessions: keys.limitConcurrentSessions,
       createdAt: keys.createdAt,
       updatedAt: keys.updatedAt,
       deletedAt: keys.deletedAt,
@@ -120,6 +144,10 @@ export async function findActiveKeyByUserIdAndName(
       name: keys.name,
       isEnabled: keys.isEnabled,
       expiresAt: keys.expiresAt,
+      limit5hUsd: keys.limit5hUsd,
+      limitWeeklyUsd: keys.limitWeeklyUsd,
+      limitMonthlyUsd: keys.limitMonthlyUsd,
+      limitConcurrentSessions: keys.limitConcurrentSessions,
       createdAt: keys.createdAt,
       updatedAt: keys.updatedAt,
       deletedAt: keys.deletedAt,
@@ -203,6 +231,10 @@ export async function findActiveKeyByKeyString(
       name: keys.name,
       isEnabled: keys.isEnabled,
       expiresAt: keys.expiresAt,
+      limit5hUsd: keys.limit5hUsd,
+      limitWeeklyUsd: keys.limitWeeklyUsd,
+      limitMonthlyUsd: keys.limitMonthlyUsd,
+      limitConcurrentSessions: keys.limitConcurrentSessions,
       createdAt: keys.createdAt,
       updatedAt: keys.updatedAt,
       deletedAt: keys.deletedAt,
@@ -232,6 +264,10 @@ export async function validateApiKeyAndGetUser(
       keyName: keys.name,
       keyIsEnabled: keys.isEnabled,
       keyExpiresAt: keys.expiresAt,
+      keyLimit5hUsd: keys.limit5hUsd,
+      keyLimitWeeklyUsd: keys.limitWeeklyUsd,
+      keyLimitMonthlyUsd: keys.limitMonthlyUsd,
+      keyLimitConcurrentSessions: keys.limitConcurrentSessions,
       keyCreatedAt: keys.createdAt,
       keyUpdatedAt: keys.updatedAt,
       keyDeletedAt: keys.deletedAt,
@@ -281,6 +317,10 @@ export async function validateApiKeyAndGetUser(
     name: row.keyName,
     isEnabled: row.keyIsEnabled,
     expiresAt: row.keyExpiresAt,
+    limit5hUsd: row.keyLimit5hUsd,
+    limitWeeklyUsd: row.keyLimitWeeklyUsd,
+    limitMonthlyUsd: row.keyLimitMonthlyUsd,
+    limitConcurrentSessions: row.keyLimitConcurrentSessions,
     createdAt: row.keyCreatedAt,
     updatedAt: row.keyUpdatedAt,
     deletedAt: row.keyDeletedAt,

@@ -13,6 +13,13 @@ export async function createProvider(providerData: CreateProviderData): Promise<
     key: providerData.key,
     isEnabled: providerData.is_enabled,
     weight: providerData.weight,
+    priority: providerData.priority,
+    costPerMtok: providerData.cost_per_mtok != null ? providerData.cost_per_mtok.toString() : null,
+    groupTag: providerData.group_tag,
+    limit5hUsd: providerData.limit_5h_usd != null ? providerData.limit_5h_usd.toString() : null,
+    limitWeeklyUsd: providerData.limit_weekly_usd != null ? providerData.limit_weekly_usd.toString() : null,
+    limitMonthlyUsd: providerData.limit_monthly_usd != null ? providerData.limit_monthly_usd.toString() : null,
+    limitConcurrentSessions: providerData.limit_concurrent_sessions,
     tpm: providerData.tpm,
     rpm: providerData.rpm,
     rpd: providerData.rpd,
@@ -26,6 +33,13 @@ export async function createProvider(providerData: CreateProviderData): Promise<
     key: providers.key,
     isEnabled: providers.isEnabled,
     weight: providers.weight,
+    priority: providers.priority,
+    costPerMtok: providers.costPerMtok,
+    groupTag: providers.groupTag,
+    limit5hUsd: providers.limit5hUsd,
+    limitWeeklyUsd: providers.limitWeeklyUsd,
+    limitMonthlyUsd: providers.limitMonthlyUsd,
+    limitConcurrentSessions: providers.limitConcurrentSessions,
     tpm: providers.tpm,
     rpm: providers.rpm,
     rpd: providers.rpd,
@@ -47,6 +61,13 @@ export async function findProviderList(limit: number = 50, offset: number = 0): 
       key: providers.key,
       isEnabled: providers.isEnabled,
       weight: providers.weight,
+      priority: providers.priority,
+      costPerMtok: providers.costPerMtok,
+      groupTag: providers.groupTag,
+      limit5hUsd: providers.limit5hUsd,
+      limitWeeklyUsd: providers.limitWeeklyUsd,
+      limitMonthlyUsd: providers.limitMonthlyUsd,
+      limitConcurrentSessions: providers.limitConcurrentSessions,
       tpm: providers.tpm,
       rpm: providers.rpm,
       rpd: providers.rpd,
@@ -73,6 +94,13 @@ export async function findProviderById(id: number): Promise<Provider | null> {
       key: providers.key,
       isEnabled: providers.isEnabled,
       weight: providers.weight,
+      priority: providers.priority,
+      costPerMtok: providers.costPerMtok,
+      groupTag: providers.groupTag,
+      limit5hUsd: providers.limit5hUsd,
+      limitWeeklyUsd: providers.limitWeeklyUsd,
+      limitMonthlyUsd: providers.limitMonthlyUsd,
+      limitConcurrentSessions: providers.limitConcurrentSessions,
       tpm: providers.tpm,
       rpm: providers.rpm,
       rpd: providers.rpd,
@@ -102,6 +130,13 @@ export async function updateProvider(id: number, providerData: UpdateProviderDat
   if (providerData.key !== undefined) dbData.key = providerData.key;
   if (providerData.is_enabled !== undefined) dbData.isEnabled = providerData.is_enabled;
   if (providerData.weight !== undefined) dbData.weight = providerData.weight;
+  if (providerData.priority !== undefined) dbData.priority = providerData.priority;
+  if (providerData.cost_per_mtok !== undefined) dbData.costPerMtok = providerData.cost_per_mtok != null ? providerData.cost_per_mtok.toString() : null;
+  if (providerData.group_tag !== undefined) dbData.groupTag = providerData.group_tag;
+  if (providerData.limit_5h_usd !== undefined) dbData.limit5hUsd = providerData.limit_5h_usd != null ? providerData.limit_5h_usd.toString() : null;
+  if (providerData.limit_weekly_usd !== undefined) dbData.limitWeeklyUsd = providerData.limit_weekly_usd != null ? providerData.limit_weekly_usd.toString() : null;
+  if (providerData.limit_monthly_usd !== undefined) dbData.limitMonthlyUsd = providerData.limit_monthly_usd != null ? providerData.limit_monthly_usd.toString() : null;
+  if (providerData.limit_concurrent_sessions !== undefined) dbData.limitConcurrentSessions = providerData.limit_concurrent_sessions;
   if (providerData.tpm !== undefined) dbData.tpm = providerData.tpm;
   if (providerData.rpm !== undefined) dbData.rpm = providerData.rpm;
   if (providerData.rpd !== undefined) dbData.rpd = providerData.rpd;
@@ -118,6 +153,13 @@ export async function updateProvider(id: number, providerData: UpdateProviderDat
       key: providers.key,
       isEnabled: providers.isEnabled,
       weight: providers.weight,
+      priority: providers.priority,
+      costPerMtok: providers.costPerMtok,
+      groupTag: providers.groupTag,
+      limit5hUsd: providers.limit5hUsd,
+      limitWeeklyUsd: providers.limitWeeklyUsd,
+      limitMonthlyUsd: providers.limitMonthlyUsd,
+      limitConcurrentSessions: providers.limitConcurrentSessions,
       tpm: providers.tpm,
       rpm: providers.rpm,
       rpd: providers.rpd,

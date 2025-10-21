@@ -40,7 +40,11 @@ export async function addKey(
       name: validatedData.name,
       key: generatedKey,
       is_enabled: true,
-      expires_at: validatedData.expiresAt ? new Date(validatedData.expiresAt) : undefined
+      expires_at: validatedData.expiresAt ? new Date(validatedData.expiresAt) : undefined,
+      limit_5h_usd: validatedData.limit5hUsd,
+      limit_weekly_usd: validatedData.limitWeeklyUsd,
+      limit_monthly_usd: validatedData.limitMonthlyUsd,
+      limit_concurrent_sessions: validatedData.limitConcurrentSessions,
     });
 
     revalidatePath('/dashboard');
@@ -79,7 +83,11 @@ export async function editKey(
     
     await updateKey(keyId, {
       name: validatedData.name,
-      expires_at: validatedData.expiresAt ? new Date(validatedData.expiresAt) : undefined
+      expires_at: validatedData.expiresAt ? new Date(validatedData.expiresAt) : undefined,
+      limit_5h_usd: validatedData.limit5hUsd,
+      limit_weekly_usd: validatedData.limitWeeklyUsd,
+      limit_monthly_usd: validatedData.limitMonthlyUsd,
+      limit_concurrent_sessions: validatedData.limitConcurrentSessions,
     });
     
     revalidatePath('/dashboard');

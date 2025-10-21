@@ -20,6 +20,7 @@ export const users = pgTable('users', {
   role: varchar('role').default('user'),
   rpmLimit: integer('rpm_limit').default(60),
   dailyLimitUsd: numeric('daily_limit_usd', { precision: 10, scale: 2 }).default('100.00'),
+  providerGroup: varchar('provider_group', { length: 50 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
@@ -39,6 +40,13 @@ export const keys = pgTable('keys', {
   name: varchar('name').notNull(),
   isEnabled: boolean('is_enabled').default(true),
   expiresAt: timestamp('expires_at'),
+
+  // 新增：金额限流配置
+  limit5hUsd: numeric('limit_5h_usd', { precision: 10, scale: 2 }),
+  limitWeeklyUsd: numeric('limit_weekly_usd', { precision: 10, scale: 2 }),
+  limitMonthlyUsd: numeric('limit_monthly_usd', { precision: 10, scale: 2 }),
+  limitConcurrentSessions: integer('limit_concurrent_sessions').default(0),
+
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
@@ -58,16 +66,32 @@ export const providers = pgTable('providers', {
   key: varchar('key').notNull(),
   isEnabled: boolean('is_enabled').notNull().default(true),
   weight: integer('weight').notNull().default(1),
+
+  // 新增：优先级和分组配置
+  priority: integer('priority').notNull().default(0),
+  costPerMtok: numeric('cost_per_mtok', { precision: 10, scale: 4 }),
+  groupTag: varchar('group_tag', { length: 50 }),
+
+  // 新增：金额限流配置
+  limit5hUsd: numeric('limit_5h_usd', { precision: 10, scale: 2 }),
+  limitWeeklyUsd: numeric('limit_weekly_usd', { precision: 10, scale: 2 }),
+  limitMonthlyUsd: numeric('limit_monthly_usd', { precision: 10, scale: 2 }),
+  limitConcurrentSessions: integer('limit_concurrent_sessions').default(0),
+
+  // 废弃（保留向后兼容，但不再使用）
   tpm: integer('tpm').default(0),
   rpm: integer('rpm').default(0),
   rpd: integer('rpd').default(0),
   cc: integer('cc').default(0),
+
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
 }, (table) => ({
-  // 优化启用状态的服务商查询（按权重排序）
-  providersEnabledWeightIdx: index('idx_providers_enabled_weight').on(table.isEnabled, table.weight).where(sql`${table.deletedAt} IS NULL`),
+  // 优化启用状态的服务商查询（按优先级和权重排序）
+  providersEnabledPriorityIdx: index('idx_providers_enabled_priority').on(table.isEnabled, table.priority, table.weight).where(sql`${table.deletedAt} IS NULL`),
+  // 分组查询优化
+  providersGroupIdx: index('idx_providers_group').on(table.groupTag).where(sql`${table.deletedAt} IS NULL`),
   // 基础索引
   providersCreatedAtIdx: index('idx_providers_created_at').on(table.createdAt),
   providersDeletedAtIdx: index('idx_providers_deleted_at').on(table.deletedAt),

@@ -35,10 +35,14 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
   const [name, setName] = useState(isEdit ? provider?.name ?? "" : "");
   const [url, setUrl] = useState(isEdit ? provider?.url ?? "" : "");
   const [key, setKey] = useState(""); // 编辑时留空代表不更新
-  const [tpm, setTpm] = useState<number | null>(isEdit ? provider?.tpm ?? null : null);
-  const [rpm, setRpm] = useState<number | null>(isEdit ? provider?.rpm ?? null : null);
-  const [rpd, setRpd] = useState<number | null>(isEdit ? provider?.rpd ?? null : null);
-  const [cc, setCc] = useState<number | null>(isEdit ? provider?.cc ?? null : null);
+  const [priority, setPriority] = useState<number>(isEdit ? provider?.priority ?? 0 : 0);
+  const [weight, setWeight] = useState<number>(isEdit ? provider?.weight ?? 1 : 1);
+  const [costPerMtok, setCostPerMtok] = useState<number | null>(isEdit ? provider?.costPerMtok ?? null : null);
+  const [groupTag, setGroupTag] = useState<string>(isEdit ? provider?.groupTag ?? "" : "");
+  const [limit5hUsd, setLimit5hUsd] = useState<number | null>(isEdit ? provider?.limit5hUsd ?? null : null);
+  const [limitWeeklyUsd, setLimitWeeklyUsd] = useState<number | null>(isEdit ? provider?.limitWeeklyUsd ?? null : null);
+  const [limitMonthlyUsd, setLimitMonthlyUsd] = useState<number | null>(isEdit ? provider?.limitMonthlyUsd ?? null : null);
+  const [limitConcurrentSessions, setLimitConcurrentSessions] = useState<number | null>(isEdit ? provider?.limitConcurrentSessions ?? null : null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,6 +63,14 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
             name?: string;
             url?: string;
             key?: string;
+            priority?: number;
+            weight?: number;
+            cost_per_mtok?: number | null;
+            group_tag?: string | null;
+            limit_5h_usd?: number | null;
+            limit_weekly_usd?: number | null;
+            limit_monthly_usd?: number | null;
+            limit_concurrent_sessions?: number | null;
             tpm?: number | null;
             rpm?: number | null;
             rpd?: number | null;
@@ -66,10 +78,18 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
           } = {
             name: name.trim(),
             url: url.trim(),
-            tpm,
-            rpm,
-            rpd,
-            cc,
+            priority: priority,
+            weight: weight,
+            cost_per_mtok: costPerMtok,
+            group_tag: groupTag.trim() || null,
+            limit_5h_usd: limit5hUsd,
+            limit_weekly_usd: limitWeeklyUsd,
+            limit_monthly_usd: limitMonthlyUsd,
+            limit_concurrent_sessions: limitConcurrentSessions,
+            tpm: null,
+            rpm: null,
+            rpd: null,
+            cc: null,
           };
           if (key.trim()) {
             updateData.key = key.trim();
@@ -86,11 +106,18 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
             key: key.trim(),
             // 使用配置的默认值：默认不启用、权重=1
             is_enabled: PROVIDER_DEFAULTS.IS_ENABLED,
-            weight: PROVIDER_DEFAULTS.WEIGHT,
-            tpm,
-            rpm,
-            rpd,
-            cc,
+            weight: weight,
+            priority: priority,
+            cost_per_mtok: costPerMtok,
+            group_tag: groupTag.trim() || null,
+            limit_5h_usd: limit5hUsd,
+            limit_weekly_usd: limitWeeklyUsd,
+            limit_monthly_usd: limitMonthlyUsd,
+            limit_concurrent_sessions: limitConcurrentSessions ?? 0,
+            tpm: null,
+            rpm: null,
+            rpd: null,
+            cc: null,
           });
           if (!res.ok) {
             toast.error(res.error || '添加服务商失败');
@@ -100,10 +127,14 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
           setName("");
           setUrl("");
           setKey("");
-          setTpm(null);
-          setRpm(null);
-          setRpd(null);
-          setCc(null);
+          setPriority(0);
+          setWeight(1);
+          setCostPerMtok(null);
+          setGroupTag("");
+          setLimit5hUsd(null);
+          setLimitWeeklyUsd(null);
+          setLimitMonthlyUsd(null);
+          setLimitConcurrentSessions(null);
         }
         onSuccess?.();
       } catch (error) {
@@ -162,57 +193,132 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
           ) : null}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor={isEdit ? "edit-tpm" : "tpm"}>TPM (每分钟Token数)</Label>
-            <Input
-              id={isEdit ? "edit-tpm" : "tpm"}
-              type="number"
-              value={tpm?.toString() ?? ""}
-              onChange={(e) => setTpm(validateNumericField(e.target.value))}
-              placeholder="留空表示无限制"
-              disabled={isPending}
-              min="1"
-            />
+        {/* 路由配置 */}
+        <div className="space-y-4 pt-2 border-t">
+          <div className="text-sm font-medium">路由配置</div>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor={isEdit ? "edit-priority" : "priority"}>
+                优先级
+                <span className="text-xs text-muted-foreground ml-1">(0最高)</span>
+              </Label>
+              <Input
+                id={isEdit ? "edit-priority" : "priority"}
+                type="number"
+                value={priority}
+                onChange={(e) => setPriority(parseInt(e.target.value) || 0)}
+                placeholder="0"
+                disabled={isPending}
+                min="0"
+                step="1"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={isEdit ? "edit-weight" : "weight"}>
+                权重
+                <span className="text-xs text-muted-foreground ml-1">(负载均衡)</span>
+              </Label>
+              <Input
+                id={isEdit ? "edit-weight" : "weight"}
+                type="number"
+                value={weight}
+                onChange={(e) => setWeight(parseInt(e.target.value) || 1)}
+                placeholder="1"
+                disabled={isPending}
+                min="1"
+                step="1"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={isEdit ? "edit-cost" : "cost"}>
+                成本 (USD/M tokens)
+              </Label>
+              <Input
+                id={isEdit ? "edit-cost" : "cost"}
+                type="number"
+                value={costPerMtok?.toString() ?? ""}
+                onChange={(e) => setCostPerMtok(validateNumericField(e.target.value))}
+                placeholder="留空表示未知"
+                disabled={isPending}
+                min="0"
+                step="0.0001"
+              />
+            </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor={isEdit ? "edit-rpm" : "rpm"}>RPM (每分钟请求数)</Label>
+            <Label htmlFor={isEdit ? "edit-group" : "group"}>
+              供应商分组
+              <span className="text-xs text-muted-foreground ml-1">(用于用户绑定)</span>
+            </Label>
             <Input
-              id={isEdit ? "edit-rpm" : "rpm"}
-              type="number"
-              value={rpm?.toString() ?? ""}
-              onChange={(e) => setRpm(validateNumericField(e.target.value))}
-              placeholder="留空表示无限制"
+              id={isEdit ? "edit-group" : "group"}
+              value={groupTag}
+              onChange={(e) => setGroupTag(e.target.value)}
+              placeholder="例如: premium, economy"
               disabled={isPending}
-              min="1"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor={isEdit ? "edit-rpd" : "rpd"}>RPD (每日请求数)</Label>
-            <Input
-              id={isEdit ? "edit-rpd" : "rpd"}
-              type="number"
-              value={rpd?.toString() ?? ""}
-              onChange={(e) => setRpd(validateNumericField(e.target.value))}
-              placeholder="留空表示无限制"
-              disabled={isPending}
-              min="1"
-            />
+        {/* 限流配置 */}
+        <div className="space-y-4 pt-2 border-t">
+          <div className="text-sm font-medium">限流配置</div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor={isEdit ? "edit-limit-5h" : "limit-5h"}>5小时消费上限 (USD)</Label>
+              <Input
+                id={isEdit ? "edit-limit-5h" : "limit-5h"}
+                type="number"
+                value={limit5hUsd?.toString() ?? ""}
+                onChange={(e) => setLimit5hUsd(validateNumericField(e.target.value))}
+                placeholder="留空表示无限制"
+                disabled={isPending}
+                min="0"
+                step="0.01"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={isEdit ? "edit-limit-weekly" : "limit-weekly"}>周消费上限 (USD)</Label>
+              <Input
+                id={isEdit ? "edit-limit-weekly" : "limit-weekly"}
+                type="number"
+                value={limitWeeklyUsd?.toString() ?? ""}
+                onChange={(e) => setLimitWeeklyUsd(validateNumericField(e.target.value))}
+                placeholder="留空表示无限制"
+                disabled={isPending}
+                min="0"
+                step="0.01"
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor={isEdit ? "edit-cc" : "cc"}>并发连接数</Label>
-            <Input
-              id={isEdit ? "edit-cc" : "cc"}
-              type="number"
-              value={cc?.toString() ?? ""}
-              onChange={(e) => setCc(validateNumericField(e.target.value))}
-              placeholder="例如: 10，留空表示无限制"
-              disabled={isPending}
-              min="1"
-            />
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor={isEdit ? "edit-limit-monthly" : "limit-monthly"}>月消费上限 (USD)</Label>
+              <Input
+                id={isEdit ? "edit-limit-monthly" : "limit-monthly"}
+                type="number"
+                value={limitMonthlyUsd?.toString() ?? ""}
+                onChange={(e) => setLimitMonthlyUsd(validateNumericField(e.target.value))}
+                placeholder="留空表示无限制"
+                disabled={isPending}
+                min="0"
+                step="0.01"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={isEdit ? "edit-limit-concurrent" : "limit-concurrent"}>并发 Session 上限</Label>
+              <Input
+                id={isEdit ? "edit-limit-concurrent" : "limit-concurrent"}
+                type="number"
+                value={limitConcurrentSessions?.toString() ?? ""}
+                onChange={(e) => setLimitConcurrentSessions(validateNumericField(e.target.value))}
+                placeholder="0 表示无限制"
+                disabled={isPending}
+                min="0"
+                step="1"
+              />
+            </div>
           </div>
         </div>
 
