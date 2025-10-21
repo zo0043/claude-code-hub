@@ -46,14 +46,14 @@ src/
 │   ├── config/                   # 环境变量配置和验证
 │   ├── utils/                    # 通用工具 (成本计算、货币等)
 │   └── auth.ts                   # 认证逻辑
-├── components/                   # 
+├── components/                   # UI 组件
 │   ├── ui/                       # shadcn ui安装的组件目录，此目录禁止修改和删除。只能使用 shadcn ui cli 进行添加和更新。
-│   └── cutstoms/*                # 自定义的组件，一般用于多个页面或者 layout 共用组件
+│   └── customs/*                 # 自定义的组件，一般用于多个页面或者 layout 共用组件
 └── types/                        # TypeScript 类型定义
 ```
 
 > 每个 `page` 的目录下都可以有 `_components` 目录，用于存储当前 `page` 下封装的组件。
-> 如果有多个页面或者 layout 使用，则应该放在 `src/app/components/customs/` 目录下，并且根据模块划分不同文件夹。
+> 如果有多个页面或者 layout 使用，则应该放在 `src/components/customs/` 目录下，并且根据模块划分不同文件夹。
 
 
 
@@ -63,13 +63,14 @@ src/
 
 1. **ProxySession** - 会话上下文管理
 2. **ProxyAuthenticator** - API Key 认证和权限验证
-3. **ProxyProviderResolver** - 智能供应商选择
+3. **ProxyRateLimitGuard** - 限流检查（金额限制、并发 Session 限制）
+4. **ProxyProviderResolver** - 智能供应商选择
    - 支持会话复用（连续对话使用同一供应商）
    - 加权随机负载均衡
-4. **ProxyMessageService** - 消息上下文处理
-5. **ProxyForwarder** - 转发请求到上游供应商
-6. **ProxyResponseHandler** - 处理响应（支持 SSE 流式）
-7. **ProxyErrorHandler** - 统一错误处理
+5. **ProxyMessageService** - 消息上下文处理
+6. **ProxyForwarder** - 转发请求到上游供应商
+7. **ProxyResponseHandler** - 处理响应（支持 SSE 流式）
+8. **ProxyErrorHandler** - 统一错误处理
 
 ### Codex 支持架构
 

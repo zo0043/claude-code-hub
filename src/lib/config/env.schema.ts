@@ -7,6 +7,11 @@ export const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   DSN: z.string().url('数据库URL格式无效').optional(),
   ADMIN_TOKEN: z.string().min(1, '管理员令牌不能为空').optional(),
+  AUTO_MIGRATE: z.coerce.boolean().default(true),
+  PORT: z.coerce.number().default(23000),
+  REDIS_URL: z.string().optional(),
+  ENABLE_RATE_LIMIT: z.coerce.boolean().default(true),
+  SESSION_TTL: z.coerce.number().default(300),
   DEBUG_MODE: z.coerce.boolean().default(false),
 });
 

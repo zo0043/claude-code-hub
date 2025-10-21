@@ -14,9 +14,9 @@
 
 ## PostgreSQL 数据目录说明
 
-为了避免权限问题,PostgreSQL 配置了 `PGDATA=/var/lib/postgresql/data/pgdata`:
-- 容器挂载点: `/var/lib/postgresql/data` → `./data/postgres`
-- 实际数据目录: `/var/lib/postgresql/data/pgdata` → `./data/postgres/pgdata`
+为了避免权限问题,PostgreSQL 配置了 `PGDATA=/data/pgdata`:
+- 容器挂载点: `/data` → `./data/postgres`
+- 实际数据目录: `/data/pgdata` → `./data/postgres/pgdata`
 
 这样 PostgreSQL 可以在挂载点内创建所需的子目录结构。
 
@@ -27,7 +27,7 @@
 **原因**: PostgreSQL 容器需要在挂载点内创建 pgdata 子目录
 
 **解决方案**:
-1. 确保 docker-compose 中包含 `PGDATA: /var/lib/postgresql/data/pgdata`
+1. 确保 docker-compose 中包含 `PGDATA: /data/pgdata`
 2. 清空 data/postgres 目录并重启:
    ```bash
    docker compose down

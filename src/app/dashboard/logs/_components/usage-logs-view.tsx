@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getUsageLogs } from "@/actions/usage-logs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { RefreshCw, Pause, Play } from "lucide-react";
 import { UsageLogsFilters } from "./usage-logs-filters";
 import { UsageLogsTable } from "./usage-logs-table";
 import type { UsageLogsResult } from "@/repository/usage-logs";
@@ -28,6 +30,8 @@ export function UsageLogsView({
   const [isPending, startTransition] = useTransition();
   const [data, setData] = useState<UsageLogsResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isAutoRefresh, setIsAutoRefresh] = useState(true);
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
   // 从 URL 参数解析筛选条件
   const filters: {
@@ -50,10 +54,19 @@ export function UsageLogsView({
     page: searchParams.page ? parseInt(searchParams.page as string) : 1,
   };
 
+  // 使用 ref 来存储最新的值,避免闭包陷阱
+  const isPendingRef = useRef(isPending);
+  const filtersRef = useRef(filters);
+
+  isPendingRef.current = isPending;
+
+  // 更新 filtersRef
+  filtersRef.current = filters;
+
   // 加载数据
   const loadData = async () => {
     startTransition(async () => {
-      const result = await getUsageLogs(filters);
+      const result = await getUsageLogs(filtersRef.current);
       if (result.ok && result.data) {
         setData(result.data);
         setError(null);
@@ -64,10 +77,30 @@ export function UsageLogsView({
     });
   };
 
+  // 手动刷新
+  const handleManualRefresh = async () => {
+    setIsManualRefreshing(true);
+    await loadData();
+    setTimeout(() => setIsManualRefreshing(false), 500);
+  };
+
   // 初始加载
   useEffect(() => {
     loadData();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 自动轮询
+  useEffect(() => {
+    if (!isAutoRefresh) return;
+
+    const intervalId = setInterval(() => {
+      // 如果正在加载,跳过本次轮询
+      if (isPendingRef.current) return;
+      loadData();
+    }, 10000); // 10 秒间隔
+
+    return () => clearInterval(intervalId);
+  }, [isAutoRefresh]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 处理筛选条件变更
   const handleFilterChange = (newFilters: Omit<typeof filters, 'page'>) => {
@@ -145,7 +178,44 @@ export function UsageLogsView({
       {/* 数据表格 */}
       <Card>
         <CardHeader>
-          <CardTitle>使用记录</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>使用记录</CardTitle>
+            <div className="flex items-center gap-2">
+              {/* 手动刷新按钮 */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleManualRefresh}
+                disabled={isPending}
+                className="gap-2"
+              >
+                <RefreshCw
+                  className={`h-4 w-4 ${isManualRefreshing ? 'animate-spin' : ''}`}
+                />
+                刷新
+              </Button>
+
+              {/* 自动刷新开关 */}
+              <Button
+                variant={isAutoRefresh ? "default" : "outline"}
+                size="sm"
+                onClick={() => setIsAutoRefresh(!isAutoRefresh)}
+                className="gap-2"
+              >
+                {isAutoRefresh ? (
+                  <>
+                    <Pause className="h-4 w-4" />
+                    停止自动刷新
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4" />
+                    开启自动刷新
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {error ? (

@@ -74,17 +74,16 @@ services:
       - "35432:5432"
     env_file:
       - ./.env
-      - ./.env.local
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DB: ${DB_NAME:-claude_code_hub}
-      # 指定 PostgreSQL 数据目录为挂载点的子目录,避免权限问题
-      PGDATA: /var/lib/postgresql/data/pgdata
+      # 使用自定义数据目录
+      PGDATA: /data/pgdata
     volumes:
       # 持久化数据库数据到本地 ./data/postgres 目录
-      # 重建容器不会丢失数据,可直接备份此目录
-      - ./data/postgres:/var/lib/postgresql/data
+      # 挂载到 /data 而不是 /var/lib/postgresql/data 避免权限冲突
+      - ./data/postgres:/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-claude_code_hub}"]
       interval: 5s

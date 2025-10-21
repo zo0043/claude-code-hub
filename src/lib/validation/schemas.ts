@@ -140,15 +140,25 @@ export const CreateProviderSchema = z.object({
     .min(0, "优先级不能为负数")
     .optional()
     .default(0),
-  cost_per_mtok: z
+  cost_multiplier: z
     .coerce
     .number()
-    .min(0, "成本不能为负数")
-    .nullable()
-    .optional(),
+    .min(0, "成本倍率不能为负数")
+    .optional()
+    .default(1.0),
   group_tag: z
     .string()
     .max(50, "分组标签不能超过50个字符")
+    .nullable()
+    .optional(),
+  // Codex 支持:供应商类型和模型重定向
+  provider_type: z
+    .string()
+    .max(20, "供应商类型不能超过20个字符")
+    .optional()
+    .default('claude'),
+  model_redirects: z
+    .record(z.string(), z.string())
     .nullable()
     .optional(),
   // 新增：金额限流配置
@@ -208,15 +218,23 @@ export const UpdateProviderSchema = z
       .int("优先级必须是整数")
       .min(0, "优先级不能为负数")
       .optional(),
-    cost_per_mtok: z
+    cost_multiplier: z
       .coerce
       .number()
-      .min(0, "成本不能为负数")
-      .nullable()
+      .min(0, "成本倍率不能为负数")
       .optional(),
     group_tag: z
       .string()
       .max(50, "分组标签不能超过50个字符")
+      .nullable()
+      .optional(),
+    // Codex 支持:供应商类型和模型重定向
+    provider_type: z
+      .string()
+      .max(20, "供应商类型不能超过20个字符")
+      .optional(),
+    model_redirects: z
+      .record(z.string(), z.string())
       .nullable()
       .optional(),
     // 新增：金额限流配置
