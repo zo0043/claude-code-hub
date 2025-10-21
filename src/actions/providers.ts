@@ -49,6 +49,17 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
     const result = providers.map(provider => {
       const stats = statsMap.get(provider.id);
 
+      // 处理 last_call_time: 可能是 Date 对象,也可能是字符串
+      let lastCallTimeStr: string | null = null;
+      if (stats?.last_call_time) {
+        if (stats.last_call_time instanceof Date) {
+          lastCallTimeStr = stats.last_call_time.toISOString();
+        } else if (typeof stats.last_call_time === 'string') {
+          // 原生 SQL 查询返回的是字符串,直接使用
+          lastCallTimeStr = stats.last_call_time;
+        }
+      }
+
       return {
         id: provider.id,
         name: provider.name,
@@ -74,7 +85,7 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
         // 统计数据（可能为空）
         todayTotalCostUsd: stats?.today_cost,
         todayCallCount: stats?.today_calls ?? 0,
-        lastCallTime: stats?.last_call_time?.toISOString() ?? null,
+        lastCallTime: lastCallTimeStr,
         lastCallModel: stats?.last_call_model ?? null,
       };
     });
