@@ -49,3 +49,8 @@ next-env.d.ts
 logs/
 .idea/
 .specify
+
+# docker volumes data
+/data/*
+!/data/.gitkeep
+!/data/README.md

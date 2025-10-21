@@ -152,6 +152,10 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
             toast.error(res.error || '添加服务商失败');
             return;
           }
+          // ✅ 添加成功提示
+          toast.success('添加服务商成功', {
+            description: `服务商 "${name.trim()}" 已添加`
+          });
           // 重置表单（仅新增）
           setName("");
           setUrl("");

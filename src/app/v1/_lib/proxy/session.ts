@@ -213,8 +213,8 @@ async function parseRequestBody(c: Context): Promise<RequestBodyResult> {
 
   try {
     const parsedMessage = JSON.parse(requestBodyText) as Record<string, unknown>;
-    requestMessage = optimizeRequestMessage(parsedMessage);
-    requestBodyLog = JSON.stringify(parsedMessage, null, 2);
+    requestMessage = parsedMessage;  // 保留原始数据用于业务逻辑
+    requestBodyLog = JSON.stringify(optimizeRequestMessage(parsedMessage), null, 2);  // 仅在日志中优化
   } catch {
     requestMessage = { raw: requestBodyText };
     requestBodyLog = requestBodyText;

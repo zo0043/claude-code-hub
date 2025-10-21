@@ -8,12 +8,16 @@ import { getSession } from "@/lib/auth";
 import { CreateProviderSchema, UpdateProviderSchema } from "@/lib/validation/schemas";
 import type { ActionResult } from "./types";
 import { getAllHealthStatus, resetCircuit } from "@/lib/circuit-breaker";
+import { debugLog } from "@/lib/utils/debug-logger";
 
 // 获取服务商数据
 export async function getProviders(): Promise<ProviderDisplay[]> {
   try {
     const session = await getSession();
+    debugLog('getProviders:session', { hasSession: !!session, role: session?.user.role });
+
     if (!session || session.user.role !== 'admin') {
+      debugLog('getProviders:unauthorized', { hasSession: !!session, role: session?.user.role });
       return [];
     }
 
@@ -21,17 +25,28 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
     const [providers, statistics] = await Promise.all([
       findProviderList(),
       getProviderStatistics().catch((error) => {
+        debugLog('getProviders:statistics_error', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
         console.error('获取供应商统计数据失败:', error);
         return []; // 统计查询失败时返回空数组，不影响供应商列表显示
       }),
     ]);
+
+    debugLog('getProviders:raw_data', {
+      providerCount: providers.length,
+      statisticsCount: statistics.length,
+      providerIds: providers.map(p => p.id)
+    });
 
     // 将统计数据按 provider_id 索引
     const statsMap = new Map(
       statistics.map(stat => [stat.id, stat])
     );
 
-    return providers.map(provider => {
+    const result = providers.map(provider => {
       const stats = statsMap.get(provider.id);
 
       return {
@@ -63,7 +78,14 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
         lastCallModel: stats?.last_call_model ?? null,
       };
     });
+
+    debugLog('getProviders:final_result', { count: result.length });
+    return result;
   } catch (error) {
+    debugLog('getProviders:catch_error', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     console.error("获取服务商数据失败:", error);
     return [];
   }
@@ -96,7 +118,11 @@ export async function addProvider(data: {
       return { ok: false, error: '无权限执行此操作' };
     }
 
+    debugLog('addProvider:input', { name: data.name, url: data.url, provider_type: data.provider_type });
+
     const validated = CreateProviderSchema.parse(data);
+    debugLog('addProvider:validated', { name: validated.name });
+
     const payload = {
       ...validated,
       limit_5h_usd: validated.limit_5h_usd ?? null,
@@ -108,10 +134,19 @@ export async function addProvider(data: {
       rpd: validated.rpd ?? null,
       cc: validated.cc ?? null,
     };
+
     await createProvider(payload);
+    debugLog('addProvider:created_success', { name: validated.name });
+
     revalidatePath('/settings/providers');
+    debugLog('addProvider:revalidated', { path: '/settings/providers' });
+
     return { ok: true };
   } catch (error) {
+    debugLog('addProvider:error', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     console.error('创建服务商失败:', error);
     const message = error instanceof Error ? error.message : '创建服务商失败';
     return { ok: false, error: message };

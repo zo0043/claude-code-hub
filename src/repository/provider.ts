@@ -5,6 +5,7 @@ import { providers } from "@/drizzle/schema";
 import { eq, isNull, and, desc, sql } from "drizzle-orm";
 import type { Provider, CreateProviderData, UpdateProviderData } from "@/types/provider";
 import { toProvider } from "./_shared/transformers";
+import { debugLog } from "@/lib/utils/debug-logger";
 
 export async function createProvider(providerData: CreateProviderData): Promise<Provider> {
   const dbData = {
@@ -87,6 +88,11 @@ export async function findProviderList(limit: number = 50, offset: number = 0): 
     .orderBy(desc(providers.createdAt))
     .limit(limit)
     .offset(offset);
+
+  debugLog('findProviderList:query_result', {
+    count: result.length,
+    ids: result.map(r => r.id)
+  });
 
   return result.map(toProvider);
 }
@@ -208,48 +214,63 @@ export async function getProviderStatistics(): Promise<
     last_call_model: string | null;
   }>
 > {
-  const query = sql`
-    WITH provider_stats AS (
+  try {
+    const query = sql`
+      WITH provider_stats AS (
+        SELECT
+          p.id,
+          COALESCE(
+            SUM(CASE WHEN DATE(mr.created_at) = CURRENT_DATE THEN mr.cost_usd ELSE 0 END),
+            0
+          ) AS today_cost,
+          COUNT(CASE WHEN DATE(mr.created_at) = CURRENT_DATE THEN 1 END)::integer AS today_calls
+        FROM providers p
+        LEFT JOIN message_request mr ON p.id = mr.provider_id
+          AND mr.deleted_at IS NULL
+        WHERE p.deleted_at IS NULL
+        GROUP BY p.id
+      ),
+      latest_call AS (
+        SELECT DISTINCT ON (provider_id)
+          provider_id,
+          created_at AS last_call_time,
+          model AS last_call_model
+        FROM message_request
+        WHERE deleted_at IS NULL
+        ORDER BY provider_id, created_at DESC
+      )
       SELECT
-        p.id,
-        COALESCE(
-          SUM(CASE WHEN DATE(mr.created_at) = CURRENT_DATE THEN mr.cost_usd ELSE 0 END),
-          0
-        ) AS today_cost,
-        COUNT(CASE WHEN DATE(mr.created_at) = CURRENT_DATE THEN 1 END)::integer AS today_calls
-      FROM providers p
-      LEFT JOIN message_request mr ON p.id = mr.provider_id
-        AND mr.deleted_at IS NULL
-      WHERE p.deleted_at IS NULL
-      GROUP BY p.id
-    ),
-    latest_call AS (
-      SELECT DISTINCT ON (provider_id)
-        provider_id,
-        created_at AS last_call_time,
-        model AS last_call_model
-      FROM message_request
-      WHERE deleted_at IS NULL
-      ORDER BY provider_id, created_at DESC
-    )
-    SELECT
-      ps.id,
-      ps.today_cost,
-      ps.today_calls,
-      lc.last_call_time,
-      lc.last_call_model
-    FROM provider_stats ps
-    LEFT JOIN latest_call lc ON ps.id = lc.provider_id
-    ORDER BY ps.id ASC
-  `;
+        ps.id,
+        ps.today_cost,
+        ps.today_calls,
+        lc.last_call_time,
+        lc.last_call_model
+      FROM provider_stats ps
+      LEFT JOIN latest_call lc ON ps.id = lc.provider_id
+      ORDER BY ps.id ASC
+    `;
 
-  const result = await db.execute(query);
-  // postgres-js 返回的结果需要通过 unknown 进行类型断言
-  return result as unknown as Array<{
-    id: number;
-    today_cost: string;
-    today_calls: number;
-    last_call_time: Date | null;
-    last_call_model: string | null;
-  }>;
+    debugLog('getProviderStatistics:executing_query');
+
+    const result = await db.execute(query);
+
+    debugLog('getProviderStatistics:result', {
+      count: Array.isArray(result) ? result.length : 0
+    });
+
+    // postgres-js 返回的结果需要通过 unknown 进行类型断言
+    return result as unknown as Array<{
+      id: number;
+      today_cost: string;
+      today_calls: number;
+      last_call_time: Date | null;
+      last_call_model: string | null;
+    }>;
+  } catch (error) {
+    debugLog('getProviderStatistics:error', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    throw error;
+  }
 }

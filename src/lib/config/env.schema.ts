@@ -7,6 +7,7 @@ export const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   DSN: z.string().url('数据库URL格式无效').optional(),
   ADMIN_TOKEN: z.string().min(1, '管理员令牌不能为空').optional(),
+  DEBUG_MODE: z.coerce.boolean().default(false),
 });
 
 /**

@@ -26,16 +26,17 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
   const session = await ProxySession.fromContext(c);
 
   try {
-    // ✅ 识别为 OpenAI 格式（用于响应转换）
-    session.setOriginalFormat('openai');
+    const request = session.request.message;
 
-    // ✅ 验证请求格式
-    const openAIRequest = session.request.message as ChatCompletionRequest;
-    if (!openAIRequest.model || !openAIRequest.messages) {
+    // ✅ 格式检测
+    const isOpenAIFormat = 'messages' in request && Array.isArray(request.messages);
+    const isResponseAPIFormat = 'input' in request && Array.isArray(request.input);
+
+    if (!isOpenAIFormat && !isResponseAPIFormat) {
       return new Response(
         JSON.stringify({
           error: {
-            message: 'Invalid request: model and messages are required',
+            message: 'Invalid request: either "messages" (OpenAI format) or "input" (Response API format) is required',
             type: 'invalid_request_error',
             code: 'missing_required_fields'
           }
@@ -44,42 +45,79 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
       );
     }
 
-    console.debug('[ChatCompletions] Request details:', {
-      model: openAIRequest.model,
-      stream: openAIRequest.stream,
-      messageCount: openAIRequest.messages.length
-    });
+    if (isOpenAIFormat) {
+      // ✅ OpenAI 格式 → 转换为 Response API
+      const openAIRequest = request as ChatCompletionRequest;
 
-    // ✅ 转换请求体：OpenAI → Response API
-    try {
-      const responseRequest = RequestTransformer.transform(openAIRequest);
+      if (!openAIRequest.model) {
+        return new Response(
+          JSON.stringify({
+            error: {
+              message: 'Invalid request: model is required',
+              type: 'invalid_request_error',
+              code: 'missing_required_fields'
+            }
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
 
-      console.debug('[ChatCompletions] Transformed to Response API:', {
-        model: responseRequest.model,
-        inputCount: responseRequest.input?.length,
-        hasReasoning: !!responseRequest.reasoning
+      console.debug('[ChatCompletions] OpenAI format detected, transforming...', {
+        model: openAIRequest.model,
+        stream: openAIRequest.stream,
+        messageCount: openAIRequest.messages.length
       });
 
-      // ✅ 更新 session（替换为 Response API 格式）
-      session.request.message = responseRequest as unknown as Record<string, unknown>;
-      session.request.model = responseRequest.model;
+      try {
+        const responseRequest = RequestTransformer.transform(openAIRequest);
 
-      // 重新生成请求 buffer
-      const encoder = new TextEncoder();
-      session.request.buffer = encoder.encode(JSON.stringify(responseRequest)).buffer;
+        console.debug('[ChatCompletions] Transformed to Response API:', {
+          model: responseRequest.model,
+          inputCount: responseRequest.input?.length,
+          hasReasoning: !!responseRequest.reasoning
+        });
 
-    } catch (transformError) {
-      console.error('[ChatCompletions] Request transformation failed:', transformError);
-      return new Response(
-        JSON.stringify({
-          error: {
-            message: 'Failed to transform request format',
-            type: 'invalid_request_error',
-            code: 'transformation_error'
-          }
-        }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+        // ✅ 更新 session（替换为 Response API 格式）
+        session.request.message = responseRequest as unknown as Record<string, unknown>;
+        session.request.model = responseRequest.model;
+
+        // ✅ 标记为 OpenAI 格式（用于响应转换）
+        session.setOriginalFormat('openai');
+
+      } catch (transformError) {
+        console.error('[ChatCompletions] Request transformation failed:', transformError);
+        return new Response(
+          JSON.stringify({
+            error: {
+              message: 'Failed to transform request format',
+              type: 'invalid_request_error',
+              code: 'transformation_error'
+            }
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+    } else if (isResponseAPIFormat) {
+      // ✅ Response API 格式 → 直接透传
+      console.info('[ChatCompletions] Response API format detected, passing through');
+
+      // ✅ 标记为 Response API 格式（响应也用 Response API 格式）
+      session.setOriginalFormat('response');
+
+      // 验证必需字段
+      if (!request.model) {
+        return new Response(
+          JSON.stringify({
+            error: {
+              message: 'Invalid request: model is required',
+              type: 'invalid_request_error',
+              code: 'missing_required_fields'
+            }
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // ✅ 复用现有代理流程

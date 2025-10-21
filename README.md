@@ -80,7 +80,9 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DB: ${DB_NAME:-claude_code_hub}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # 持久化数据库数据到本地 ./data/postgres 目录
+      # 重建容器不会丢失数据,可直接备份此目录
+      - ./data/postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-claude_code_hub}"]
       interval: 5s
@@ -93,7 +95,9 @@ services:
     container_name: claude-code-hub-redis
     restart: unless-stopped
     volumes:
-      - redis_data:/data
+      # 持久化 Redis 数据到本地 ./data/redis 目录
+      # 使用 AOF 持久化模式,确保数据不丢失
+      - ./data/redis:/data
     command: redis-server --appendonly yes
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -112,6 +116,7 @@ services:
         condition: service_started
     env_file:
       - ./.env
+      - ./.env.local
     environment:
       NODE_ENV: production
       PORT: ${APP_PORT:-23000}
@@ -123,11 +128,9 @@ services:
       - "${APP_PORT:-23000}:${APP_PORT:-23000}"
     restart: unless-stopped
 
-volumes:
-  postgres_data:
-    driver: local
-  redis_data:
-    driver: local
+# volumes 配置已移除,改用本地目录映射
+# 数据存储在 ./data/postgres 和 ./data/redis 目录
+# 重建容器时数据不会丢失,可直接备份 ./data 目录
 ```
 
 </details>
@@ -219,7 +222,9 @@ docker compose exec redis redis-cli --scan         # 查看所有 key
 docker compose exec redis redis-cli FLUSHALL       # ⚠️ 清空所有 Redis 数据
 
 # 完全清理（⚠️ 会删除所有数据）
-docker compose down -v
+docker compose down        # 停止并删除容器
+rm -rf ./data/             # 删除本地数据目录
+docker compose up -d       # 重新启动（全新环境）
 ```
 
 ## 📖 使用指南
@@ -398,7 +403,8 @@ docker compose logs -f postgres
 
 4. 如果持续失败，可以重置数据库（⚠️ 会丢失数据）：
    ```bash
-   docker compose down -v
+   docker compose down
+   rm -rf ./data/postgres
    docker compose up -d
    ```
 
@@ -435,20 +441,45 @@ server {
 <details>
 <summary><b>❓ 如何备份和恢复数据？</b></summary>
 
+**数据持久化说明**：
+- 数据库和 Redis 数据存储在 `./data/` 目录
+- `./data/postgres/` - PostgreSQL 数据
+- `./data/redis/` - Redis 持久化数据
+
+**方式 1：直接备份数据目录**（推荐）：
+```bash
+# 备份整个数据目录
+tar -czf backup_$(date +%Y%m%d_%H%M%S).tar.gz ./data/
+
+# 恢复数据
+tar -xzf backup_20250121_120000.tar.gz
+docker compose restart
+```
+
+**方式 2：SQL 备份**（传统方式）：
+```bash
+# 手动备份
+docker exec claude-code-hub-db pg_dump -U postgres claude_code_hub > backup.sql
+
+# 恢复数据
+docker exec -i claude-code-hub-db psql -U postgres claude_code_hub < backup.sql
+```
+
 **自动备份**（推荐）：
 ```bash
 # 添加到 crontab（每天凌晨 2 点备份）
-0 2 * * * docker exec claude-code-hub-db pg_dump -U postgres claude_code_hub | gzip > /backup/claude_$(date +\%Y\%m\%d).sql.gz
+0 2 * * * cd /path/to/claude-code-hub && tar -czf /backup/data_$(date +\%Y\%m\%d).tar.gz ./data/
 ```
 
-**手动备份**：
+**迁移到新服务器**：
 ```bash
-docker exec claude-code-hub-db pg_dump -U postgres claude_code_hub > backup.sql
-```
+# 在旧服务器上
+docker compose down
+tar -czf backup.tar.gz ./data/
 
-**恢复数据**：
-```bash
-docker exec -i claude-code-hub-db psql -U postgres claude_code_hub < backup.sql
+# 在新服务器上
+tar -xzf backup.tar.gz
+docker compose up -d
 ```
 
 </details>
@@ -622,7 +653,7 @@ docker compose restart redis
 **完全清空并重建**（⚠️ 会丢失所有 Redis 数据）：
 ```bash
 docker compose stop redis
-docker volume rm claude-code-hub_redis_data
+rm -rf ./data/redis
 docker compose up -d redis
 ```
 
@@ -638,27 +669,31 @@ docker compose up -d redis
    - 配置：`redis-server --appendonly yes`
    - 重启后自动恢复数据
 
-2. **Docker Volume 持久化**：
-   - 数据存储在 `redis_data` volume
+2. **本地目录持久化**：
+   - 数据存储在 `./data/redis` 目录
    - 即使删除容器，数据仍然保留
-   - 查看 volume：`docker volume ls | grep redis`
+   - 可直接复制此目录进行备份或迁移
 
 **数据恢复**：
 - 正常重启：数据自动恢复
-- 迁移到新机器：复制 `/var/lib/docker/volumes/claude-code-hub_redis_data` 目录
+- 迁移到新机器：复制 `./data/redis` 目录到新服务器
 
 **备份 Redis 数据**：
 ```bash
-# 手动触发保存
+# 方式 1: 直接复制数据目录（推荐）
+cp -r ./data/redis ./redis_backup_$(date +%Y%m%d)
+
+# 方式 2: 手动触发保存
 docker compose exec redis redis-cli BGSAVE
 
-# 导出 AOF 文件
+# 方式 3: 导出 AOF 文件
 docker cp claude-code-hub-redis:/data/appendonly.aof ./redis_backup_$(date +%Y%m%d).aof
 ```
 
 **注意事项**：
-- ⚠️ `docker compose down -v` 会删除 volume，包括 Redis 数据
-- ✅ `docker compose down` 或 `docker compose stop` 不会删除数据
+- ⚠️ `docker compose down -v` 会删除容器，但不会删除 `./data` 目录
+- ✅ `docker compose down` 或 `docker compose stop` 都是安全的，数据不会丢失
+- ✅ 重建容器时（`docker compose up -d --force-recreate`），数据会自动恢复
 
 </details>
 
