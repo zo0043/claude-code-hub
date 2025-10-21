@@ -1,7 +1,8 @@
 import { HeaderProcessor } from "../headers";
 import { buildProxyUrl } from "../url";
-import { recordFailure, recordSuccess } from "@/lib/circuit-breaker";
+import { recordFailure, recordSuccess, getCircuitState } from "@/lib/circuit-breaker";
 import { ProxyProviderResolver } from "./provider-selector";
+import { ProxyError } from "./errors";
 import type { ProxySession } from "./session";
 
 const MAX_RETRY_ATTEMPTS = 3;
@@ -15,12 +16,19 @@ export class ProxyForwarder {
     let lastError: Error | null = null;
     let attemptCount = 0;
     let currentProvider = session.provider;
+    const failedProviderIds: number[] = [];  // ✅ 记录已失败的供应商ID
 
     // 智能重试循环
     while (attemptCount <= MAX_RETRY_ATTEMPTS) {
       try {
-        // 记录尝试的供应商到决策链
-        session.addProviderToChain(currentProvider);
+        // ✅ 重试时记录决策链（初始选择在 ProxyProviderResolver.ensure 中已记录）
+        if (attemptCount > 0) {
+          session.addProviderToChain(currentProvider, {
+            reason: 'retry_attempt',
+            circuitState: getCircuitState(currentProvider.id),
+            attemptNumber: attemptCount + 1,
+          });
+        }
 
         const response = await ProxyForwarder.doForward(session, currentProvider);
 
@@ -34,6 +42,7 @@ export class ProxyForwarder {
       } catch (error) {
         attemptCount++;
         lastError = error as Error;
+        failedProviderIds.push(currentProvider.id);  // ✅ 记录失败的供应商
 
         // 记录失败
         recordFailure(currentProvider.id, lastError);
@@ -44,7 +53,10 @@ export class ProxyForwarder {
 
         // 如果还有重试机会，选择新的供应商
         if (attemptCount <= MAX_RETRY_ATTEMPTS) {
-          const alternativeProvider = await ProxyForwarder.selectAlternative(session, currentProvider.id);
+          const alternativeProvider = await ProxyForwarder.selectAlternative(
+            session,
+            failedProviderIds  // ✅ 传入所有已失败的供应商ID列表
+          );
 
           if (!alternativeProvider) {
             console.error(`[ProxyForwarder] No alternative provider available, stopping retries`);
@@ -60,8 +72,13 @@ export class ProxyForwarder {
     }
 
     // 所有重试都失败
+    // 如果最后一个错误是 ProxyError，提取详细信息（包含上游响应）
+    const errorDetails = lastError instanceof ProxyError
+      ? lastError.getDetailedErrorMessage()
+      : (lastError?.message || 'Unknown error');
+
     throw new Error(
-      `All providers failed after ${attemptCount} attempts. Last error: ${lastError?.message || 'Unknown error'}`
+      `All providers failed after ${attemptCount} attempts. Last error: ${errorDetails}`
     );
   }
 
@@ -87,39 +104,47 @@ export class ProxyForwarder {
 
     const response = await fetch(proxyUrl, init);
 
-    // 检查 HTTP 错误状态（5xx 视为失败，触发重试）
-    if (response.status >= 500) {
-      throw new Error(`Provider returned ${response.status}: ${response.statusText}`);
+    // 检查 HTTP 错误状态（4xx/5xx 均视为失败，触发重试）
+    // 注意：用户要求所有 4xx 都重试，包括 401、403、429 等
+    if (!response.ok) {
+      throw await ProxyError.fromUpstreamResponse(response, {
+        id: provider.id,
+        name: provider.name
+      });
     }
 
     return response;
   }
 
   /**
-   * 选择替代供应商（排除已失败的）
+   * 选择替代供应商（排除所有已失败的供应商）
    */
   private static async selectAlternative(
     session: ProxySession,
-    excludeProviderId: number
+    excludeProviderIds: number[]  // ✅ 改为数组，排除所有失败的供应商
   ): Promise<typeof session.provider | null> {
-    // 临时清除当前供应商，强制重新选择
-    session.setProvider(null);
+    // ✅ 使用公开的选择方法，传入排除列表
+    const alternativeProvider = await ProxyProviderResolver.pickRandomProviderWithExclusion(
+      session,
+      excludeProviderIds
+    );
 
-    // 使用供应商选择器重新选择（会自动过滤掉熔断的供应商）
-    const result = await ProxyProviderResolver.ensure(session);
-
-    // 如果返回了错误响应，说明没有可用供应商
-    if (result) {
+    if (!alternativeProvider) {
+      console.warn(
+        `[ProxyForwarder] No alternative provider available (excluded: ${excludeProviderIds.join(', ')})`
+      );
       return null;
     }
 
-    // 确保不是同一个供应商
-    if (session.provider?.id === excludeProviderId) {
-      console.warn(`[ProxyForwarder] Provider selector returned the same failed provider ${excludeProviderId}`);
+    // ✅ 确保不是已失败的供应商之一
+    if (excludeProviderIds.includes(alternativeProvider.id)) {
+      console.error(
+        `[ProxyForwarder] Selector returned excluded provider ${alternativeProvider.id}, this should not happen`
+      );
       return null;
     }
 
-    return session.provider;
+    return alternativeProvider;
   }
 
   private static buildHeaders(session: ProxySession, provider: NonNullable<typeof session.provider>): Headers {

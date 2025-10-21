@@ -107,15 +107,40 @@ export class ProxySession {
   }
 
   /**
-   * 添加供应商到决策链
+   * 添加供应商到决策链（带详细元数据）
    */
-  addProviderToChain(provider: Provider): void {
-    // 避免重复添加同一个供应商
-    if (this.providerChain.length === 0 || this.providerChain[this.providerChain.length - 1].id !== provider.id) {
-      this.providerChain.push({
-        id: provider.id,
-        name: provider.name
-      });
+  addProviderToChain(
+    provider: Provider,
+    metadata?: {
+      reason?: 'initial_selection' | 'retry_attempt' | 'retry_fallback' | 'reuse';
+      selectionMethod?: 'reuse' | 'random' | 'group_filter' | 'fallback';
+      circuitState?: 'closed' | 'open' | 'half-open';
+      attemptNumber?: number;
+    }
+  ): void {
+    const item: ProviderChainItem = {
+      id: provider.id,
+      name: provider.name,
+      // 元数据
+      reason: metadata?.reason,
+      selectionMethod: metadata?.selectionMethod,
+      priority: provider.priority,
+      weight: provider.weight,
+      costMultiplier: provider.costMultiplier,
+      groupTag: provider.groupTag,
+      circuitState: metadata?.circuitState,
+      timestamp: Date.now(),
+      attemptNumber: metadata?.attemptNumber,
+    };
+
+    // 避免重复添加同一个供应商（除非是重试，即有 attemptNumber）
+    const shouldAdd =
+      this.providerChain.length === 0 ||
+      this.providerChain[this.providerChain.length - 1].id !== provider.id ||
+      metadata?.attemptNumber !== undefined;
+
+    if (shouldAdd) {
+      this.providerChain.push(item);
     }
   }
 

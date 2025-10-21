@@ -2,28 +2,54 @@ import type { Provider } from "@/types/provider";
 import { findProviderList, findProviderById } from "@/repository/provider";
 import { findLatestMessageRequestByKey } from "@/repository/message";
 import { RateLimitService } from "@/lib/rate-limit";
-import { isCircuitOpen } from "@/lib/circuit-breaker";
+import { isCircuitOpen, getCircuitState } from "@/lib/circuit-breaker";
 import { ProxyLogger } from "./logger";
 import { ProxyResponses } from "./responses";
 import type { ProxySession } from "./session";
 
 export class ProxyProviderResolver {
   static async ensure(session: ProxySession): Promise<Response | null> {
-    session.setProvider(await ProxyProviderResolver.findReusable(session));
+    // 标记选择方法
+    let selectionMethod: 'reuse' | 'random' | 'group_filter' | 'fallback' = 'random';
 
+    // 尝试复用之前的供应商
+    const reusedProvider = await ProxyProviderResolver.findReusable(session);
+    if (reusedProvider) {
+      session.setProvider(reusedProvider);
+      selectionMethod = 'reuse';
+    }
+
+    // 如果没有可复用的，随机选择
     if (!session.provider) {
       session.setProvider(await ProxyProviderResolver.pickRandomProvider(session));
     }
 
+    // ✅ 关键修复：选定供应商后立即记录到决策链
     if (session.provider) {
+      session.addProviderToChain(session.provider, {
+        reason: 'initial_selection',
+        selectionMethod,
+        circuitState: getCircuitState(session.provider.id),
+      });
       return null;
     }
 
+    // 无可用供应商
     const status = 503;
     const message = "暂无可用的上游服务";
-    console.error("No available providers");
+    console.error("[ProviderSelector] No available providers");
     await ProxyLogger.logFailure(session, new Error(message));
     return ProxyResponses.buildError(status, message);
+  }
+
+  /**
+   * ✅ 公开方法：选择供应商（支持排除列表，用于重试场景）
+   */
+  static async pickRandomProviderWithExclusion(
+    session: ProxySession,
+    excludeIds: number[]
+  ): Promise<Provider | null> {
+    return this.pickRandomProvider(session, excludeIds);
   }
 
   private static async findReusable(session: ProxySession): Promise<Provider | null> {
@@ -49,16 +75,23 @@ export class ProxyProviderResolver {
     return provider;
   }
 
-  private static async pickRandomProvider(session?: ProxySession): Promise<Provider | null> {
+  private static async pickRandomProvider(
+    session?: ProxySession,
+    excludeIds: number[] = []  // ✅ 新增：排除已失败的供应商
+  ): Promise<Provider | null> {
     const allProviders = await findProviderList();
 
-    const enabledProviders = allProviders.filter((provider) => provider.isEnabled);
+    // Step 0: 第一层过滤 - 排除已禁用和黑名单中的供应商
+    const enabledProviders = allProviders.filter(
+      (provider) => provider.isEnabled && !excludeIds.includes(provider.id)
+    );
 
     if (enabledProviders.length === 0) {
+      console.warn('[ProviderSelector] No enabled providers after exclusion filter');
       return null;
     }
 
-    // Step 0: 用户分组过滤（如果用户指定了分组）
+    // Step 1: 用户分组过滤（如果用户指定了分组）
     let candidateProviders = enabledProviders;
     const userGroup = session?.authState?.user?.providerGroup;
     if (userGroup) {
@@ -78,8 +111,25 @@ export class ProxyProviderResolver {
       }
     }
 
-    // Step 1: 过滤超限供应商（健康度过滤）
+    // Step 2: 过滤超限供应商（健康度过滤）
     const healthyProviders = await this.filterByLimits(candidateProviders);
+
+    // ✅ 记录过滤掉的供应商（熔断或限流）
+    const filteredOut = candidateProviders.filter(
+      p => !healthyProviders.find(hp => hp.id === p.id)
+    );
+    if (filteredOut.length > 0) {
+      const reasons = await Promise.all(
+        filteredOut.map(async p => {
+          if (isCircuitOpen(p.id)) {
+            const state = getCircuitState(p.id);
+            return `${p.name}(id=${p.id}, circuit=${state})`;
+          }
+          return `${p.name}(id=${p.id}, rate-limited)`;
+        })
+      );
+      console.debug(`[ProviderSelector] Filtered out: ${reasons.join(', ')}`);
+    }
 
     if (healthyProviders.length === 0) {
       console.warn('[ProviderSelector] All providers rate limited, falling back to random');
@@ -87,11 +137,28 @@ export class ProxyProviderResolver {
       return this.weightedRandom(candidateProviders);
     }
 
-    // Step 2: 优先级分层（只选择最高优先级的供应商）
+    // Step 3: 优先级分层（只选择最高优先级的供应商）
     const topPriorityProviders = this.selectTopPriority(healthyProviders);
 
-    // Step 3: 成本排序 + 加权选择
-    return this.selectOptimal(topPriorityProviders);
+    // Step 4: 成本排序 + 加权选择
+    const selected = this.selectOptimal(topPriorityProviders);
+
+    // ✅ 详细的选择日志
+    const minPriority = Math.min(...healthyProviders.map(p => p.priority || 0));
+    console.info(`[ProviderSelector] Selection Decision:
+  ├─ Total providers: ${allProviders.length}
+  ├─ Enabled: ${enabledProviders.length}
+  ├─ Excluded IDs: ${excludeIds.length > 0 ? excludeIds.join(', ') : 'none'}
+  ├─ User group filter: '${userGroup || 'none'}'
+  ├─ After group filter: ${candidateProviders.length} (${candidateProviders.map(p => p.name).join(', ')})
+  ├─ After health/circuit filter: ${healthyProviders.length}
+  ${filteredOut.length > 0 ? `│  └─ Filtered: ${filteredOut.map(p => p.name).join(', ')}` : ''}
+  ├─ Top priority level: ${minPriority}
+  ├─ Top priority candidates: ${topPriorityProviders.map(p => `${p.name}(w=${p.weight}, cost=${p.costMultiplier}x)`).join(', ')}
+  └─ ✓ Selected: ${selected.name} (id=${selected.id}, priority=${selected.priority}, weight=${selected.weight}, cost=${selected.costMultiplier}x, circuit=${getCircuitState(selected.id)})
+    `);
+
+    return selected;
   }
 
   /**
@@ -164,10 +231,10 @@ export class ProxyProviderResolver {
       return providers[0];
     }
 
-    // 按成本排序（便宜的在前，null 成本视为 0）
+    // 按成本倍率排序（倍率低的在前）
     const sorted = [...providers].sort((a, b) => {
-      const costA = a.costPerMtok ?? 0;
-      const costB = b.costPerMtok ?? 0;
+      const costA = a.costMultiplier;
+      const costB = b.costMultiplier;
       return costA - costB;
     });
 

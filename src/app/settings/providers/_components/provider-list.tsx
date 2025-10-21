@@ -7,9 +7,16 @@ import { ProviderListItem } from "./provider-list-item";
 interface ProviderListProps {
   providers: ProviderDisplay[];
   currentUser?: User;
+  healthStatus: Record<number, {
+    circuitState: 'closed' | 'open' | 'half-open';
+    failureCount: number;
+    lastFailureTime: number | null;
+    circuitOpenUntil: number | null;
+    recoveryMinutes: number | null;
+  }>;
 }
 
-export function ProviderList({ providers, currentUser }: ProviderListProps) {
+export function ProviderList({ providers, currentUser, healthStatus }: ProviderListProps) {
   if (providers.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4">
@@ -27,7 +34,12 @@ export function ProviderList({ providers, currentUser }: ProviderListProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
       {providers.map((provider) => (
-        <ProviderListItem key={provider.id} item={provider} currentUser={currentUser} />
+        <ProviderListItem
+          key={provider.id}
+          item={provider}
+          currentUser={currentUser}
+          healthStatus={healthStatus[provider.id]}
+        />
       ))}
     </div>
   );

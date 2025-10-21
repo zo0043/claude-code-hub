@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { Edit, Globe, Key } from "lucide-react";
 import type { ProviderDisplay } from "@/types/provider";
 import type { User } from "@/types/user";
@@ -16,9 +17,16 @@ import { useProviderEdit } from "./hooks/use-provider-edit";
 interface ProviderListItemProps {
   item: ProviderDisplay;
   currentUser?: User;
+  healthStatus?: {
+    circuitState: 'closed' | 'open' | 'half-open';
+    failureCount: number;
+    lastFailureTime: number | null;
+    circuitOpenUntil: number | null;
+    recoveryMinutes: number | null;
+  };
 }
 
-export function ProviderListItem({ item, currentUser }: ProviderListItemProps) {
+export function ProviderListItem({ item, currentUser, healthStatus }: ProviderListItemProps) {
   const [openEdit, setOpenEdit] = useState(false);
   const canEdit = currentUser?.role === 'admin';
 
@@ -60,11 +68,29 @@ export function ProviderListItem({ item, currentUser }: ProviderListItemProps) {
     <div className="group relative h-full rounded-xl border border-border/70 bg-card p-4 shadow-sm transition-all duration-150 hover:shadow-md hover:border-border focus-within:ring-1 focus-within:ring-primary/20">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className={`inline-flex h-5 w-5 items-center justify-center rounded-md text-[10px] font-semibold ${enabled ? "bg-green-500/15 text-green-600" : "bg-muted text-muted-foreground"}`}>
               ●
             </span>
             <h3 className="text-sm font-semibold text-foreground truncate tracking-tight">{item.name}</h3>
+
+            {/* ✅ 熔断器状态徽章 */}
+            {healthStatus?.circuitState === 'open' && (
+              <Badge variant="destructive" className="text-xs h-5 px-2">
+                🔴 熔断中
+                {healthStatus.recoveryMinutes && healthStatus.recoveryMinutes > 0 && (
+                  <span className="ml-1 opacity-80">
+                    ({healthStatus.recoveryMinutes}分钟后重试)
+                  </span>
+                )}
+              </Badge>
+            )}
+            {healthStatus?.circuitState === 'half-open' && (
+              <Badge variant="secondary" className="text-xs h-5 px-2 border-yellow-500/50 bg-yellow-500/10 text-yellow-700">
+                🟡 恢复中
+              </Badge>
+            )}
+
             {/* 编辑按钮 - 仅管理员可见 */}
             {canEdit && (
               <Dialog open={openEdit} onOpenChange={setOpenEdit}>
@@ -154,11 +180,11 @@ export function ProviderListItem({ item, currentUser }: ProviderListItemProps) {
             )}
           </div>
 
-          {/* 成本 */}
+          {/* 成本倍率 */}
           <div className="min-w-0 text-center">
-            <div className="text-muted-foreground">成本/M</div>
+            <div className="text-muted-foreground">倍率</div>
             <div className="w-full text-center font-medium tabular-nums truncate text-foreground">
-              <span>{item.costPerMtok ? `$${item.costPerMtok.toFixed(4)}` : '-'}</span>
+              <span>{item.costMultiplier.toFixed(2)}x</span>
             </div>
           </div>
 

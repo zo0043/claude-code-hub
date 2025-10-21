@@ -7,6 +7,7 @@ import { maskKey } from "@/lib/utils/validation";
 import { getSession } from "@/lib/auth";
 import { CreateProviderSchema, UpdateProviderSchema } from "@/lib/validation/schemas";
 import type { ActionResult } from "./types";
+import { getAllHealthStatus } from "@/lib/circuit-breaker";
 
 // 获取服务商数据
 export async function getProviders(): Promise<ProviderDisplay[]> {
@@ -26,7 +27,7 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
       isEnabled: provider.isEnabled,
       weight: provider.weight,
       priority: provider.priority,
-      costPerMtok: provider.costPerMtok,
+      costMultiplier: provider.costMultiplier,
       groupTag: provider.groupTag,
       limit5hUsd: provider.limit5hUsd,
       limitWeeklyUsd: provider.limitWeeklyUsd,
@@ -53,7 +54,7 @@ export async function addProvider(data: {
   is_enabled?: boolean;
   weight?: number;
   priority?: number;
-  cost_per_mtok?: number | null;
+  cost_multiplier?: number;
   group_tag?: string | null;
   limit_5h_usd?: number | null;
   limit_weekly_usd?: number | null;
@@ -102,7 +103,7 @@ export async function editProvider(
     is_enabled?: boolean;
     weight?: number;
     priority?: number;
-    cost_per_mtok?: number | null;
+    cost_multiplier?: number;
     group_tag?: string | null;
     limit_5h_usd?: number | null;
     limit_weekly_usd?: number | null;
@@ -146,5 +147,46 @@ export async function removeProvider(providerId: number): Promise<ActionResult> 
     console.error('删除服务商失败:', error);
     const message = error instanceof Error ? error.message : '删除服务商失败';
     return { ok: false, error: message };
+  }
+}
+
+/**
+ * 获取所有供应商的熔断器健康状态
+ * 返回格式：{ providerId: { circuitState, failureCount, circuitOpenUntil, ... } }
+ */
+export async function getProvidersHealthStatus() {
+  try {
+    const session = await getSession();
+    if (!session || session.user.role !== 'admin') {
+      return {};
+    }
+
+    const healthStatus = getAllHealthStatus();
+
+    // 转换为前端友好的格式
+    const enrichedStatus: Record<number, {
+      circuitState: 'closed' | 'open' | 'half-open';
+      failureCount: number;
+      lastFailureTime: number | null;
+      circuitOpenUntil: number | null;
+      recoveryMinutes: number | null;  // 距离恢复的分钟数
+    }> = {};
+
+    Object.entries(healthStatus).forEach(([providerId, health]) => {
+      enrichedStatus[Number(providerId)] = {
+        circuitState: health.circuitState,
+        failureCount: health.failureCount,
+        lastFailureTime: health.lastFailureTime,
+        circuitOpenUntil: health.circuitOpenUntil,
+        recoveryMinutes: health.circuitOpenUntil
+          ? Math.ceil((health.circuitOpenUntil - Date.now()) / 60000)
+          : null,
+      };
+    });
+
+    return enrichedStatus;
+  } catch (error) {
+    console.error('获取熔断器状态失败:', error);
+    return {};
   }
 }

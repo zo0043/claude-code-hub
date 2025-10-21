@@ -1,4 +1,4 @@
-import { getProviders } from "@/actions/providers";
+import { getProviders, getProvidersHealthStatus } from "@/actions/providers";
 import { Section } from "@/components/section";
 import { ProviderManager } from "./_components/provider-manager";
 import { AddProviderDialog } from "./_components/add-provider-dialog";
@@ -8,9 +8,10 @@ import { getSession } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 
 export default async function SettingsProvidersPage() {
-  const [providers, session] = await Promise.all([
+  const [providers, session, healthStatus] = await Promise.all([
     getProviders(),
     getSession(),
+    getProvidersHealthStatus(),
   ]);
 
   return (
@@ -25,7 +26,11 @@ export default async function SettingsProvidersPage() {
         description="配置上游服务商的金额限流和并发限制，留空表示无限制。"
         actions={<AddProviderDialog />}
       >
-        <ProviderManager providers={providers} currentUser={session?.user} />
+        <ProviderManager
+          providers={providers}
+          currentUser={session?.user}
+          healthStatus={healthStatus}
+        />
       </Section>
     </>
   );

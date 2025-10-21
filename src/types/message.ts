@@ -2,10 +2,28 @@ import type { Numeric } from "decimal.js-light";
 
 /**
  * 供应商信息（用于决策链）
+ * 记录详细的选择决策过程和上下文
  */
 export interface ProviderChainItem {
   id: number;
   name: string;
+
+  // 选择原因和方法
+  reason?: 'initial_selection' | 'retry_attempt' | 'retry_fallback' | 'reuse';
+  selectionMethod?: 'reuse' | 'random' | 'group_filter' | 'fallback';
+
+  // 供应商配置（决策依据）
+  priority?: number;
+  weight?: number;
+  costMultiplier?: number;
+  groupTag?: string | null;
+
+  // 健康状态快照
+  circuitState?: 'closed' | 'open' | 'half-open';
+
+  // 时间戳和尝试信息
+  timestamp?: number;
+  attemptNumber?: number;  // 第几次尝试（用于标识重试）
 }
 
 /**

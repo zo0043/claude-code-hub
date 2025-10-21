@@ -17,9 +17,9 @@ interface ProviderHealth {
 
 // 配置参数
 const CIRCUIT_BREAKER_CONFIG = {
-  failureThreshold: 5,        // 失败 5 次后打开熔断器
-  openDuration: 60 * 1000,    // 熔断器打开 60 秒
-  halfOpenSuccessThreshold: 2 // 半开状态下成功 2 次后关闭
+  failureThreshold: 5,            // 失败 5 次后打开熔断器
+  openDuration: 30 * 60 * 1000,   // 熔断器打开 30 分钟（从 60 秒改为 30 分钟）
+  halfOpenSuccessThreshold: 2     // 半开状态下成功 2 次后关闭
 };
 
 // 内存存储
@@ -116,6 +116,14 @@ export function recordSuccess(providerId: number): void {
       health.lastFailureTime = null;
     }
   }
+}
+
+/**
+ * 获取供应商的熔断器状态（用于决策链记录）
+ */
+export function getCircuitState(providerId: number): 'closed' | 'open' | 'half-open' {
+  const health = getOrCreateHealth(providerId);
+  return health.circuitState;
 }
 
 /**
