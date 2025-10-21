@@ -112,10 +112,28 @@ export class ProxyForwarder {
     const proxyUrl = buildProxyUrl(provider.url, forwardUrl);
 
     const hasBody = session.method !== "GET" && session.method !== "HEAD";
+
+    // ✅ 关键修复：使用转换后的 message 而非原始 buffer
+    // 确保 OpenAI 格式转换为 Response API 后，发送的是包含 input 字段的请求体
+    let requestBody: BodyInit | undefined;
+    if (hasBody) {
+      const bodyString = JSON.stringify(session.request.message);
+      requestBody = bodyString;
+
+      // 调试日志：输出实际转发的请求体（仅在开发环境）
+      if (process.env.NODE_ENV === 'development') {
+        console.debug(`[ProxyForwarder] Forwarding request body:`, {
+          provider: provider.name,
+          format: session.originalFormat,
+          bodyPreview: bodyString.slice(0, 500)
+        });
+      }
+    }
+
     const init: RequestInit = {
       method: session.method,
       headers: processedHeaders,
-      ...(hasBody && session.request.buffer ? { body: session.request.buffer } : {})
+      ...(requestBody ? { body: requestBody } : {})
     };
 
     (init as Record<string, unknown>).verbose = true;

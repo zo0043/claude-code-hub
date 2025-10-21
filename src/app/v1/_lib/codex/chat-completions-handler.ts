@@ -81,6 +81,16 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
         session.request.message = responseRequest as unknown as Record<string, unknown>;
         session.request.model = responseRequest.model;
 
+        // ✅ 验证转换结果（仅在开发环境）
+        if (process.env.NODE_ENV === 'development') {
+          const msgObj = session.request.message as Record<string, unknown>;
+          console.debug('[ChatCompletions] Verification - session.request.message contains input:', {
+            hasInput: 'input' in msgObj,
+            inputType: Array.isArray(msgObj.input) ? 'array' : typeof msgObj.input,
+            inputLength: Array.isArray(msgObj.input) ? msgObj.input.length : 'N/A'
+          });
+        }
+
         // ✅ 标记为 OpenAI 格式（用于响应转换）
         session.setOriginalFormat('openai');
 
