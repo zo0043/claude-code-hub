@@ -244,7 +244,8 @@ export async function getProviderStatistics(): Promise<
   `;
 
   const result = await db.execute(query);
-  return Array.from(result) as unknown as Array<{
+  // postgres-js 返回的结果需要通过 unknown 进行类型断言
+  return result as unknown as Array<{
     id: number;
     today_cost: string;
     today_calls: number;

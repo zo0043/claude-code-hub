@@ -20,7 +20,10 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
     // 并行获取供应商列表和统计数据
     const [providers, statistics] = await Promise.all([
       findProviderList(),
-      getProviderStatistics().catch(() => []), // 统计查询失败时返回空数组
+      getProviderStatistics().catch((error) => {
+        console.error('获取供应商统计数据失败:', error);
+        return []; // 统计查询失败时返回空数组，不影响供应商列表显示
+      }),
     ]);
 
     // 将统计数据按 provider_id 索引
