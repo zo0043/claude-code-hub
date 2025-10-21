@@ -21,12 +21,28 @@ services:
       retries: 10
       start_period: 10s
 
+  redis:
+    image: redis:7-alpine
+    container_name: claude-code-hub-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
   app:
     image: ghcr.io/ding113/claude-code-hub:latest
     container_name: claude-code-hub-app
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_started
     env_file:
       - ./.env
       - ./.env.local
@@ -34,10 +50,15 @@ services:
       NODE_ENV: production
       PORT: ${APP_PORT:-23000}
       DSN: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-claude_code_hub}
+      REDIS_URL: redis://redis:6379
+      ENABLE_RATE_LIMIT: ${ENABLE_RATE_LIMIT:-true}
+      SESSION_TTL: ${SESSION_TTL:-300}
     ports:
       - "${APP_PORT:-23000}:${APP_PORT:-23000}"
     restart: unless-stopped
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
     driver: local

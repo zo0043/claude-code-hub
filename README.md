@@ -84,24 +84,45 @@ services:
       retries: 10
       start_period: 10s
 
+  redis:
+    image: redis:7-alpine
+    container_name: claude-code-hub-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
   app:
     image: ghcr.io/ding113/claude-code-hub:latest
     container_name: claude-code-hub-app
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_started
     env_file:
       - ./.env
     environment:
       NODE_ENV: production
       PORT: ${APP_PORT:-23000}
       DSN: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-claude_code_hub}
+      REDIS_URL: redis://redis:6379
+      ENABLE_RATE_LIMIT: ${ENABLE_RATE_LIMIT:-true}
+      SESSION_TTL: ${SESSION_TTL:-300}
     ports:
       - "${APP_PORT:-23000}:${APP_PORT:-23000}"
     restart: unless-stopped
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
     driver: local
 ```
 
@@ -123,7 +144,10 @@ docker compose logs -f
    ```bash
    docker compose ps
    ```
-   确保两个容器都是 `healthy` 或 `running` 状态
+   确保三个容器都是 `healthy` 或 `running` 状态：
+   - `claude-code-hub-db` (PostgreSQL)
+   - `claude-code-hub-redis` (Redis)
+   - `claude-code-hub-app` (应用服务)
 
 
 ### 环境变量配置
@@ -150,6 +174,9 @@ DB_NAME=claude_code_hub
 | `DB_PASSWORD` | ❌ | `postgres` | 数据库密码（生产环境建议修改） |
 | `DB_NAME` | ❌ | `claude_code_hub` | 数据库名称 |
 | `AUTO_MIGRATE` | ❌ | `true` | 启动时自动执行数据库迁移 |
+| `ENABLE_RATE_LIMIT` | ❌ | `true` | 是否启用限流功能（需要 Redis） |
+| `REDIS_URL` | ❌ | `redis://redis:6379` | Redis 连接地址（容器内网络） |
+| `SESSION_TTL` | ❌ | `300` | Session 过期时间（秒，5 分钟） |
 
 </details>
 
@@ -160,10 +187,12 @@ DB_NAME=claude_code_hub
 docker compose logs -f          # 所有服务
 docker compose logs -f app      # 仅应用
 docker compose logs -f postgres # 仅数据库
+docker compose logs -f redis    # 仅 Redis
 
 # 重启服务
 docker compose restart          # 重启所有
 docker compose restart app      # 仅重启应用
+docker compose restart redis    # 仅重启 Redis
 
 # 停止服务
 docker compose stop             # 停止但保留容器
@@ -178,6 +207,12 @@ docker exec claude-code-hub-db pg_dump -U postgres claude_code_hub > backup_$(da
 
 # 恢复数据
 docker exec -i claude-code-hub-db psql -U postgres claude_code_hub < backup.sql
+
+# Redis 操作
+docker compose exec redis redis-cli ping           # 检查 Redis 连接
+docker compose exec redis redis-cli info stats     # 查看 Redis 统计信息
+docker compose exec redis redis-cli --scan         # 查看所有 key
+docker compose exec redis redis-cli FLUSHALL       # ⚠️ 清空所有 Redis 数据
 
 # 完全清理（⚠️ 会删除所有数据）
 docker compose down -v
@@ -434,6 +469,186 @@ docker stats claude-code-hub-app claude-code-hub-db
    - 使用 SSD 存储
    - 增加服务器内存
    - 配置负载均衡（多实例部署）
+
+</details>
+
+<details>
+<summary><b>❓ Redis 连接失败怎么办？</b></summary>
+
+本服务采用 **Fail Open 策略**，Redis 连接失败不会影响服务可用性：
+
+1. **检查 Redis 状态**：
+   ```bash
+   docker compose ps redis
+   docker compose logs redis
+   ```
+
+2. **验证 Redis 连接**：
+   ```bash
+   docker compose exec redis redis-cli ping
+   # 应返回 PONG
+   ```
+
+3. **检查应用日志**：
+   ```bash
+   docker compose logs app | grep -i redis
+   # 查看是否有 Redis 连接错误
+   ```
+
+4. **降级模式**：
+   - Redis 不可用时，限流功能会自动降级
+   - 所有请求仍然正常通过
+   - 日志会记录警告信息："Redis connection failed, rate limiting disabled"
+
+5. **重启 Redis 服务**：
+   ```bash
+   docker compose restart redis
+   ```
+
+</details>
+
+<details>
+<summary><b>❓ 如何查看 Redis 数据？</b></summary>
+
+**查看存储的 Key**：
+```bash
+# 查看所有 key
+docker compose exec redis redis-cli --scan
+
+# 查看特定模式的 key
+docker compose exec redis redis-cli --scan --pattern "key:*"
+docker compose exec redis redis-cli --scan --pattern "provider:*"
+docker compose exec redis redis-cli --scan --pattern "session:*"
+```
+
+**查看 Key 的值**：
+```bash
+# 查看字符串类型的值（成本数据）
+docker compose exec redis redis-cli GET "key:123:cost_5h"
+
+# 查看集合类型的值（活跃 Session）
+docker compose exec redis redis-cli SMEMBERS "provider:1:active_sessions"
+
+# 查看 Key 的 TTL
+docker compose exec redis redis-cli TTL "session:abc123:last_seen"
+```
+
+**实时监控 Redis 命令**：
+```bash
+docker compose exec redis redis-cli MONITOR
+```
+
+**查看 Redis 统计信息**：
+```bash
+docker compose exec redis redis-cli info stats
+docker compose exec redis redis-cli info memory
+```
+
+</details>
+
+<details>
+<summary><b>❓ 如何清空 Redis 缓存？</b></summary>
+
+**清空所有数据**（⚠️ 谨慎操作）：
+```bash
+docker compose exec redis redis-cli FLUSHALL
+```
+
+**清空特定 Key**：
+```bash
+# 删除特定用户的限流数据
+docker compose exec redis redis-cli DEL "key:123:cost_5h"
+docker compose exec redis redis-cli DEL "key:123:cost_weekly"
+
+# 删除所有 Session 数据
+docker compose exec redis redis-cli EVAL "
+  local keys = redis.call('keys', 'session:*')
+  for i=1,#keys do
+    redis.call('del', keys[i])
+  end
+  return #keys
+" 0
+```
+
+**重启 Redis 但保留数据**：
+```bash
+docker compose restart redis
+```
+
+**完全清空并重建**（⚠️ 会丢失所有 Redis 数据）：
+```bash
+docker compose stop redis
+docker volume rm claude-code-hub_redis_data
+docker compose up -d redis
+```
+
+</details>
+
+<details>
+<summary><b>❓ Redis 数据会持久化吗？</b></summary>
+
+✅ **会持久化**，配置了双重保障：
+
+1. **AOF（Append Only File）持久化**：
+   - 每次写操作都会追加到日志文件
+   - 配置：`redis-server --appendonly yes`
+   - 重启后自动恢复数据
+
+2. **Docker Volume 持久化**：
+   - 数据存储在 `redis_data` volume
+   - 即使删除容器，数据仍然保留
+   - 查看 volume：`docker volume ls | grep redis`
+
+**数据恢复**：
+- 正常重启：数据自动恢复
+- 迁移到新机器：复制 `/var/lib/docker/volumes/claude-code-hub_redis_data` 目录
+
+**备份 Redis 数据**：
+```bash
+# 手动触发保存
+docker compose exec redis redis-cli BGSAVE
+
+# 导出 AOF 文件
+docker cp claude-code-hub-redis:/data/appendonly.aof ./redis_backup_$(date +%Y%m%d).aof
+```
+
+**注意事项**：
+- ⚠️ `docker compose down -v` 会删除 volume，包括 Redis 数据
+- ✅ `docker compose down` 或 `docker compose stop` 不会删除数据
+
+</details>
+
+<details>
+<summary><b>❓ 限流功能如何工作？</b></summary>
+
+**限流机制**：
+
+1. **金额限流**（三个时间窗口）：
+   - 5 小时限制：`key:{keyId}:cost_5h`
+   - 周限制：`key:{keyId}:cost_weekly`
+   - 月限制：`key:{keyId}:cost_monthly`
+
+2. **Session 并发限流**：
+   - 追踪活跃 Session 数量（5 分钟 TTL）
+   - 防止恶意并发请求
+   - Key: `key:{keyId}:active_sessions`
+
+3. **供应商限流**：
+   - 保护上游供应商
+   - 类似机制：`provider:{id}:cost_*` 和 `active_sessions`
+
+**响应头示例**（触发限流时）：
+```http
+HTTP/1.1 429 Too Many Requests
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 3600
+Retry-After: 3600
+```
+
+**禁用限流**：
+- 设置环境变量 `ENABLE_RATE_LIMIT=false`
+- 重启服务：`docker compose restart app`
 
 </details>
 
