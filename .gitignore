@@ -47,6 +47,7 @@ next-env.d.ts
 .claude/
 .serena/
 logs/
+!src/app/dashboard/logs/
 .idea/
 .specify
 

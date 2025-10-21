@@ -79,6 +79,8 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DB: ${DB_NAME:-claude_code_hub}
+      # 指定 PostgreSQL 数据目录为挂载点的子目录,避免权限问题
+      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       # 持久化数据库数据到本地 ./data/postgres 目录
       # 重建容器不会丢失数据,可直接备份此目录

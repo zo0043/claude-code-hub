@@ -2,7 +2,7 @@
 
 此目录用于存储 Docker Compose 容器的持久化数据:
 
-- `postgres/` - PostgreSQL 数据库数据
+- `postgres/pgdata/` - PostgreSQL 数据库数据（实际数据存储位置）
 - `redis/` - Redis 持久化数据
 
 ## 注意事项
@@ -12,7 +12,30 @@
 3. 备份此目录即可备份所有数据库数据
 4. 删除此目录将清空所有数据库数据
 
-## 权限问题
+## PostgreSQL 数据目录说明
+
+为了避免权限问题,PostgreSQL 配置了 `PGDATA=/var/lib/postgresql/data/pgdata`:
+- 容器挂载点: `/var/lib/postgresql/data` → `./data/postgres`
+- 实际数据目录: `/var/lib/postgresql/data/pgdata` → `./data/postgres/pgdata`
+
+这样 PostgreSQL 可以在挂载点内创建所需的子目录结构。
+
+## 常见问题
+
+### 如果遇到 "no such file or directory" 错误
+
+**原因**: PostgreSQL 容器需要在挂载点内创建 pgdata 子目录
+
+**解决方案**:
+1. 确保 docker-compose 中包含 `PGDATA: /var/lib/postgresql/data/pgdata`
+2. 清空 data/postgres 目录并重启:
+   ```bash
+   docker compose down
+   sudo rm -rf data/postgres/*
+   docker compose up -d
+   ```
+
+### 权限问题
 
 如果遇到 PostgreSQL 权限问题,执行:
 ```bash
