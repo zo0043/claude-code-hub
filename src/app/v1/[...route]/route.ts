@@ -7,8 +7,12 @@ export const runtime = "nodejs";
 
 const app = new Hono().basePath("/v1");
 
-// OpenAI Compatible API 路由（优先匹配）
+// OpenAI Compatible API 路由
 app.post("/chat/completions", handleChatCompletions);
+
+// Response API 路由（支持 Codex）
+app.post("/responses", handleChatCompletions);  // OpenAI 
+
 
 // Claude API 和其他所有请求（fallback）
 app.all("*", handleProxyRequest);
