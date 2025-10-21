@@ -3,6 +3,7 @@ import { buildProxyUrl } from "../url";
 import { recordFailure, recordSuccess, getCircuitState } from "@/lib/circuit-breaker";
 import { ProxyProviderResolver } from "./provider-selector";
 import { ProxyError } from "./errors";
+import { ModelRedirector } from "./model-redirector";
 import type { ProxySession } from "./session";
 
 const MAX_RETRY_ATTEMPTS = 3;
@@ -88,6 +89,12 @@ export class ProxyForwarder {
   private static async doForward(session: ProxySession, provider: typeof session.provider): Promise<Response> {
     if (!provider) {
       throw new Error("Provider is required");
+    }
+
+    // ✅ 应用模型重定向（如果配置了）
+    const wasRedirected = ModelRedirector.apply(session, provider);
+    if (wasRedirected) {
+      console.debug(`[ProxyForwarder] Model redirected for provider ${provider.id}`);
     }
 
     const processedHeaders = ProxyForwarder.buildHeaders(session, provider);

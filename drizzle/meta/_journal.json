@@ -85,6 +85,13 @@
       "when": 1761058800000,
       "tag": "0011_add_codex_support_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1761053242647,
+      "tag": "0012_curly_the_stranger",
+      "breakpoints": true
     }
   ]
 }

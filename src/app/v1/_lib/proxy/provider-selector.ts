@@ -47,12 +47,13 @@ export class ProxyProviderResolver {
    */
   static async pickRandomProviderWithExclusion(
     session: ProxySession,
-    excludeIds: number[]
+    excludeIds: number[],
+    targetProviderType: 'claude' | 'codex' = 'claude'
   ): Promise<Provider | null> {
-    return this.pickRandomProvider(session, excludeIds);
+    return this.pickRandomProvider(session, excludeIds, targetProviderType);
   }
 
-  private static async findReusable(session: ProxySession): Promise<Provider | null> {
+  private static async findReusable(session: ProxySession, targetProviderType: 'claude' | 'codex'): Promise<Provider | null> {
     if (!session.shouldReuseProvider()) {
       return null;
     }
@@ -72,18 +73,28 @@ export class ProxyProviderResolver {
       return null;
     }
 
+    // ✅ 检查供应商类型是否匹配
+    if (provider.providerType !== targetProviderType) {
+      console.debug(`[ProviderSelector] Provider ${provider.id} type mismatch: ${provider.providerType} !== ${targetProviderType}`);
+      return null;
+    }
+
     return provider;
   }
 
   private static async pickRandomProvider(
     session?: ProxySession,
-    excludeIds: number[] = []  // ✅ 新增：排除已失败的供应商
+    excludeIds: number[] = [],  // ✅ 排除已失败的供应商
+    targetProviderType: 'claude' | 'codex' = 'claude'  // ✅ 目标供应商类型
   ): Promise<Provider | null> {
     const allProviders = await findProviderList();
 
-    // Step 0: 第一层过滤 - 排除已禁用和黑名单中的供应商
+    // Step 0: 第一层过滤 - 排除已禁用、类型不匹配和黑名单中的供应商
     const enabledProviders = allProviders.filter(
-      (provider) => provider.isEnabled && !excludeIds.includes(provider.id)
+      (provider) =>
+        provider.isEnabled &&
+        provider.providerType === targetProviderType &&
+        !excludeIds.includes(provider.id)
     );
 
     if (enabledProviders.length === 0) {
@@ -146,8 +157,9 @@ export class ProxyProviderResolver {
     // ✅ 详细的选择日志
     const minPriority = Math.min(...healthyProviders.map(p => p.priority || 0));
     console.info(`[ProviderSelector] Selection Decision:
+  ├─ Target provider type: ${targetProviderType}
   ├─ Total providers: ${allProviders.length}
-  ├─ Enabled: ${enabledProviders.length}
+  ├─ Enabled (type-filtered): ${enabledProviders.length}
   ├─ Excluded IDs: ${excludeIds.length > 0 ? excludeIds.join(', ') : 'none'}
   ├─ User group filter: '${userGroup || 'none'}'
   ├─ After group filter: ${candidateProviders.length} (${candidateProviders.map(p => p.name).join(', ')})
@@ -155,7 +167,7 @@ export class ProxyProviderResolver {
   ${filteredOut.length > 0 ? `│  └─ Filtered: ${filteredOut.map(p => p.name).join(', ')}` : ''}
   ├─ Top priority level: ${minPriority}
   ├─ Top priority candidates: ${topPriorityProviders.map(p => `${p.name}(w=${p.weight}, cost=${p.costMultiplier}x)`).join(', ')}
-  └─ ✓ Selected: ${selected.name} (id=${selected.id}, priority=${selected.priority}, weight=${selected.weight}, cost=${selected.costMultiplier}x, circuit=${getCircuitState(selected.id)})
+  └─ ✓ Selected: ${selected.name} (id=${selected.id}, type=${selected.providerType}, priority=${selected.priority}, weight=${selected.weight}, cost=${selected.costMultiplier}x, circuit=${getCircuitState(selected.id)})
     `);
 
     return selected;

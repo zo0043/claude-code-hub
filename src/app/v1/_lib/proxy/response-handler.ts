@@ -6,6 +6,8 @@ import { RateLimitService } from "@/lib/rate-limit";
 import type { ProxySession } from "./session";
 import { ProxyLogger } from "./logger";
 import { ProxyStatusTracker } from "@/lib/proxy-status-tracker";
+import { ResponseTransformer } from "../codex/transformers/response";
+import type { ResponseResponse } from "../codex/types/response";
 
 export type UsageMetrics = {
   input_tokens?: number;
@@ -26,7 +28,7 @@ export class ProxyResponseHandler {
     return await ProxyResponseHandler.handleStream(session, response);
   }
 
-  private static handleNonStream(session: ProxySession, response: Response): Response {
+  private static async handleNonStream(session: ProxySession, response: Response): Promise<Response> {
     const provider = session.provider;
     if (!provider) {
       return response;
@@ -34,6 +36,35 @@ export class ProxyResponseHandler {
 
     const responseForLog = response.clone();
     const statusCode = response.status;
+
+    // ✅ 检查是否需要格式转换（OpenAI 请求 + Codex 供应商）
+    const needsTransform = session.originalFormat === 'openai' && session.providerType === 'codex';
+    let finalResponse = response;
+
+    if (needsTransform) {
+      try {
+        // 克隆一份用于转换
+        const responseForTransform = response.clone();
+        const responseText = await responseForTransform.text();
+        const responseData = JSON.parse(responseText) as ResponseResponse;
+
+        // 转换为 OpenAI 格式
+        const openAIResponse = ResponseTransformer.toOpenAI(responseData);
+
+        console.debug('[ResponseHandler] Transformed Response API → OpenAI format (non-stream)');
+
+        // 构建新的响应
+        finalResponse = new Response(JSON.stringify(openAIResponse), {
+          status: response.status,
+          statusText: response.statusText,
+          headers: new Headers(response.headers)
+        });
+      } catch (error) {
+        console.error('[ResponseHandler] Failed to transform response:', error);
+        // 转换失败时返回原始响应
+        finalResponse = response;
+      }
+    }
 
     void (async () => {
       try {
@@ -92,7 +123,7 @@ export class ProxyResponseHandler {
       }
     })();
 
-    return response;
+    return finalResponse;
   }
 
   private static async handleStream(session: ProxySession, response: Response): Promise<Response> {
