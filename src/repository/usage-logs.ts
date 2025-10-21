@@ -3,6 +3,7 @@
 import { db } from "@/drizzle/db";
 import { messageRequest, users, keys as keysTable, providers } from "@/drizzle/schema";
 import { and, eq, isNull, gte, lte, desc, sql } from "drizzle-orm";
+import type { ProviderChainItem } from "@/types/message";
 
 export interface UsageLogFilters {
   userId?: number;
@@ -32,7 +33,7 @@ export interface UsageLogRow {
   costUsd: string | null;
   durationMs: number | null;
   errorMessage: string | null;
-  providerChain: Array<{ id: number; name: string }> | null;
+  providerChain: ProviderChainItem[] | null;
 }
 
 export interface UsageLogSummary {
@@ -171,7 +172,7 @@ export async function findUsageLogsWithDetails(
       ...row,
       totalTokens: totalRowTokens,
       costUsd: row.costUsd?.toString() ?? null,
-      providerChain: row.providerChain as Array<{ id: number; name: string }> | null,
+      providerChain: row.providerChain as ProviderChainItem[] | null,
     };
   });
 

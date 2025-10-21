@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import type { UsageLogRow } from "@/repository/usage-logs";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import { ProviderChainPopover } from "./provider-chain-popover";
 
 interface UsageLogsTableProps {
   logs: UsageLogRow[];
@@ -82,7 +83,16 @@ export function UsageLogsTable({
                   </TableCell>
                   <TableCell>{log.userName}</TableCell>
                   <TableCell className="font-mono text-xs">{log.keyName}</TableCell>
-                  <TableCell>{log.providerName}</TableCell>
+                  <TableCell>
+                    {log.providerChain && log.providerChain.length > 0 ? (
+                      <ProviderChainPopover
+                        chain={log.providerChain}
+                        finalProvider={log.providerName}
+                      />
+                    ) : (
+                      log.providerName
+                    )}
+                  </TableCell>
                   <TableCell className="font-mono text-xs">{log.model || "-"}</TableCell>
                   <TableCell className="text-right font-mono text-xs">
                     {log.totalTokens.toLocaleString()}

@@ -49,15 +49,46 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
     const result = providers.map(provider => {
       const stats = statsMap.get(provider.id);
 
-      // 处理 last_call_time: 可能是 Date 对象,也可能是字符串
+      // 安全处理 last_call_time: 可能是 Date 对象、字符串或其他类型
       let lastCallTimeStr: string | null = null;
-      if (stats?.last_call_time) {
-        if (stats.last_call_time instanceof Date) {
-          lastCallTimeStr = stats.last_call_time.toISOString();
-        } else if (typeof stats.last_call_time === 'string') {
-          // 原生 SQL 查询返回的是字符串,直接使用
-          lastCallTimeStr = stats.last_call_time;
+      try {
+        if (stats?.last_call_time) {
+          if (stats.last_call_time instanceof Date) {
+            lastCallTimeStr = stats.last_call_time.toISOString();
+          } else if (typeof stats.last_call_time === 'string') {
+            // 原生 SQL 查询返回的是字符串,直接使用
+            lastCallTimeStr = stats.last_call_time;
+          } else {
+            // 尝试将其他类型转换为 Date
+            const date = new Date(stats.last_call_time as string | number);
+            if (!isNaN(date.getTime())) {
+              lastCallTimeStr = date.toISOString();
+            }
+          }
         }
+      } catch (error) {
+        debugLog('getProviders:last_call_time_conversion_error', {
+          providerId: provider.id,
+          rawValue: stats?.last_call_time,
+          error: error instanceof Error ? error.message : String(error)
+        });
+        // 转换失败时保持 null,不影响整体数据返回
+        lastCallTimeStr = null;
+      }
+
+      // 安全处理 createdAt 和 updatedAt
+      let createdAtStr: string;
+      let updatedAtStr: string;
+      try {
+        createdAtStr = provider.createdAt.toISOString().split('T')[0];
+        updatedAtStr = provider.updatedAt.toISOString().split('T')[0];
+      } catch (error) {
+        debugLog('getProviders:date_conversion_error', {
+          providerId: provider.id,
+          error: error instanceof Error ? error.message : String(error)
+        });
+        createdAtStr = new Date().toISOString().split('T')[0];
+        updatedAtStr = createdAtStr;
       }
 
       return {
@@ -80,10 +111,10 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
         rpm: provider.rpm,
         rpd: provider.rpd,
         cc: provider.cc,
-        createdAt: provider.createdAt.toISOString().split('T')[0],
-        updatedAt: provider.updatedAt.toISOString().split('T')[0],
+        createdAt: createdAtStr,
+        updatedAt: updatedAtStr,
         // 统计数据（可能为空）
-        todayTotalCostUsd: stats?.today_cost,
+        todayTotalCostUsd: stats?.today_cost ?? '0',
         todayCallCount: stats?.today_calls ?? 0,
         lastCallTime: lastCallTimeStr,
         lastCallModel: stats?.last_call_model ?? null,
