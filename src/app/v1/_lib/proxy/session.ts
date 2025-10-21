@@ -45,6 +45,10 @@ export class ProxySession {
   provider: Provider | null;
   messageContext: MessageContext | null;
 
+  // Codex 支持：记录原始请求格式和供应商类型
+  originalFormat: 'response' | 'openai' | 'claude' = 'claude';
+  providerType: 'claude' | 'codex' | null = null;
+
   // 上游决策链（记录尝试的供应商列表）
   private providerChain: ProviderChainItem[];
 
@@ -97,6 +101,16 @@ export class ProxySession {
 
   setProvider(provider: Provider | null): void {
     this.provider = provider;
+    if (provider) {
+      this.providerType = (provider.providerType as 'claude' | 'codex') || 'claude';
+    }
+  }
+
+  /**
+   * 设置原始请求格式（从路由层调用）
+   */
+  setOriginalFormat(format: 'response' | 'openai' | 'claude'): void {
+    this.originalFormat = format;
   }
 
   setMessageContext(context: MessageContext | null): void {

@@ -16,6 +16,8 @@ export async function createProvider(providerData: CreateProviderData): Promise<
     priority: providerData.priority,
     costMultiplier: providerData.cost_multiplier != null ? providerData.cost_multiplier.toString() : '1.0',
     groupTag: providerData.group_tag,
+    providerType: providerData.provider_type,
+    modelRedirects: providerData.model_redirects,
     limit5hUsd: providerData.limit_5h_usd != null ? providerData.limit_5h_usd.toString() : null,
     limitWeeklyUsd: providerData.limit_weekly_usd != null ? providerData.limit_weekly_usd.toString() : null,
     limitMonthlyUsd: providerData.limit_monthly_usd != null ? providerData.limit_monthly_usd.toString() : null,
@@ -36,6 +38,8 @@ export async function createProvider(providerData: CreateProviderData): Promise<
     priority: providers.priority,
     costMultiplier: providers.costMultiplier,
     groupTag: providers.groupTag,
+    providerType: providers.providerType,
+    modelRedirects: providers.modelRedirects,
     limit5hUsd: providers.limit5hUsd,
     limitWeeklyUsd: providers.limitWeeklyUsd,
     limitMonthlyUsd: providers.limitMonthlyUsd,
@@ -64,6 +68,8 @@ export async function findProviderList(limit: number = 50, offset: number = 0): 
       priority: providers.priority,
       costMultiplier: providers.costMultiplier,
       groupTag: providers.groupTag,
+      providerType: providers.providerType,
+      modelRedirects: providers.modelRedirects,
       limit5hUsd: providers.limit5hUsd,
       limitWeeklyUsd: providers.limitWeeklyUsd,
       limitMonthlyUsd: providers.limitMonthlyUsd,
@@ -97,6 +103,8 @@ export async function findProviderById(id: number): Promise<Provider | null> {
       priority: providers.priority,
       costMultiplier: providers.costMultiplier,
       groupTag: providers.groupTag,
+      providerType: providers.providerType,
+      modelRedirects: providers.modelRedirects,
       limit5hUsd: providers.limit5hUsd,
       limitWeeklyUsd: providers.limitWeeklyUsd,
       limitMonthlyUsd: providers.limitMonthlyUsd,
@@ -133,6 +141,8 @@ export async function updateProvider(id: number, providerData: UpdateProviderDat
   if (providerData.priority !== undefined) dbData.priority = providerData.priority;
   if (providerData.cost_multiplier !== undefined) dbData.costMultiplier = providerData.cost_multiplier != null ? providerData.cost_multiplier.toString() : '1.0';
   if (providerData.group_tag !== undefined) dbData.groupTag = providerData.group_tag;
+  if (providerData.provider_type !== undefined) dbData.providerType = providerData.provider_type;
+  if (providerData.model_redirects !== undefined) dbData.modelRedirects = providerData.model_redirects;
   if (providerData.limit_5h_usd !== undefined) dbData.limit5hUsd = providerData.limit_5h_usd != null ? providerData.limit_5h_usd.toString() : null;
   if (providerData.limit_weekly_usd !== undefined) dbData.limitWeeklyUsd = providerData.limit_weekly_usd != null ? providerData.limit_weekly_usd.toString() : null;
   if (providerData.limit_monthly_usd !== undefined) dbData.limitMonthlyUsd = providerData.limit_monthly_usd != null ? providerData.limit_monthly_usd.toString() : null;
@@ -156,6 +166,8 @@ export async function updateProvider(id: number, providerData: UpdateProviderDat
       priority: providers.priority,
       costMultiplier: providers.costMultiplier,
       groupTag: providers.groupTag,
+      providerType: providers.providerType,
+      modelRedirects: providers.modelRedirects,
       limit5hUsd: providers.limit5hUsd,
       limitWeeklyUsd: providers.limitWeeklyUsd,
       limitMonthlyUsd: providers.limitMonthlyUsd,

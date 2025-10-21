@@ -8,12 +8,12 @@ import { ProxyResponses } from "./responses";
 import type { ProxySession } from "./session";
 
 export class ProxyProviderResolver {
-  static async ensure(session: ProxySession): Promise<Response | null> {
+  static async ensure(session: ProxySession, targetProviderType: 'claude' | 'codex' = 'claude'): Promise<Response | null> {
     // 标记选择方法
     let selectionMethod: 'reuse' | 'random' | 'group_filter' | 'fallback' = 'random';
 
     // 尝试复用之前的供应商
-    const reusedProvider = await ProxyProviderResolver.findReusable(session);
+    const reusedProvider = await ProxyProviderResolver.findReusable(session, targetProviderType);
     if (reusedProvider) {
       session.setProvider(reusedProvider);
       selectionMethod = 'reuse';
@@ -21,7 +21,7 @@ export class ProxyProviderResolver {
 
     // 如果没有可复用的，随机选择
     if (!session.provider) {
-      session.setProvider(await ProxyProviderResolver.pickRandomProvider(session));
+      session.setProvider(await ProxyProviderResolver.pickRandomProvider(session, [], targetProviderType));
     }
 
     // ✅ 关键修复：选定供应商后立即记录到决策链

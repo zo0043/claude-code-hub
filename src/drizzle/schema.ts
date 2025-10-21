@@ -72,6 +72,10 @@ export const providers = pgTable('providers', {
   costMultiplier: numeric('cost_multiplier', { precision: 10, scale: 4 }).default('1.0'),
   groupTag: varchar('group_tag', { length: 50 }),
 
+  // Codex 支持：供应商类型和模型重定向
+  providerType: varchar('provider_type', { length: 20 }).notNull().default('claude'),
+  modelRedirects: jsonb('model_redirects').$type<Record<string, string>>(),
+
   // 新增：金额限流配置
   limit5hUsd: numeric('limit_5h_usd', { precision: 10, scale: 2 }),
   limitWeeklyUsd: numeric('limit_weekly_usd', { precision: 10, scale: 2 }),
@@ -112,6 +116,9 @@ export const messageRequest = pgTable('message_request', {
 
   // HTTP 状态码
   statusCode: integer('status_code'),
+
+  // Codex 支持：API 类型（'response' 或 'openai'）
+  apiType: varchar('api_type', { length: 20 }),
 
   // Token 使用信息
   inputTokens: integer('input_tokens'),

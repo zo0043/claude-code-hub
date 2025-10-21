@@ -71,6 +71,20 @@
       "when": 1761026503946,
       "tag": "0009_puzzling_morgan_stark",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1761055800000,
+      "tag": "0010_rename_cost_per_mtok_to_cost_multiplier",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1761058800000,
+      "tag": "0011_add_codex_support_fields",
+      "breakpoints": true
     }
   ]
 }

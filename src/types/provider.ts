@@ -13,6 +13,10 @@ export interface Provider {
   costMultiplier: number;
   groupTag: string | null;
 
+  // Codex 支持：供应商类型和模型重定向
+  providerType: string;
+  modelRedirects: Record<string, string> | null;
+
   // 新增：金额限流配置
   limit5hUsd: number | null;
   limitWeeklyUsd: number | null;
@@ -46,6 +50,9 @@ export interface ProviderDisplay {
   priority: number;
   costMultiplier: number;
   groupTag: string | null;
+  // Codex 支持：供应商类型和模型重定向
+  providerType: string;
+  modelRedirects: Record<string, string> | null;
   // 新增：金额限流配置
   limit5hUsd: number | null;
   limitWeeklyUsd: number | null;
@@ -73,6 +80,10 @@ export interface CreateProviderData {
   priority?: number;
   cost_multiplier?: number;
   group_tag?: string | null;
+
+  // Codex 支持：供应商类型和模型重定向
+  provider_type?: string;
+  model_redirects?: Record<string, string> | null;
 
   // 新增：金额限流配置
   limit_5h_usd?: number | null;
@@ -104,6 +115,10 @@ export interface UpdateProviderData {
   priority?: number;
   cost_multiplier?: number;
   group_tag?: string | null;
+
+  // Codex 支持：供应商类型和模型重定向
+  provider_type?: string;
+  model_redirects?: Record<string, string> | null;
 
   // 新增：金额限流配置
   limit_5h_usd?: number | null;
