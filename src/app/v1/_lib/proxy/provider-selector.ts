@@ -44,12 +44,14 @@ export class ProxyProviderResolver {
 
   /**
    * ✅ 公开方法：选择供应商（支持排除列表，用于重试场景）
+   * 供应商类型从 session.providerType 自动读取，确保重试时类型一致
    */
   static async pickRandomProviderWithExclusion(
     session: ProxySession,
-    excludeIds: number[],
-    targetProviderType: 'claude' | 'codex' = 'claude'
+    excludeIds: number[]
   ): Promise<Provider | null> {
+    // ✅ 从 session 读取供应商类型，避免参数传递和类型不一致
+    const targetProviderType = session.providerType || 'claude';
     return this.pickRandomProvider(session, excludeIds, targetProviderType);
   }
 
