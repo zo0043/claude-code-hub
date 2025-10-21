@@ -6,6 +6,7 @@ services:
     ports:
       - "35432:5432"
     env_file:
+      - ./.env
       - ./.env.local
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
@@ -19,6 +20,23 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+
+  app:
+    image: ghcr.io/ding113/claude-code-hub:latest
+    container_name: claude-code-hub-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ./.env
+      - ./.env.local
+    environment:
+      NODE_ENV: production
+      PORT: ${APP_PORT:-23000}
+      DSN: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-claude_code_hub}
+    ports:
+      - "${APP_PORT:-23000}:${APP_PORT:-23000}"
+    restart: unless-stopped
 
 volumes:
   postgres_data:

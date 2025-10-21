@@ -6,7 +6,7 @@
 
 专为需要统一管理多个 AI 服务提供商的团队和企业设计
 
-[![Docker Image](https://img.shields.io/docker/v/zsio/claude-code-hub?label=Docker&logo=docker)](https://hub.docker.com/r/zsio/claude-code-hub)
+[![Container Image](https://img.shields.io/badge/ghcr.io-ding113%2Fclaude--code--hub-181717?logo=github)](https://github.com/ding113/claude-code-hub/pkgs/container/claude-code-hub)
 [![License](https://img.shields.io/github/license/zsio/claude-code-hub)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/zsio/claude-code-hub)](https://github.com/zsio/claude-code-hub/stargazers)
 
@@ -68,6 +68,9 @@ services:
     restart: unless-stopped
     ports:
       - "35432:5432"
+    env_file:
+      - ./.env
+      - ./.env.local
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
@@ -82,7 +85,7 @@ services:
       start_period: 10s
 
   app:
-    image: zsio/claude-code-hub:latest
+    image: ghcr.io/ding113/claude-code-hub:latest
     container_name: claude-code-hub-app
     depends_on:
       postgres:
@@ -91,10 +94,10 @@ services:
       - ./.env
     environment:
       NODE_ENV: production
-      PORT: 23000
+      PORT: ${APP_PORT:-23000}
       DSN: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-claude_code_hub}
     ports:
-      - "23000:23000"
+      - "${APP_PORT:-23000}:${APP_PORT:-23000}"
     restart: unless-stopped
 
 volumes:
