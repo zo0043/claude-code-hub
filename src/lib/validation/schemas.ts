@@ -9,11 +9,7 @@ export const CreateUserSchema = z.object({
   name: z
     .string()
     .min(1, "用户名不能为空")
-    .max(64, "用户名不能超过64个字符")
-    .regex(
-      /^[a-zA-Z0-9_\u4e00-\u9fff-]+$/,
-      "用户名只能包含字母、数字、下划线和中文",
-    ),
+    .max(64, "用户名不能超过64个字符"),
   note: z.string().max(200, "备注不能超过200个字符").optional().default(""),
   providerGroup: z.string().max(50, "供应商分组不能超过50个字符").optional().default(""),
   rpm: z
@@ -41,10 +37,6 @@ export const UpdateUserSchema = z.object({
     .string()
     .min(1, "用户名不能为空")
     .max(64, "用户名不能超过64个字符")
-    .regex(
-      /^[a-zA-Z0-9_\u4e00-\u9fff-]+$/,
-      "用户名只能包含字母、数字、下划线和中文",
-    )
     .optional(),
   note: z.string().max(200, "备注不能超过200个字符").optional(),
   providerGroup: z.string().max(50, "供应商分组不能超过50个字符").optional(),
