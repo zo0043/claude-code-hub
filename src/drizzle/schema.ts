@@ -69,7 +69,7 @@ export const providers = pgTable('providers', {
 
   // 新增：优先级和分组配置
   priority: integer('priority').notNull().default(0),
-  costPerMtok: numeric('cost_per_mtok', { precision: 10, scale: 4 }),
+  costMultiplier: numeric('cost_multiplier', { precision: 10, scale: 4 }).default('1.0'),
   groupTag: varchar('group_tag', { length: 50 }),
 
   // 新增：金额限流配置

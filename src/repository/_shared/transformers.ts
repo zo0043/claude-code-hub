@@ -41,7 +41,7 @@ export function toProvider(dbProvider: any): Provider {
     isEnabled: dbProvider?.isEnabled ?? true,
     weight: dbProvider?.weight ?? 1,
     priority: dbProvider?.priority ?? 0,
-    costPerMtok: dbProvider?.costPerMtok ? parseFloat(dbProvider.costPerMtok) : null,
+    costMultiplier: dbProvider?.costMultiplier ? parseFloat(dbProvider.costMultiplier) : 1.0,
     groupTag: dbProvider?.groupTag ?? null,
     limit5hUsd: dbProvider?.limit5hUsd ? parseFloat(dbProvider.limit5hUsd) : null,
     limitWeeklyUsd: dbProvider?.limitWeeklyUsd ? parseFloat(dbProvider.limitWeeklyUsd) : null,

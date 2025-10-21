@@ -2,12 +2,26 @@
 import { useState } from "react";
 import { DataTable, TableColumnTypes } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, ExternalLink, ChevronDown, ChevronRight } from "lucide-react";
 import { KeyActions } from "./key-actions";
 import type { UserKeyDisplay } from "@/types/user";
 import type { User } from "@/types/user";
 import { format } from "timeago.js";
 import { formatCurrency } from "@/lib/utils/currency";
+import Link from "next/link";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface KeyListProps {
   keys: UserKeyDisplay[];
@@ -17,7 +31,20 @@ interface KeyListProps {
 
 export function KeyList({ keys, currentUser, keyOwnerUserId }: KeyListProps) {
   const [copiedKeyId, setCopiedKeyId] = useState<number | null>(null);
+  const [expandedKeys, setExpandedKeys] = useState<Set<number>>(new Set());
   const canDeleteKeys = keys.length > 1;
+
+  const toggleExpanded = (keyId: number) => {
+    setExpandedKeys((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(keyId)) {
+        newSet.delete(keyId);
+      } else {
+        newSet.add(keyId);
+      }
+      return newSet;
+    });
+  };
 
   const handleCopyKey = async (key: UserKeyDisplay) => {
     if (!key.fullKey || !key.canCopy) return;
@@ -33,8 +60,51 @@ export function KeyList({ keys, currentUser, keyOwnerUserId }: KeyListProps) {
 
   const columns = [
     TableColumnTypes.text<UserKeyDisplay>('name', '名称', {
-      render: (value) => (
-        <div className="truncate">{value}</div>
+      render: (value, record) => (
+        <div className="space-y-1">
+          <div className="truncate font-medium">{value}</div>
+          {record.modelStats.length > 0 && (
+            <Collapsible open={expandedKeys.has(record.id)}>
+              <CollapsibleTrigger asChild>
+                <button
+                  onClick={() => toggleExpanded(record.id)}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {expandedKeys.has(record.id) ? (
+                    <ChevronDown className="h-3 w-3" />
+                  ) : (
+                    <ChevronRight className="h-3 w-3" />
+                  )}
+                  模型统计 ({record.modelStats.length})
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <div className="border rounded-md">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs py-1.5">模型</TableHead>
+                        <TableHead className="text-xs py-1.5 text-right">调用次数</TableHead>
+                        <TableHead className="text-xs py-1.5 text-right">消耗</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {record.modelStats.map((stat) => (
+                        <TableRow key={stat.model}>
+                          <TableCell className="text-xs py-1.5 font-mono">{stat.model}</TableCell>
+                          <TableCell className="text-xs py-1.5 text-right">{stat.callCount}</TableCell>
+                          <TableCell className="text-xs py-1.5 text-right font-mono">
+                            {formatCurrency(stat.totalCost)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+        </div>
       )
     }),
     TableColumnTypes.text<UserKeyDisplay>('maskedKey', 'Key', {
@@ -61,32 +131,59 @@ export function KeyList({ keys, currentUser, keyOwnerUserId }: KeyListProps) {
         </div>
       )
     }),
-    TableColumnTypes.text<UserKeyDisplay>('expiresAt', '过期时间'),
-    TableColumnTypes.number<UserKeyDisplay>('todayUsage', '今日用量', {
+    TableColumnTypes.text<UserKeyDisplay>('todayCallCount', '今日调用', {
+      render: (value) => (
+        <div className="text-sm">
+          {typeof value === 'number' ? value.toLocaleString() : 0} 次
+        </div>
+      )
+    }),
+    TableColumnTypes.number<UserKeyDisplay>('todayUsage', '今日消耗', {
       render: (value) => {
         const amount = typeof value === 'number' ? value : 0;
         return formatCurrency(amount);
       }
     }),
-    TableColumnTypes.text<UserKeyDisplay>('createdAt', '创建时间', {
+    TableColumnTypes.text<UserKeyDisplay>('lastUsedAt', '最后使用', {
       render: (_, record: UserKeyDisplay) => (
         <div className="space-y-0.5">
-          <div className="text-sm">
-            {format(record.createdAt)}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {record.createdAtFormatted}
-          </div>
+          {record.lastUsedAt ? (
+            <>
+              <div className="text-sm">
+                {format(record.lastUsedAt, 'zh_CN')}
+              </div>
+              {record.lastProviderName && (
+                <div className="text-xs text-muted-foreground">
+                  供应商: {record.lastProviderName}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-sm text-muted-foreground">未使用</div>
+          )}
         </div>
       )
     }),
     TableColumnTypes.actions<UserKeyDisplay>('操作', (value, record) => (
-      <KeyActions
-        keyData={record}
-        currentUser={currentUser}
-        keyOwnerUserId={keyOwnerUserId}
-        canDelete={canDeleteKeys}
-      />
+      <div className="flex items-center gap-1">
+        <Link href={`/dashboard/logs?keyId=${record.id}`}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            title="查看详细日志"
+          >
+            <ExternalLink className="h-3.5 w-3.5 mr-1" />
+            日志
+          </Button>
+        </Link>
+        <KeyActions
+          keyData={record}
+          currentUser={currentUser}
+          keyOwnerUserId={keyOwnerUserId}
+          canDelete={canDeleteKeys}
+        />
+      </div>
     ))
   ];
 
@@ -98,7 +195,7 @@ export function KeyList({ keys, currentUser, keyOwnerUserId }: KeyListProps) {
         title: "暂无 Key",
         description: '可点击右上角 "新增 Key" 按钮添加密钥'
       }}
-      maxHeight="460px"
+      maxHeight="600px"
       stickyHeader
     />
   );

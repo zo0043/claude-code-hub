@@ -23,9 +23,14 @@ function multiplyCost(quantity: number | undefined, unitCost: number | undefined
  * 计算单次请求的费用
  * @param usage - token使用量
  * @param priceData - 模型价格数据
+ * @param multiplier - 成本倍率（默认 1.0，表示官方价格）
  * @returns 费用（美元），保留 15 位小数
  */
-export function calculateRequestCost(usage: UsageMetrics, priceData: ModelPriceData): Decimal {
+export function calculateRequestCost(
+  usage: UsageMetrics,
+  priceData: ModelPriceData,
+  multiplier: number = 1.0
+): Decimal {
   const segments: Decimal[] = [];
 
   segments.push(multiplyCost(usage.input_tokens, priceData.input_cost_per_token));
@@ -34,5 +39,8 @@ export function calculateRequestCost(usage: UsageMetrics, priceData: ModelPriceD
   segments.push(multiplyCost(usage.cache_read_input_tokens, priceData.cache_read_input_token_cost));
 
   const total = segments.reduce((acc, segment) => acc.plus(segment), new Decimal(0));
-  return total.toDecimalPlaces(COST_SCALE);
+
+  // 应用倍率
+  const multiplierDecimal = new Decimal(multiplier);
+  return total.mul(multiplierDecimal).toDecimalPlaces(COST_SCALE);
 }

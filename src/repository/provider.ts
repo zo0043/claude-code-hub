@@ -14,7 +14,7 @@ export async function createProvider(providerData: CreateProviderData): Promise<
     isEnabled: providerData.is_enabled,
     weight: providerData.weight,
     priority: providerData.priority,
-    costPerMtok: providerData.cost_per_mtok != null ? providerData.cost_per_mtok.toString() : null,
+    costMultiplier: providerData.cost_multiplier != null ? providerData.cost_multiplier.toString() : '1.0',
     groupTag: providerData.group_tag,
     limit5hUsd: providerData.limit_5h_usd != null ? providerData.limit_5h_usd.toString() : null,
     limitWeeklyUsd: providerData.limit_weekly_usd != null ? providerData.limit_weekly_usd.toString() : null,
@@ -34,7 +34,7 @@ export async function createProvider(providerData: CreateProviderData): Promise<
     isEnabled: providers.isEnabled,
     weight: providers.weight,
     priority: providers.priority,
-    costPerMtok: providers.costPerMtok,
+    costMultiplier: providers.costMultiplier,
     groupTag: providers.groupTag,
     limit5hUsd: providers.limit5hUsd,
     limitWeeklyUsd: providers.limitWeeklyUsd,
@@ -62,7 +62,7 @@ export async function findProviderList(limit: number = 50, offset: number = 0): 
       isEnabled: providers.isEnabled,
       weight: providers.weight,
       priority: providers.priority,
-      costPerMtok: providers.costPerMtok,
+      costMultiplier: providers.costMultiplier,
       groupTag: providers.groupTag,
       limit5hUsd: providers.limit5hUsd,
       limitWeeklyUsd: providers.limitWeeklyUsd,
@@ -95,7 +95,7 @@ export async function findProviderById(id: number): Promise<Provider | null> {
       isEnabled: providers.isEnabled,
       weight: providers.weight,
       priority: providers.priority,
-      costPerMtok: providers.costPerMtok,
+      costMultiplier: providers.costMultiplier,
       groupTag: providers.groupTag,
       limit5hUsd: providers.limit5hUsd,
       limitWeeklyUsd: providers.limitWeeklyUsd,
@@ -131,7 +131,7 @@ export async function updateProvider(id: number, providerData: UpdateProviderDat
   if (providerData.is_enabled !== undefined) dbData.isEnabled = providerData.is_enabled;
   if (providerData.weight !== undefined) dbData.weight = providerData.weight;
   if (providerData.priority !== undefined) dbData.priority = providerData.priority;
-  if (providerData.cost_per_mtok !== undefined) dbData.costPerMtok = providerData.cost_per_mtok != null ? providerData.cost_per_mtok.toString() : null;
+  if (providerData.cost_multiplier !== undefined) dbData.costMultiplier = providerData.cost_multiplier != null ? providerData.cost_multiplier.toString() : '1.0';
   if (providerData.group_tag !== undefined) dbData.groupTag = providerData.group_tag;
   if (providerData.limit_5h_usd !== undefined) dbData.limit5hUsd = providerData.limit_5h_usd != null ? providerData.limit_5h_usd.toString() : null;
   if (providerData.limit_weekly_usd !== undefined) dbData.limitWeeklyUsd = providerData.limit_weekly_usd != null ? providerData.limit_weekly_usd.toString() : null;
@@ -154,7 +154,7 @@ export async function updateProvider(id: number, providerData: UpdateProviderDat
       isEnabled: providers.isEnabled,
       weight: providers.weight,
       priority: providers.priority,
-      costPerMtok: providers.costPerMtok,
+      costMultiplier: providers.costMultiplier,
       groupTag: providers.groupTag,
       limit5hUsd: providers.limit5hUsd,
       limitWeeklyUsd: providers.limitWeeklyUsd,

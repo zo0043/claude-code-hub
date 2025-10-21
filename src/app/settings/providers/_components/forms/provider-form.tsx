@@ -37,7 +37,7 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
   const [key, setKey] = useState(""); // 编辑时留空代表不更新
   const [priority, setPriority] = useState<number>(isEdit ? provider?.priority ?? 0 : 0);
   const [weight, setWeight] = useState<number>(isEdit ? provider?.weight ?? 1 : 1);
-  const [costPerMtok, setCostPerMtok] = useState<number | null>(isEdit ? provider?.costPerMtok ?? null : null);
+  const [costMultiplier, setCostMultiplier] = useState<number>(isEdit ? provider?.costMultiplier ?? 1.0 : 1.0);
   const [groupTag, setGroupTag] = useState<string>(isEdit ? provider?.groupTag ?? "" : "");
   const [limit5hUsd, setLimit5hUsd] = useState<number | null>(isEdit ? provider?.limit5hUsd ?? null : null);
   const [limitWeeklyUsd, setLimitWeeklyUsd] = useState<number | null>(isEdit ? provider?.limitWeeklyUsd ?? null : null);
@@ -65,7 +65,7 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
             key?: string;
             priority?: number;
             weight?: number;
-            cost_per_mtok?: number | null;
+            cost_multiplier?: number;
             group_tag?: string | null;
             limit_5h_usd?: number | null;
             limit_weekly_usd?: number | null;
@@ -80,7 +80,7 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
             url: url.trim(),
             priority: priority,
             weight: weight,
-            cost_per_mtok: costPerMtok,
+            cost_multiplier: costMultiplier,
             group_tag: groupTag.trim() || null,
             limit_5h_usd: limit5hUsd,
             limit_weekly_usd: limitWeeklyUsd,
@@ -108,7 +108,7 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
             is_enabled: PROVIDER_DEFAULTS.IS_ENABLED,
             weight: weight,
             priority: priority,
-            cost_per_mtok: costPerMtok,
+            cost_multiplier: costMultiplier,
             group_tag: groupTag.trim() || null,
             limit_5h_usd: limit5hUsd,
             limit_weekly_usd: limitWeeklyUsd,
@@ -129,7 +129,7 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
           setKey("");
           setPriority(0);
           setWeight(1);
-          setCostPerMtok(null);
+          setCostMultiplier(1.0);
           setGroupTag("");
           setLimit5hUsd(null);
           setLimitWeeklyUsd(null);
@@ -231,18 +231,22 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
             </div>
             <div className="space-y-2">
               <Label htmlFor={isEdit ? "edit-cost" : "cost"}>
-                成本 (USD/M tokens)
+                成本倍率
+                <span className="text-xs text-muted-foreground ml-1">(相对官方定价)</span>
               </Label>
               <Input
                 id={isEdit ? "edit-cost" : "cost"}
                 type="number"
-                value={costPerMtok?.toString() ?? ""}
-                onChange={(e) => setCostPerMtok(validateNumericField(e.target.value))}
-                placeholder="留空表示未知"
+                value={costMultiplier}
+                onChange={(e) => setCostMultiplier(parseFloat(e.target.value) || 1.0)}
+                placeholder="1.0 表示官方价格"
                 disabled={isPending}
                 min="0"
-                step="0.0001"
+                step="0.01"
               />
+              <p className="text-xs text-muted-foreground">
+                例如填 0.6 表示按官方价格的 60% 计费，填 1.0 表示官方价格
+              </p>
             </div>
           </div>
           <div className="space-y-2">

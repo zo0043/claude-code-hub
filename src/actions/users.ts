@@ -6,7 +6,7 @@ import {
   updateUser,
   deleteUser,
 } from "@/repository/user";
-import { findKeyList, findKeyUsageToday } from "@/repository/key";
+import { findKeyList, findKeyUsageToday, findKeysWithStatistics } from "@/repository/key";
 import { revalidatePath } from "next/cache";
 import { randomBytes } from "node:crypto";
 import { type UserDisplay } from "@/types/user";
@@ -43,13 +43,18 @@ export async function getUsers(): Promise<UserDisplay[]> {
     const userDisplays: UserDisplay[] = await Promise.all(
       users.map(async (user) => {
         try {
-          const [keys, usageRecords] = await Promise.all([
+          const [keys, usageRecords, keyStatistics] = await Promise.all([
             findKeyList(user.id),
-            findKeyUsageToday(user.id)
+            findKeyUsageToday(user.id),
+            findKeysWithStatistics(user.id)
           ]);
 
           const usageMap = new Map(
             usageRecords.map((item) => [item.keyId, item.totalCost ?? 0])
+          );
+
+          const statisticsMap = new Map(
+            keyStatistics.map((stat) => [stat.keyId, stat])
           );
 
           return {
@@ -60,27 +65,34 @@ export async function getUsers(): Promise<UserDisplay[]> {
             rpm: user.rpm,
             dailyQuota: user.dailyQuota,
             providerGroup: user.providerGroup || undefined,
-            keys: keys.map((key) => ({
-              id: key.id,
-              name: key.name,
-              maskedKey: maskKey(key.key),
-              fullKey: isAdmin ? key.key : undefined, // 仅管理员可见
-              canCopy: isAdmin, // 仅管理员可复制
-              expiresAt: key.expiresAt
-                ? key.expiresAt.toISOString().split("T")[0]
-                : "永不过期",
-              status: key.isEnabled ? "enabled" : ("disabled" as const),
-              createdAt: key.createdAt,
-              createdAtFormatted: key.createdAt.toLocaleString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-              }),
-              todayUsage: usageMap.get(key.id) ?? 0
-            })),
+            keys: keys.map((key) => {
+              const stats = statisticsMap.get(key.id);
+              return {
+                id: key.id,
+                name: key.name,
+                maskedKey: maskKey(key.key),
+                fullKey: isAdmin ? key.key : undefined, // 仅管理员可见
+                canCopy: isAdmin, // 仅管理员可复制
+                expiresAt: key.expiresAt
+                  ? key.expiresAt.toISOString().split("T")[0]
+                  : "永不过期",
+                status: key.isEnabled ? "enabled" : ("disabled" as const),
+                createdAt: key.createdAt,
+                createdAtFormatted: key.createdAt.toLocaleString('zh-CN', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit'
+                }),
+                todayUsage: usageMap.get(key.id) ?? 0,
+                todayCallCount: stats?.todayCallCount ?? 0,
+                lastUsedAt: stats?.lastUsedAt ?? null,
+                lastProviderName: stats?.lastProviderName ?? null,
+                modelStats: stats?.modelStats ?? []
+              };
+            }),
           };
         } catch (error) {
           console.error(`获取用户 ${user.id} 的密钥失败:`, error);

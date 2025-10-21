@@ -56,7 +56,12 @@ export class ProxyResponseHandler {
 
         const messageContext = session.messageContext;
         if (usageRecord && usageMetrics && messageContext) {
-          await updateRequestCostFromUsage(messageContext.id, session.request.model, usageMetrics);
+          await updateRequestCostFromUsage(
+            messageContext.id,
+            session.request.model,
+            usageMetrics,
+            provider.costMultiplier
+          );
 
           // 追踪消费到 Redis（用于限流）
           await trackCostToRedis(session, usageMetrics);
@@ -142,7 +147,12 @@ export class ProxyResponseHandler {
           }
         }
 
-        await updateRequestCostFromUsage(messageContext.id, session.request.model, usageForCost);
+        await updateRequestCostFromUsage(
+          messageContext.id,
+          session.request.model,
+          usageForCost,
+          provider.costMultiplier
+        );
 
         // 追踪消费到 Redis（用于限流）
         await trackCostToRedis(session, usageForCost);
@@ -206,7 +216,8 @@ function extractUsageMetrics(value: unknown): UsageMetrics | null {
 async function updateRequestCostFromUsage(
   messageId: number,
   modelName: string | null,
-  usage: UsageMetrics | null
+  usage: UsageMetrics | null,
+  costMultiplier: number = 1.0
 ): Promise<void> {
   if (!modelName || !usage) {
     return;
@@ -214,7 +225,7 @@ async function updateRequestCostFromUsage(
 
   const priceData = await findLatestPriceByModel(modelName);
   if (priceData?.priceData) {
-    const cost = calculateRequestCost(usage, priceData.priceData);
+    const cost = calculateRequestCost(usage, priceData.priceData, costMultiplier);
     if (cost.gt(0)) {
       await updateMessageRequestCost(messageId, cost);
     }
@@ -239,11 +250,11 @@ async function trackCostToRedis(
   const modelName = session.request.model;
   if (!modelName) return;
 
-  // 计算成本
+  // 计算成本（应用倍率）
   const priceData = await findLatestPriceByModel(modelName);
   if (!priceData?.priceData) return;
 
-  const cost = calculateRequestCost(usage, priceData.priceData);
+  const cost = calculateRequestCost(usage, priceData.priceData, provider.costMultiplier);
   if (cost.lte(0)) return;
 
   // 获取 sessionId（优先使用 conversation_id）

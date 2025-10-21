@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/drizzle/db";
-import { keys, users, messageRequest } from "@/drizzle/schema";
-import { eq, isNull, and, or, gt, gte, lt, count, sum } from "drizzle-orm";
+import { keys, users, messageRequest, providers } from "@/drizzle/schema";
+import { eq, isNull, and, or, gt, gte, lt, count, sum, desc, sql } from "drizzle-orm";
 import type { Key, CreateKeyData, UpdateKeyData } from "@/types/key";
 import type { User } from "@/types/user";
 import { toKey, toUser } from "./_shared/transformers";
@@ -327,4 +327,97 @@ export async function validateApiKeyAndGetUser(
   });
 
   return { user, key };
+}
+
+/**
+ * 获取密钥的统计信息（用于首页展示）
+ */
+export interface KeyStatistics {
+  keyId: number;
+  todayCallCount: number;
+  lastUsedAt: Date | null;
+  lastProviderName: string | null;
+  modelStats: Array<{
+    model: string;
+    callCount: number;
+    totalCost: number;
+  }>;
+}
+
+export async function findKeysWithStatistics(userId: number): Promise<KeyStatistics[]> {
+  const userKeys = await findKeyList(userId);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const stats: KeyStatistics[] = [];
+
+  for (const key of userKeys) {
+    // 查询今日调用次数
+    const [todayCount] = await db
+      .select({ count: count() })
+      .from(messageRequest)
+      .where(and(
+        eq(messageRequest.key, key.key),
+        isNull(messageRequest.deletedAt),
+        gte(messageRequest.createdAt, today),
+        lt(messageRequest.createdAt, tomorrow)
+      ));
+
+    // 查询最后使用时间和供应商
+    const [lastUsage] = await db
+      .select({
+        createdAt: messageRequest.createdAt,
+        providerName: providers.name,
+      })
+      .from(messageRequest)
+      .innerJoin(providers, eq(messageRequest.providerId, providers.id))
+      .where(and(
+        eq(messageRequest.key, key.key),
+        isNull(messageRequest.deletedAt)
+      ))
+      .orderBy(desc(messageRequest.createdAt))
+      .limit(1);
+
+    // 查询分模型统计（仅统计最近 30 天）
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const modelStatsRows = await db
+      .select({
+        model: messageRequest.model,
+        callCount: sql<number>`count(*)::int`,
+        totalCost: sum(messageRequest.costUsd),
+      })
+      .from(messageRequest)
+      .where(and(
+        eq(messageRequest.key, key.key),
+        isNull(messageRequest.deletedAt),
+        gte(messageRequest.createdAt, thirtyDaysAgo),
+        sql`${messageRequest.model} IS NOT NULL`
+      ))
+      .groupBy(messageRequest.model)
+      .orderBy(desc(sql`count(*)`));
+
+    const modelStats = modelStatsRows.map(row => ({
+      model: row.model || 'unknown',
+      callCount: row.callCount,
+      totalCost: (() => {
+        const costDecimal = toCostDecimal(row.totalCost) ?? new Decimal(0);
+        return costDecimal.toDecimalPlaces(6).toNumber();
+      })(),
+    }));
+
+    stats.push({
+      keyId: key.id,
+      todayCallCount: Number(todayCount?.count || 0),
+      lastUsedAt: lastUsage?.createdAt || null,
+      lastProviderName: lastUsage?.providerName || null,
+      modelStats,
+    });
+  }
+
+  return stats;
 }

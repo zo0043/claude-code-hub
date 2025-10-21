@@ -48,6 +48,14 @@ export interface UserKeyDisplay {
   expiresAt: string; // 格式化后的日期字符串或"永不过期"
   status: "enabled" | "disabled";
   todayUsage: number; // 今日消耗金额（美元）
+  todayCallCount: number; // 今日调用次数
+  lastUsedAt: Date | null; // 最后使用时间
+  lastProviderName: string | null; // 最后调用的供应商名称
+  modelStats: Array<{
+    model: string;
+    callCount: number;
+    totalCost: number;
+  }>; // 各模型统计（最近30天）
   createdAt: Date; // 创建时间
   createdAtFormatted: string; // 格式化后的具体时间
 }

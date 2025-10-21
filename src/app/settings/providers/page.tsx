@@ -2,6 +2,7 @@ import { getProviders, getProvidersHealthStatus } from "@/actions/providers";
 import { Section } from "@/components/section";
 import { ProviderManager } from "./_components/provider-manager";
 import { AddProviderDialog } from "./_components/add-provider-dialog";
+import { SchedulingRulesDialog } from "./_components/scheduling-rules-dialog";
 import { SettingsPageHeader } from "../_components/settings-page-header";
 import { getSession } from "@/lib/auth";
 
@@ -24,7 +25,12 @@ export default async function SettingsProvidersPage() {
       <Section
         title="服务商管理"
         description="配置上游服务商的金额限流和并发限制，留空表示无限制。"
-        actions={<AddProviderDialog />}
+        actions={
+          <div className="flex gap-2">
+            <SchedulingRulesDialog />
+            <AddProviderDialog />
+          </div>
+        }
       >
         <ProviderManager
           providers={providers}

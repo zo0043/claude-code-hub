@@ -10,7 +10,7 @@ export interface Provider {
 
   // 新增：优先级和分组配置
   priority: number;
-  costPerMtok: number | null;
+  costMultiplier: number;
   groupTag: string | null;
 
   // 新增：金额限流配置
@@ -44,7 +44,7 @@ export interface ProviderDisplay {
   weight: number;
   // 新增：优先级和分组配置
   priority: number;
-  costPerMtok: number | null;
+  costMultiplier: number;
   groupTag: string | null;
   // 新增：金额限流配置
   limit5hUsd: number | null;
@@ -71,7 +71,7 @@ export interface CreateProviderData {
 
   // 新增：优先级和分组配置
   priority?: number;
-  cost_per_mtok?: number | null;
+  cost_multiplier?: number;
   group_tag?: string | null;
 
   // 新增：金额限流配置
@@ -102,7 +102,7 @@ export interface UpdateProviderData {
 
   // 新增：优先级和分组配置
   priority?: number;
-  cost_per_mtok?: number | null;
+  cost_multiplier?: number;
   group_tag?: string | null;
 
   // 新增：金额限流配置
