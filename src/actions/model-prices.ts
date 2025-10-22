@@ -15,6 +15,7 @@ import type {
   ModelPriceData,
 } from "@/types/model-price";
 import type { ActionResult } from "./types";
+import { getPriceTableJson } from "@/lib/price-sync";
 
 /**
  * 检查价格数据是否相同
@@ -155,3 +156,47 @@ export async function hasPriceTable(): Promise<boolean> {
 /**
  * 获取指定模型的最新价格
  */
+
+/**
+ * 从 LiteLLM CDN 同步价格表到数据库
+ * @returns 同步结果
+ */
+export async function syncLiteLLMPrices(): Promise<ActionResult<PriceUpdateResult>> {
+  try {
+    // 权限检查：只有管理员可以同步价格表
+    const session = await getSession();
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "无权限执行此操作" };
+    }
+
+    console.log('🔄 Starting LiteLLM price sync...');
+
+    // 获取价格表 JSON（优先 CDN，降级缓存）
+    const jsonContent = await getPriceTableJson();
+
+    if (!jsonContent) {
+      console.error('❌ Failed to get price table from both CDN and cache');
+      return {
+        ok: false,
+        error: '无法从 CDN 或缓存获取价格表，请检查网络连接或稍后重试'
+      };
+    }
+
+    // 调用现有的上传逻辑（已包含权限检查，但这里直接处理以避免重复检查）
+    const result = await uploadPriceTable(jsonContent);
+
+    if (result.ok) {
+      console.log('✅ LiteLLM price sync completed:', result.data);
+    } else {
+      console.error('❌ LiteLLM price sync failed:', result.error);
+    }
+
+    return result;
+  } catch (error) {
+    console.error('❌ Sync LiteLLM prices failed:', error);
+    const message =
+      error instanceof Error ? error.message : '同步失败，请稍后重试';
+    return { ok: false, error: message };
+  }
+}
+

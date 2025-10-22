@@ -213,8 +213,8 @@ export function UploadPriceDialog({
             </div>
 
             <div className="text-xs text-muted-foreground space-y-1">
-              <p>• 推荐使用 <a className="text-blue-500 underline" href="https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json" target="_blank" rel="noopener noreferrer">LiteLLM</a> 的模型价格表</p>
-              <p>• 为避免网络问题，请您手动下载 json 文件并上传</p>
+              <p>• 推荐使用左侧&quot;同步 LiteLLM 价格&quot;按钮自动获取最新价格</p>
+              <p>• 也可以手动下载 <a className="text-blue-500 underline" href="https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json" target="_blank" rel="noopener noreferrer">LiteLLM 价格表</a> 并上传</p>
               <p>• 支持 Claude 和 OpenAI 模型（claude-, gpt-, o1-, o3- 前缀）</p>
             </div>
           </div>

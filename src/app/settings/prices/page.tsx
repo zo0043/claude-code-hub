@@ -2,6 +2,7 @@ import { getModelPrices } from "@/actions/model-prices";
 import { Section } from "@/components/section";
 import { PriceList } from "./_components/price-list";
 import { UploadPriceDialog } from "./_components/upload-price-dialog";
+import { SyncLiteLLMButton } from "./_components/sync-litellm-button";
 import { SettingsPageHeader } from "../_components/settings-page-header";
 
 export const dynamic = "force-dynamic";
@@ -28,7 +29,12 @@ export default async function SettingsPricesPage({
       <Section
         title="模型价格"
         description="管理 AI 模型的价格配置"
-        actions={<UploadPriceDialog defaultOpen={isRequired && isEmpty} isRequired={isRequired} />}
+        actions={
+          <div className="flex gap-2">
+            <SyncLiteLLMButton />
+            <UploadPriceDialog defaultOpen={isRequired && isEmpty} isRequired={isRequired} />
+          </div>
+        }
       >
         <PriceList prices={prices} />
       </Section>
