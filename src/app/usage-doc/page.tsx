@@ -140,107 +140,299 @@ function UsageDocContent({ origin }: UsageDocContentProps) {
         </div>
 
         <div className="space-y-4">
-          <h3 id="codex-api" className={headingClasses.h3}>
-            🤖 使用 Codex API (OpenAI Compatible)
+          <h3 id="droid-quickstart" className={headingClasses.h3}>
+            🤖 Droid 快速开始（兼容 Codex）
           </h3>
 
           <p>
-            本服务同时支持 OpenAI Chat Completions API 格式，可用于 Cursor、Continue.dev 等工具或任何支持 OpenAI API 的客户端。
+            Droid 是 Factory AI 开发的交互式终端 AI 编程助手，支持通过 Claude Code Hub 代理服务使用。
+            本指南将帮助你在 5 分钟内完成 Droid 的安装和配置。
           </p>
 
           <div className="space-y-3">
-            <h4 className={headingClasses.h4}>API 端点</h4>
+            <h4 className={headingClasses.h4}>安装 Droid</h4>
+
+            <p className="font-semibold text-foreground">macOS / Linux</p>
+            <CodeBlock
+              language="bash"
+              code={`curl -fsSL https://app.factory.ai/cli | sh`}
+            />
+
+            <p className="font-semibold text-foreground">Windows</p>
+            <CodeBlock
+              language="powershell"
+              code={`irm https://app.factory.ai/cli/windows | iex`}
+            />
+
+            <blockquote className="space-y-1 rounded-lg border-l-2 border-primary/50 bg-muted/40 px-4 py-3">
+              <p className="font-semibold text-foreground">提示</p>
+              <p>Linux 用户需确保已安装 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">xdg-utils</code>：</p>
+              <CodeBlock
+                language="bash"
+                code={`sudo apt-get install xdg-utils`}
+              />
+            </blockquote>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className={headingClasses.h4}>启动 Droid</h4>
+            <p>在项目目录下运行：</p>
+            <CodeBlock
+              language="bash"
+              code={`cd /path/to/your/project
+droid`}
+            />
+            <p>首次启动时，按提示通过浏览器登录 Factory 账号。</p>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className={headingClasses.h4}>基本使用</h4>
+            <p>启动后，你可以直接与 Droid 对话：</p>
             <ul className="list-disc space-y-2 pl-6">
-              <li>
-                <strong>Base URL</strong>: <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">{resolvedOrigin}/v1</code>
-              </li>
-              <li>
-                <strong>端点</strong>: <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">/v1/chat/completions</code>
-              </li>
-              <li>
-                <strong>格式</strong>: OpenAI Chat Completions API 兼容
-              </li>
+              <li>分析代码：<code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">analyze this codebase and explain the overall architecture</code></li>
+              <li>修改代码：<code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">add comprehensive logging to the main application startup</code></li>
+              <li>安全审计：<code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">audit this codebase for security vulnerabilities</code></li>
+              <li>Git 操作：<code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">review my uncommitted changes and suggest improvements</code></li>
             </ul>
           </div>
 
           <div className="space-y-3">
-            <h4 className={headingClasses.h4}>Python SDK 示例</h4>
-            <p>使用 OpenAI Python 包：</p>
+            <h4 className={headingClasses.h4}>常用快捷键</h4>
+            <ul className="list-disc space-y-2 pl-6">
+              <li><strong>Enter</strong>: 发送消息</li>
+              <li><strong>Shift+Enter</strong>: 多行输入</li>
+              <li><strong>Shift+Tab</strong>: 切换模式</li>
+              <li><strong>?</strong>: 查看所有快捷键</li>
+              <li><strong>Ctrl+C</strong> 或输入 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">exit</code>: 退出</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h3 id="droid-cch-config" className={headingClasses.h3}>
+            🔗 Droid 使用 Claude Code Hub 接入
+          </h3>
+
+          <p>
+            配置 Droid 连接到 Claude Code Hub 代理服务，使用自己的 API 密钥。
+          </p>
+
+          <div className="space-y-3">
+            <h4 className={headingClasses.h4}>1. 注册并登录 Droid</h4>
+            <ol className="list-decimal space-y-2 pl-6">
+              <li>下载并安装 Droid（参考上一节）</li>
+              <li>运行 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">droid</code> 命令</li>
+              <li>按提示注册并登录 Factory 账号</li>
+            </ol>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className={headingClasses.h4}>2. 配置自定义模型</h4>
+            <p>在配置文件中添加 Claude Code Hub 的模型配置：</p>
+
+            <p className="font-semibold text-foreground">配置文件路径</p>
+            <ul className="list-disc space-y-2 pl-6">
+              <li>macOS / Linux: <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">~/.factory/config.json</code></li>
+              <li>Windows: <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">%USERPROFILE%\.factory\config.json</code></li>
+            </ul>
+
+            <p className="font-semibold text-foreground mt-3">配置内容</p>
             <CodeBlock
-              language="python"
-              code={`from openai import OpenAI
-
-client = OpenAI(
-    api_key="your-api-key-here",
-    base_url="${resolvedOrigin}/v1"
-)
-
-response = client.chat.completions.create(
-    model="gpt-5-codex",
-    messages=[{"role": "user", "content": "Hello!"}],
-    stream=False
-)
-
-print(response.choices[0].message.content)`}
+              language="json"
+              code={`{
+  "custom_models": [
+    {
+      "model_display_name": "Sonnet 4.5 [CCH]",
+      "model": "claude-sonnet-4-5-20250929",
+      "base_url": "${resolvedOrigin}",
+      "api_key": "your-api-key-here",
+      "provider": "anthropic"
+    },
+    {
+      "model_display_name": "GPT-5-Codex [CCH]",
+      "model": "gpt-5-codex",
+      "base_url": "${resolvedOrigin}/v1",
+      "api_key": "your-api-key-here",
+      "provider": "openai"
+    }
+  ]
+}`}
             />
           </div>
 
           <div className="space-y-3">
-            <h4 className={headingClasses.h4}>JavaScript SDK 示例</h4>
-            <p>使用 OpenAI npm 包：</p>
-            <CodeBlock
-              language="javascript"
-              code={`import OpenAI from 'openai';
-
-const client = new OpenAI({
-    apiKey: 'your-api-key-here',
-    baseURL: '${resolvedOrigin}/v1'
-});
-
-const response = await client.chat.completions.create({
-    model: 'gpt-5-codex',
-    messages: [{ role: 'user', content: 'Hello!' }],
-    stream: false
-});
-
-console.log(response.choices[0].message.content);`}
-            />
-          </div>
-
-          <div className="space-y-3">
-            <h4 className={headingClasses.h4}>cURL 示例</h4>
-            <p>使用原始 HTTP 请求：</p>
-            <CodeBlock
-              language="bash"
-              code={`curl ${resolvedOrigin}/v1/chat/completions \\
-  -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer your-api-key-here" \\
-  -d '{
-    "model": "gpt-5-codex",
-    "messages": [{"role": "user", "content": "Hello!"}],
-    "stream": false
-  }'`}
-            />
-          </div>
-
-          <div className="space-y-3">
-            <h4 className={headingClasses.h4}>重要说明</h4>
+            <h4 className={headingClasses.h4}>3. 替换 API 密钥</h4>
             <blockquote className="space-y-2 rounded-lg border-l-2 border-primary/50 bg-muted/40 px-4 py-3">
+              <p className="font-semibold text-foreground">重要</p>
+              <p>将 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">your-api-key-here</code> 替换为你在 Claude Code Hub 控制台创建的 API 密钥。</p>
+              <p>密钥获取：登录控制台 → 设置 → API 密钥管理 → 创建密钥</p>
+            </blockquote>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className={headingClasses.h4}>4. 选择模型</h4>
+            <ol className="list-decimal space-y-2 pl-6">
+              <li>重启 Droid</li>
+              <li>输入 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">/model</code> 命令</li>
+              <li>选择 <strong>GPT-5-Codex [CCH]</strong> 或 <strong>Sonnet 4.5 [CCH]</strong></li>
+              <li>开始使用！</li>
+            </ol>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h3 id="codex-cli-windows" className={headingClasses.h3}>
+            💻 Codex CLI Windows 部署指南
+          </h3>
+
+          <p>
+            Codex CLI 是 OpenAI 官方的命令行 AI 编程助手，支持通过 Claude Code Hub 代理使用。
+          </p>
+
+          <div className="space-y-3">
+            <h4 className={headingClasses.h4}>一、安装 Node.js 环境</h4>
+
+            <p className="font-semibold text-foreground">方法一：官网下载（推荐）</p>
+            <ol className="list-decimal space-y-2 pl-6">
+              <li>访问 <a href="https://nodejs.org/" target="_blank" rel="noopener noreferrer" className="font-medium text-primary underline">https://nodejs.org/</a></li>
+              <li>下载 LTS 版本（需 v18 或更高）</li>
+              <li>双击 .msi 文件，按向导安装</li>
+              <li>验证安装：</li>
+            </ol>
+            <CodeBlock
+              language="powershell"
+              code={`node --version
+npm --version`}
+            />
+
+            <p className="font-semibold text-foreground">方法二：使用包管理器</p>
+            <CodeBlock
+              language="powershell"
+              code={`# 使用 Chocolatey
+choco install nodejs
+
+# 或使用 Scoop
+scoop install nodejs`}
+            />
+          </div>
+
+          <div className="space-y-3">
+            <h4 className={headingClasses.h4}>二、安装 Codex CLI</h4>
+            <p>以管理员身份运行 PowerShell，执行：</p>
+            <CodeBlock
+              language="powershell"
+              code={`npm i -g @openai/codex --registry=https://registry.npmmirror.com`}
+            />
+            <p>验证安装：</p>
+            <CodeBlock
+              language="powershell"
+              code={`codex --version`}
+            />
+          </div>
+
+          <div className="space-y-3">
+            <h4 className={headingClasses.h4}>三、配置 Codex 环境</h4>
+
+            <p className="font-semibold text-foreground">方法一：编辑配置文件（推荐）</p>
+            <ol className="list-decimal space-y-2 pl-6">
+              <li>打开文件资源管理器，找到 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">C:\Users\你的用户名\.codex</code> 文件夹（不存在则创建）</li>
+              <li>创建 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">config.toml</code> 文件</li>
+              <li>使用 Notepad 打开，添加以下内容：</li>
+            </ol>
+            <CodeBlock
+              language="toml"
+              code={`model_provider = "claude_code_hub"
+model = "gpt-5-codex"
+model_reasoning_effort = "high"
+disable_response_storage = true
+sandbox_mode = "workspace-write"
+windows_wsl_setup_acknowledged = true
+
+[features]
+plan_tool = true
+apply_patch_freeform = true
+view_image_tool = true
+web_search_request = true
+unified_exec = false
+streamable_shell = false
+rmcp_client = true
+
+[tools]
+web_search = true
+view_image = true
+
+[model_providers.claude_code_hub]
+name = "claude_code_hub"
+base_url = "${resolvedOrigin}/v1"
+wire_api = "responses"
+env_key = "CCH_API_KEY"
+requires_openai_auth = true
+
+[sandbox_workspace_write]
+network_access = true`}
+            />
+
+            <ol className="list-decimal space-y-2 pl-6" start={4}>
+              <li>创建 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">auth.json</code> 文件，添加：</li>
+            </ol>
+            <CodeBlock
+              language="json"
+              code={`{
+  "OPENAI_API_KEY": "your-api-key-here"
+}`}
+            />
+
+            <p className="font-semibold text-foreground mt-4">方法二：设置环境变量</p>
+            <p>在 PowerShell 中运行：</p>
+            <CodeBlock
+              language="powershell"
+              code={`[System.Environment]::SetEnvironmentVariable("CCH_API_KEY", "your-api-key-here", [System.EnvironmentVariableTarget]::User)`}
+            />
+
+            <blockquote className="space-y-2 rounded-lg border-l-2 border-primary/50 bg-muted/40 px-4 py-3">
+              <p className="font-semibold text-foreground">重要提示</p>
               <ul className="list-disc space-y-2 pl-4">
-                <li>
-                  <strong className="text-foreground">API 密钥</strong>：与 Claude Code 使用相同的密钥，从控制台获取
-                </li>
-                <li>
-                  <strong className="text-foreground">模型名称</strong>：需与供应商配置的模型名称或 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">model_redirects</code> 映射匹配
-                </li>
-                <li>
-                  <strong className="text-foreground">流式响应</strong>：支持设置 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">stream: true</code> 启用流式输出
-                </li>
-                <li>
-                  <strong className="text-foreground">会话复用</strong>：系统会在 5 分钟内自动复用同一供应商，优化响应速度
-                </li>
+                <li>将 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">your-api-key-here</code> 替换为你的 Claude Code Hub API 密钥</li>
+                <li>使用与 Claude Code 相同的密钥体系</li>
+                <li>设置环境变量后需重新打开 PowerShell 窗口</li>
               </ul>
             </blockquote>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className={headingClasses.h4}>四、开始使用 Codex</h4>
+            <p>在项目目录下运行：</p>
+            <CodeBlock
+              language="powershell"
+              code={`cd C:\path\to\your\project
+codex`}
+            />
+          </div>
+
+          <div className="space-y-3">
+            <h4 className={headingClasses.h4}>五、常见问题</h4>
+
+            <p className="font-semibold text-foreground">1. 命令未找到</p>
+            <ul className="list-disc space-y-2 pl-6">
+              <li>确保 npm 全局路径（通常是 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">C:\Users\你的用户名\AppData\Roaming\npm</code>）已添加到系统 PATH</li>
+              <li>重新打开 PowerShell 窗口</li>
+            </ul>
+
+            <p className="font-semibold text-foreground">2. API 连接失败</p>
+            <CodeBlock
+              language="powershell"
+              code={`# 检查环境变量
+echo $env:CCH_API_KEY
+
+# 测试网络连接
+Test-NetConnection -ComputerName ${resolvedOrigin.replace('https://', '').replace('http://', '')} -Port 443`}
+            />
+
+            <p className="font-semibold text-foreground">3. 更新 Codex</p>
+            <CodeBlock
+              language="powershell"
+              code={`npm i -g @openai/codex --registry=https://registry.npmmirror.com`}
+            />
           </div>
         </div>
       </section>

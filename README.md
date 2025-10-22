@@ -51,13 +51,21 @@
 
 <div align="center">
 
-![统计面板](/public/readme/统计.webp)
+![首页](/public/readme/首页.png)
 
-*实时统计面板 - 请求量、成本、用户活跃度一目了然*
+*首页面板 - 系统概览与快速访问*
 
-![供应商管理](/public/readme/供应商.webp)
+![供应商管理](/public/readme/供应商管理.png)
 
 *供应商管理 - 配置上游服务、权重分配、流量限制*
+
+![排行榜](/public/readme/排行榜.png)
+
+*统计排行榜 - 用户和供应商使用情况一目了然*
+
+![日志](/public/readme/日志.png)
+
+*详细日志记录 - Token 使用、成本计算、调用链追踪*
 
 </div>
 
