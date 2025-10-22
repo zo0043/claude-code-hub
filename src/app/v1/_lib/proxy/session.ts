@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import type { Provider } from "@/types/provider";
 import type { User } from "@/types/user";
 import type { Key } from "@/types/key";

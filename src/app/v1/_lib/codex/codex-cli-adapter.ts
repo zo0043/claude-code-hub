@@ -14,7 +14,7 @@
  */
 
 import type { ResponseRequest } from "./types/response";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import { CODEX_CLI_INSTRUCTIONS, isCodexCLIRequest } from "./constants/codex-cli-instructions";
 
 /**
@@ -61,12 +61,12 @@ export function adaptForCodexCLI(request: ResponseRequest): ResponseRequest {
 
   // 步骤 1: 注入 instructions (如果开关启用)
   if (ENABLE_CODEX_CLI_INJECTION && !isCodexCLIRequest(request.instructions)) {
-    logger.info('[CodexCLI] Non-Codex CLI request detected, injecting instructions');
+    logger.info("[CodexCLI] Non-Codex CLI request detected, injecting instructions");
     adaptedRequest.instructions = CODEX_CLI_INSTRUCTIONS;
   } else if (ENABLE_CODEX_CLI_INJECTION) {
-    logger.info('[CodexCLI] Codex CLI request detected, skipping injection');
+    logger.info("[CodexCLI] Codex CLI request detected, skipping injection");
   } else {
-    logger.info('[CodexCLI] Injection disabled, skipping instructions');
+    logger.info("[CodexCLI] Injection disabled, skipping instructions");
   }
 
   // 步骤 2: 删除不兼容字段 (总是执行)
@@ -82,7 +82,7 @@ export function adaptForCodexCLI(request: ResponseRequest): ResponseRequest {
     logger.debug(`[CodexCLI] Removed incompatible fields: ${removedFields.join(", ")}`);
   }
 
-  logger.debug('[CodexCLI] Adapted request:', {
+  logger.debug("[CodexCLI] Adapted request:", {
     hasInstructions: !!adaptedRequest.instructions,
     instructionsLength: adaptedRequest.instructions?.length,
     removedFields,

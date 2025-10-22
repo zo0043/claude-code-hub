@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 
 /**
  * Header 处理器配置
@@ -78,7 +78,7 @@ export class HeaderProcessor {
       const url = new URL(baseUrl);
       return url.host;
     } catch (error) {
-      logger.error('提取 host 失败:', error);
+      logger.error("提取 host 失败:", error);
       const match = baseUrl.match(/^https?:\/\/([^\/]+)/);
       return match ? match[1] : "localhost";
     }

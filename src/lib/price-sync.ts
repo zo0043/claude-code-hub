@@ -8,7 +8,7 @@
  */
 
 import fs from "fs/promises";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import path from "path";
 
 const LITELLM_PRICE_URL =
@@ -47,7 +47,7 @@ export async function fetchLiteLLMPrices(): Promise<string | null> {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      logger.error('❌ Failed to fetch LiteLLM prices: HTTP ${response.status}');
+      logger.error("❌ Failed to fetch LiteLLM prices: HTTP ${response.status}");
       return null;
     }
 
@@ -56,14 +56,14 @@ export async function fetchLiteLLMPrices(): Promise<string | null> {
     // 验证 JSON 格式
     JSON.parse(jsonText);
 
-    logger.info('Successfully fetched LiteLLM prices from CDN');
+    logger.info("Successfully fetched LiteLLM prices from CDN");
     return jsonText;
   } catch (error) {
     if (error instanceof Error) {
       if (error.name === "AbortError") {
-        logger.error('❌ Fetch LiteLLM prices timeout after 10s');
+        logger.error("❌ Fetch LiteLLM prices timeout after 10s");
       } else {
-        logger.error('❌ Failed to fetch LiteLLM prices:', { context: error.message });
+        logger.error("❌ Failed to fetch LiteLLM prices:", { context: error.message });
       }
     }
     return null;
@@ -81,13 +81,13 @@ export async function readCachedPrices(): Promise<string | null> {
     // 验证 JSON 格式
     JSON.parse(cached);
 
-    logger.info('📦 Using cached LiteLLM prices');
+    logger.info("📦 Using cached LiteLLM prices");
     return cached;
   } catch (error) {
     if (error instanceof Error && "code" in error && error.code === "ENOENT") {
-      logger.info('ℹ️  No cached prices found');
+      logger.info("ℹ️  No cached prices found");
     } else {
-      logger.error('❌ Failed to read cached prices:', error);
+      logger.error("❌ Failed to read cached prices:", error);
     }
     return null;
   }
@@ -101,9 +101,9 @@ export async function saveCachedPrices(jsonText: string): Promise<void> {
   try {
     await ensureCacheDirectory();
     await fs.writeFile(CACHE_FILE_PATH, jsonText, "utf-8");
-    logger.info('💾 Saved prices to cache');
+    logger.info("💾 Saved prices to cache");
   } catch (error) {
-    logger.error('❌ Failed to save prices to cache:', error);
+    logger.error("❌ Failed to save prices to cache:", error);
   }
 }
 
@@ -122,6 +122,6 @@ export async function getPriceTableJson(): Promise<string | null> {
   }
 
   // 失败时降级使用缓存
-  logger.info('⚠️  CDN fetch failed, trying cache...');
+  logger.info("⚠️  CDN fetch failed, trying cache...");
   return await readCachedPrices();
 }

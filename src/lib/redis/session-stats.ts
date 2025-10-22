@@ -1,5 +1,5 @@
 import { SessionTracker } from "@/lib/session-tracker";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 
 /**
  * 获取当前活跃的并发 session 数量
@@ -16,7 +16,7 @@ export async function getActiveConcurrentSessions(): Promise<number> {
   try {
     return await SessionTracker.getGlobalSessionCount();
   } catch (error) {
-    logger.error('[SessionStats] Failed to get concurrent sessions:', error);
+    logger.error("[SessionStats] Failed to get concurrent sessions:", error);
     return 0; // Fail Open
   }
 }

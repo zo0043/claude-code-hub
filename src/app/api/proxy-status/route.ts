@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import { ProxyStatusTracker } from "@/lib/proxy-status-tracker";
 import { getSession } from "@/lib/auth";
 
@@ -36,7 +36,7 @@ export async function GET() {
 
     return NextResponse.json(status);
   } catch (error) {
-    logger.error('Failed to get proxy status:', error);
+    logger.error("Failed to get proxy status:", error);
     return NextResponse.json({ error: "获取代理状态失败" }, { status: 500 });
   }
 }

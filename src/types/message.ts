@@ -1,5 +1,5 @@
 import type { Numeric } from "decimal.js-light";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 
 /**
  * 供应商信息（用于决策链）

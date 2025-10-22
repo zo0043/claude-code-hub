@@ -1,7 +1,7 @@
 "use server";
 
 import { SessionManager } from "@/lib/session-manager";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import type { ActionResult } from "./types";
 import type { ActiveSessionInfo } from "@/types/session";
 
@@ -17,7 +17,7 @@ export async function getActiveSessions(): Promise<ActionResult<ActiveSessionInf
       data: sessions,
     };
   } catch (error) {
-    logger.error('Failed to get active sessions:', error);
+    logger.error("Failed to get active sessions:", error);
     return {
       ok: false,
       error: "获取活跃 session 失败",
@@ -42,7 +42,7 @@ export async function getAllSessions(): Promise<
       data: sessions,
     };
   } catch (error) {
-    logger.error('Failed to get all sessions:', error);
+    logger.error("Failed to get all sessions:", error);
     return {
       ok: false,
       error: "获取 session 列表失败",
@@ -68,7 +68,7 @@ export async function getSessionMessages(sessionId: string): Promise<ActionResul
       data: messages,
     };
   } catch (error) {
-    logger.error('Failed to get session messages:', error);
+    logger.error("Failed to get session messages:", error);
     return {
       ok: false,
       error: "获取 session messages 失败",
@@ -88,7 +88,7 @@ export async function hasSessionMessages(sessionId: string): Promise<ActionResul
       data: messages !== null,
     };
   } catch (error) {
-    logger.error('Failed to check session messages:', error);
+    logger.error("Failed to check session messages:", error);
     return {
       ok: true,
       data: false, // 出错时默认返回 false,避免显示无效按钮

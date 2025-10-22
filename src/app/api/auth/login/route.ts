@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import { validateKey, setAuthCookie } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    logger.error('Login error:', error);
+    logger.error("Login error:", error);
     return NextResponse.json({ error: "登录失败，请稍后重试" }, { status: 500 });
   }
 }

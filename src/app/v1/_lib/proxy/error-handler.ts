@@ -1,5 +1,5 @@
 import { updateMessageRequestDuration, updateMessageRequestDetails } from "@/repository/message";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import { ProxyResponses } from "./responses";
 import { ProxyError } from "./errors";
 import type { ProxySession } from "./session";

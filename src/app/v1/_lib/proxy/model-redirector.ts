@@ -1,5 +1,5 @@
 import type { Provider } from "@/types/provider";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import type { ProxySession } from "./session";
 
 /**
@@ -25,7 +25,7 @@ export class ModelRedirector {
     // 获取原始模型名称
     const originalModel = session.request.model;
     if (!originalModel) {
-      logger.debug('[ModelRedirector] No model found in request, skipping redirect');
+      logger.debug("[ModelRedirector] No model found in request, skipping redirect");
       return false;
     }
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import { findDailyLeaderboard, findMonthlyLeaderboard } from "@/repository/leaderboard";
 import { unstable_cache } from "next/cache";
 
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    logger.error('获取排行榜失败:', error);
+    logger.error("获取排行榜失败:", error);
     return NextResponse.json({ error: "获取排行榜数据失败" }, { status: 500 });
   }
 }

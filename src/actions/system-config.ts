@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import { getSystemSettings, updateSystemSettings } from "@/repository/system-config";
 import { getSession } from "@/lib/auth";
 import { UpdateSystemSettingsSchema } from "@/lib/validation/schemas";
@@ -18,7 +18,7 @@ export async function fetchSystemSettings(): Promise<ActionResult<SystemSettings
     const settings = await getSystemSettings();
     return { ok: true, data: settings };
   } catch (error) {
-    logger.error('获取系统设置失败:', error);
+    logger.error("获取系统设置失败:", error);
     return { ok: false, error: "获取系统设置失败" };
   }
 }
@@ -45,7 +45,7 @@ export async function saveSystemSettings(formData: {
 
     return { ok: true, data: updated };
   } catch (error) {
-    logger.error('更新系统设置失败:', error);
+    logger.error("更新系统设置失败:", error);
     const message = error instanceof Error ? error.message : "更新系统设置失败";
     return { ok: false, error: message };
   }

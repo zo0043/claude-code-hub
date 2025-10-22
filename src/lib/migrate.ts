@@ -1,7 +1,7 @@
 "use server";
 
 import { migrate } from "drizzle-orm/postgres-js/migrator";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import path from "path";
@@ -12,11 +12,11 @@ import path from "path";
  */
 export async function runMigrations() {
   if (!process.env.DSN) {
-    logger.error('❌ DSN environment variable is not set');
+    logger.error("❌ DSN environment variable is not set");
     process.exit(1);
   }
 
-  logger.info('🔄 Starting database migrations...');
+  logger.info("🔄 Starting database migrations...");
 
   const migrationClient = postgres(process.env.DSN, { max: 1 });
   const db = drizzle(migrationClient);
@@ -28,9 +28,9 @@ export async function runMigrations() {
     // 执行迁移
     await migrate(db, { migrationsFolder });
 
-    logger.info('Database migrations completed successfully!');
+    logger.info("Database migrations completed successfully!");
   } catch (error) {
-    logger.error('❌ Migration failed:', error);
+    logger.error("❌ Migration failed:", error);
     process.exit(1);
   } finally {
     // 关闭连接
@@ -43,7 +43,7 @@ export async function runMigrations() {
  */
 export async function checkDatabaseConnection(retries = 30, delay = 2000): Promise<boolean> {
   if (!process.env.DSN) {
-    logger.error('❌ DSN environment variable is not set');
+    logger.error("❌ DSN environment variable is not set");
     return false;
   }
 
@@ -52,16 +52,16 @@ export async function checkDatabaseConnection(retries = 30, delay = 2000): Promi
       const client = postgres(process.env.DSN, { max: 1 });
       await client`SELECT 1`;
       await client.end();
-      logger.info('Database connection established');
+      logger.info("Database connection established");
       return true;
     } catch (error) {
-      logger.error('⏳ Waiting for database... (${i + 1}/${retries})', error);
+      logger.error("⏳ Waiting for database... (${i + 1}/${retries})", error);
       if (i < retries - 1) {
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
   }
 
-  logger.error('Failed to connect to database after retries', { attempts: retries });
+  logger.error("Failed to connect to database after retries", { attempts: retries });
   return false;
 }

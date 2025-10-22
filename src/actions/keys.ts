@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import { randomBytes } from "node:crypto";
 import { KeyFormSchema } from "@/lib/validation/schemas";
 import {
@@ -69,7 +69,7 @@ export async function addKey(data: {
     // 返回生成的key供前端显示
     return { ok: true, data: { generatedKey, name: validatedData.name } };
   } catch (error) {
-    logger.error('添加密钥失败:', error);
+    logger.error("添加密钥失败:", error);
     const message = error instanceof Error ? error.message : "添加密钥失败，请稍后重试";
     return { ok: false, error: message };
   }
@@ -110,7 +110,7 @@ export async function editKey(
     revalidatePath("/dashboard");
     return { ok: true };
   } catch (error) {
-    logger.error('更新密钥失败:', error);
+    logger.error("更新密钥失败:", error);
     const message = error instanceof Error ? error.message : "更新密钥失败，请稍后重试";
     return { ok: false, error: message };
   }
@@ -143,7 +143,7 @@ export async function removeKey(keyId: number): Promise<ActionResult> {
     revalidatePath("/dashboard");
     return { ok: true };
   } catch (error) {
-    logger.error('删除密钥失败:', error);
+    logger.error("删除密钥失败:", error);
     const message = error instanceof Error ? error.message : "删除密钥失败，请稍后重试";
     return { ok: false, error: message };
   }
@@ -165,7 +165,7 @@ export async function getKeys(userId: number): Promise<ActionResult<Key[]>> {
     const keys = await findKeyList(userId);
     return { ok: true, data: keys };
   } catch (error) {
-    logger.error('获取密钥列表失败:', error);
+    logger.error("获取密钥列表失败:", error);
     return { ok: false, error: "获取密钥列表失败" };
   }
 }
@@ -188,7 +188,7 @@ export async function getKeysWithStatistics(
     const stats = await findKeysWithStatistics(userId);
     return { ok: true, data: stats };
   } catch (error) {
-    logger.error('获取密钥统计失败:', error);
+    logger.error("获取密钥统计失败:", error);
     return { ok: false, error: "获取密钥统计失败" };
   }
 }

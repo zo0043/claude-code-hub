@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/drizzle/db";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import { systemSettings } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import type { SystemSettings, UpdateSystemSettingsInput } from "@/types/system-config";

@@ -1,7 +1,7 @@
 "use server";
 
 import { getActiveConcurrentSessions } from "@/lib/redis";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import type { ActionResult } from "./types";
 
 /**
@@ -15,7 +15,7 @@ export async function getConcurrentSessions(): Promise<ActionResult<number>> {
       data: count,
     };
   } catch (error) {
-    logger.error('Failed to get concurrent sessions:', error);
+    logger.error("Failed to get concurrent sessions:", error);
     return {
       ok: false,
       error: "获取并发数失败",

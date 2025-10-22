@@ -11,7 +11,7 @@ export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   if (isDevelopment()) {
-    logger.info('Request received', { method: method.toUpperCase(), pathname });
+    logger.info("Request received", { method: method.toUpperCase(), pathname });
   }
 
   // API 代理路由不需要 Web 鉴权（使用自己的 Bearer token）

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import { APP_VERSION, GITHUB_REPO, compareVersions } from "@/lib/version";
 
 export const runtime = "edge";
@@ -58,7 +58,7 @@ export async function GET() {
       publishedAt: release.published_at,
     });
   } catch (error) {
-    logger.error('版本检查失败:', error);
+    logger.error("版本检查失败:", error);
     return NextResponse.json(
       {
         current: APP_VERSION,

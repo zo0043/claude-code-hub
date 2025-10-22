@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import { toast } from "sonner";
 import { editProvider } from "@/actions/providers";
 import type { ProviderDisplay } from "@/types/provider";
@@ -69,7 +69,7 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
         throw new Error(res.error);
       }
     } catch (e) {
-      logger.error('切换服务商启用状态失败', { context: e });
+      logger.error("切换服务商启用状态失败", { context: e });
       setEnabled(prev);
       const msg = e instanceof Error ? e.message : "切换失败";
       toast.error(msg);
@@ -94,7 +94,7 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
           if (!res.ok) throw new Error(res.error);
         })
         .catch((e) => {
-          logger.error('更新权重失败', { context: e });
+          logger.error("更新权重失败", { context: e });
           const msg = e instanceof Error ? e.message : "更新权重失败";
           toast.error(msg);
           setWeight(clampWeight(initialWeightRef.current));
@@ -120,7 +120,7 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
           if (!res.ok) throw new Error(res.error);
         })
         .catch((e) => {
-          logger.error('更新5小时消费上限失败', { context: e });
+          logger.error("更新5小时消费上限失败", { context: e });
           const msg = e instanceof Error ? e.message : "更新5小时消费上限失败";
           toast.error(msg);
           setLimit5hInfinite(initial5hRef.current === null);
@@ -147,7 +147,7 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
           if (!res.ok) throw new Error(res.error);
         })
         .catch((e) => {
-          logger.error('更新周消费上限失败', { context: e });
+          logger.error("更新周消费上限失败", { context: e });
           const msg = e instanceof Error ? e.message : "更新周消费上限失败";
           toast.error(msg);
           setLimitWeeklyInfinite(initialWeeklyRef.current === null);
@@ -174,7 +174,7 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
           if (!res.ok) throw new Error(res.error);
         })
         .catch((e) => {
-          logger.error('更新月消费上限失败', { context: e });
+          logger.error("更新月消费上限失败", { context: e });
           const msg = e instanceof Error ? e.message : "更新月消费上限失败";
           toast.error(msg);
           setLimitMonthlyInfinite(initialMonthlyRef.current === null);
@@ -201,7 +201,7 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
           if (!res.ok) throw new Error(res.error);
         })
         .catch((e) => {
-          logger.error('更新并发Session上限失败', { context: e });
+          logger.error("更新并发Session上限失败", { context: e });
           const msg = e instanceof Error ? e.message : "更新并发Session上限失败";
           toast.error(msg);
           setConcurrentInfinite(initialConcurrentRef.current === 0);

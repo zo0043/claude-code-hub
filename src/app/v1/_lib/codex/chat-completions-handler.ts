@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import { ProxySession } from "../proxy/session";
 import { ProxyAuthenticator } from "../proxy/auth-guard";
 import { ProxyRateLimitGuard } from "../proxy/rate-limit-guard";
@@ -24,7 +24,7 @@ import type { ChatCompletionRequest } from "./types/compatible";
  * 5. 响应自动转换回 OpenAI 格式（在 ResponseHandler 中）
  */
 export async function handleChatCompletions(c: Context): Promise<Response> {
-  logger.info('[ChatCompletions] Received OpenAI Compatible API request');
+  logger.info("[ChatCompletions] Received OpenAI Compatible API request");
 
   const session = await ProxySession.fromContext(c);
 
@@ -66,7 +66,7 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
         );
       }
 
-      logger.debug('[ChatCompletions] OpenAI format detected, transforming...', {
+      logger.debug("[ChatCompletions] OpenAI format detected, transforming...", {
         model: openAIRequest.model,
         stream: openAIRequest.stream,
         messageCount: openAIRequest.messages.length,
@@ -79,16 +79,15 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
 
       // 开发模式：输出完整原始请求
       if (process.env.NODE_ENV === "development") {
-        logger.debug(
-          "[ChatCompletions] Full OpenAI request:",
-          { request: JSON.stringify(openAIRequest, null, 2) }
-        );
+        logger.debug("[ChatCompletions] Full OpenAI request:", {
+          request: JSON.stringify(openAIRequest, null, 2),
+        });
       }
 
       try {
         let responseRequest = RequestTransformer.transform(openAIRequest);
 
-        logger.debug('[ChatCompletions] Transformed to Response API:', {
+        logger.debug("[ChatCompletions] Transformed to Response API:", {
           model: responseRequest.model,
           inputCount: responseRequest.input?.length,
           hasReasoning: !!responseRequest.reasoning,
@@ -101,25 +100,22 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
 
         // 开发模式：输出完整转换后请求
         if (process.env.NODE_ENV === "development") {
-          logger.debug(
-            "[ChatCompletions] Full Response API request:",
-            { request: JSON.stringify(responseRequest, null, 2) }
-          );
+          logger.debug("[ChatCompletions] Full Response API request:", {
+            request: JSON.stringify(responseRequest, null, 2),
+          });
         }
 
         // 适配 Codex CLI (注入 instructions)
         if (process.env.NODE_ENV === "development") {
-          logger.debug(
-            "[ChatCompletions] Before adaptForCodexCLI:",
-            { request: JSON.stringify(responseRequest, null, 2) }
-          );
+          logger.debug("[ChatCompletions] Before adaptForCodexCLI:", {
+            request: JSON.stringify(responseRequest, null, 2),
+          });
         }
         responseRequest = adaptForCodexCLI(responseRequest);
         if (process.env.NODE_ENV === "development") {
-          logger.debug(
-            "[ChatCompletions] After adaptForCodexCLI:",
-            { request: JSON.stringify(responseRequest, null, 2) }
-          );
+          logger.debug("[ChatCompletions] After adaptForCodexCLI:", {
+            request: JSON.stringify(responseRequest, null, 2),
+          });
         }
 
         // 更新 session（替换为 Response API 格式）
@@ -129,20 +125,19 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
         // 验证转换结果（仅在开发环境）
         if (process.env.NODE_ENV === "development") {
           const msgObj = session.request.message as Record<string, unknown>;
-          logger.debug(
-            "[ChatCompletions] Verification - session.request.message contains input:",
-            {
-              hasInput: "input" in msgObj,
-              inputType: Array.isArray(msgObj.input) ? "array" : typeof msgObj.input,
-              inputLength: Array.isArray(msgObj.input) ? msgObj.input.length : "N/A",
-            }
-          );
+          logger.debug("[ChatCompletions] Verification - session.request.message contains input:", {
+            hasInput: "input" in msgObj,
+            inputType: Array.isArray(msgObj.input) ? "array" : typeof msgObj.input,
+            inputLength: Array.isArray(msgObj.input) ? msgObj.input.length : "N/A",
+          });
         }
 
         // 标记为 OpenAI 格式（用于响应转换）
         session.setOriginalFormat("openai");
       } catch (transformError) {
-        logger.error('[ChatCompletions] Request transformation failed:', { context: transformError });
+        logger.error("[ChatCompletions] Request transformation failed:", {
+          context: transformError,
+        });
         return new Response(
           JSON.stringify({
             error: {
@@ -156,7 +151,7 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
       }
     } else if (isResponseAPIFormat) {
       // Response API 格式 → 直接透传
-      logger.info('[ChatCompletions] Response API format detected, passing through');
+      logger.info("[ChatCompletions] Response API format detected, passing through");
 
       // 标记为 Response API 格式（响应也用 Response API 格式）
       session.setOriginalFormat("response");
@@ -217,7 +212,7 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
     // 5. 响应处理（自动转换回 OpenAI 格式）
     return await ProxyResponseHandler.dispatch(session, response);
   } catch (error) {
-    logger.error('[ChatCompletions] Handler error:', error);
+    logger.error("[ChatCompletions] Handler error:", error);
     return await ProxyErrorHandler.handle(session, error);
   }
 }

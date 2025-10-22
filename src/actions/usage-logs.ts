@@ -1,7 +1,7 @@
 "use server";
 
 import { getSession } from "@/lib/auth";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import {
   findUsageLogsWithDetails,
   getUsedModels,
@@ -31,7 +31,7 @@ export async function getUsageLogs(
 
     return { ok: true, data: result };
   } catch (error) {
-    logger.error('获取使用日志失败:', error);
+    logger.error("获取使用日志失败:", error);
     const message = error instanceof Error ? error.message : "获取使用日志失败";
     return { ok: false, error: message };
   }
@@ -50,7 +50,7 @@ export async function getModelList(): Promise<ActionResult<string[]>> {
     const models = await getUsedModels();
     return { ok: true, data: models };
   } catch (error) {
-    logger.error('获取模型列表失败:', error);
+    logger.error("获取模型列表失败:", error);
     return { ok: false, error: "获取模型列表失败" };
   }
 }
@@ -68,7 +68,7 @@ export async function getStatusCodeList(): Promise<ActionResult<number[]>> {
     const codes = await getUsedStatusCodes();
     return { ok: true, data: codes };
   } catch (error) {
-    logger.error('获取状态码列表失败:', error);
+    logger.error("获取状态码列表失败:", error);
     return { ok: false, error: "获取状态码列表失败" };
   }
 }

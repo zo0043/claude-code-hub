@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import { getSession } from "@/lib/auth";
 import {
   findLatestPriceByModel,
@@ -97,7 +97,7 @@ export async function uploadPriceTable(
           result.unchanged.push(modelName);
         }
       } catch (error) {
-        logger.error('处理模型 ${modelName} 失败:', error);
+        logger.error("处理模型 ${modelName} 失败:", error);
         result.failed.push(modelName);
       }
     }
@@ -107,7 +107,7 @@ export async function uploadPriceTable(
 
     return { ok: true, data: result };
   } catch (error) {
-    logger.error('上传价格表失败:', error);
+    logger.error("上传价格表失败:", error);
     const message = error instanceof Error ? error.message : "上传失败，请稍后重试";
     return { ok: false, error: message };
   }
@@ -126,7 +126,7 @@ export async function getModelPrices(): Promise<ModelPrice[]> {
 
     return await findAllLatestPrices();
   } catch (error) {
-    logger.error('获取模型价格失败:', error);
+    logger.error("获取模型价格失败:", error);
     return [];
   }
 }
@@ -145,7 +145,7 @@ export async function hasPriceTable(): Promise<boolean> {
 
     return await hasAnyPriceRecords();
   } catch (error) {
-    logger.error('检查价格表失败:', error);
+    logger.error("检查价格表失败:", error);
     return false;
   }
 }
@@ -166,13 +166,13 @@ export async function syncLiteLLMPrices(): Promise<ActionResult<PriceUpdateResul
       return { ok: false, error: "无权限执行此操作" };
     }
 
-    logger.info('🔄 Starting LiteLLM price sync...');
+    logger.info("🔄 Starting LiteLLM price sync...");
 
     // 获取价格表 JSON（优先 CDN，降级缓存）
     const jsonContent = await getPriceTableJson();
 
     if (!jsonContent) {
-      logger.error('❌ Failed to get price table from both CDN and cache');
+      logger.error("❌ Failed to get price table from both CDN and cache");
       return {
         ok: false,
         error: "无法从 CDN 或缓存获取价格表，请检查网络连接或稍后重试",
@@ -183,14 +183,14 @@ export async function syncLiteLLMPrices(): Promise<ActionResult<PriceUpdateResul
     const result = await uploadPriceTable(jsonContent);
 
     if (result.ok) {
-      logger.info('✅ LiteLLM price sync completed', { result: result.data });
+      logger.info("✅ LiteLLM price sync completed", { result: result.data });
     } else {
-      logger.error('❌ LiteLLM price sync failed:', { context: result.error });
+      logger.error("❌ LiteLLM price sync failed:", { context: result.error });
     }
 
     return result;
   } catch (error) {
-    logger.error('❌ Sync LiteLLM prices failed:', error);
+    logger.error("❌ Sync LiteLLM prices failed:", error);
     const message = error instanceof Error ? error.message : "同步失败，请稍后重试";
     return { ok: false, error: message };
   }

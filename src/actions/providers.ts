@@ -8,7 +8,7 @@ import {
   getProviderStatistics,
 } from "@/repository/provider";
 import { revalidatePath } from "next/cache";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import { type ProviderDisplay } from "@/types/provider";
 import { maskKey } from "@/lib/utils/validation";
 import { getSession } from "@/lib/auth";
@@ -23,7 +23,10 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
     logger.trace("getProviders:session", { hasSession: !!session, role: session?.user.role });
 
     if (!session || session.user.role !== "admin") {
-      logger.trace("getProviders:unauthorized", { hasSession: !!session, role: session?.user.role });
+      logger.trace("getProviders:unauthorized", {
+        hasSession: !!session,
+        role: session?.user.role,
+      });
       return [];
     }
 
@@ -36,7 +39,7 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
           stack: error.stack,
           name: error.name,
         });
-        logger.error('获取供应商统计数据失败:', error);
+        logger.error("获取供应商统计数据失败:", error);
         return []; // 统计查询失败时返回空数组，不影响供应商列表显示
       }),
     ]);
@@ -132,7 +135,7 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    logger.error('获取服务商数据失败:', error);
+    logger.error("获取服务商数据失败:", error);
     return [];
   }
 }
@@ -197,7 +200,7 @@ export async function addProvider(data: {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    logger.error('创建服务商失败:', error);
+    logger.error("创建服务商失败:", error);
     const message = error instanceof Error ? error.message : "创建服务商失败";
     return { ok: false, error: message };
   }
@@ -238,7 +241,7 @@ export async function editProvider(
     revalidatePath("/settings/providers");
     return { ok: true };
   } catch (error) {
-    logger.error('更新服务商失败:', error);
+    logger.error("更新服务商失败:", error);
     const message = error instanceof Error ? error.message : "更新服务商失败";
     return { ok: false, error: message };
   }
@@ -256,7 +259,7 @@ export async function removeProvider(providerId: number): Promise<ActionResult> 
     revalidatePath("/settings/providers");
     return { ok: true };
   } catch (error) {
-    logger.error('删除服务商失败:', error);
+    logger.error("删除服务商失败:", error);
     const message = error instanceof Error ? error.message : "删除服务商失败";
     return { ok: false, error: message };
   }
@@ -301,7 +304,7 @@ export async function getProvidersHealthStatus() {
 
     return enrichedStatus;
   } catch (error) {
-    logger.error('获取熔断器状态失败:', error);
+    logger.error("获取熔断器状态失败:", error);
     return {};
   }
 }
@@ -321,7 +324,7 @@ export async function resetProviderCircuit(providerId: number): Promise<ActionRe
 
     return { ok: true };
   } catch (error) {
-    logger.error('重置熔断器失败:', error);
+    logger.error("重置熔断器失败:", error);
     const message = error instanceof Error ? error.message : "重置熔断器失败";
     return { ok: false, error: message };
   }

@@ -1,5 +1,5 @@
 import type { ProxySession } from "./session";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import { SessionManager } from "@/lib/session-manager";
 import { SessionTracker } from "@/lib/session-tracker";
 
@@ -15,7 +15,7 @@ export class ProxySessionGuard {
   static async ensure(session: ProxySession): Promise<void> {
     const keyId = session.authState?.key?.id;
     if (!keyId) {
-      logger.warn('[ProxySessionGuard] No key ID, skipping session assignment');
+      logger.warn("[ProxySessionGuard] No key ID, skipping session assignment");
       return;
     }
 
@@ -34,7 +34,7 @@ export class ProxySessionGuard {
 
       // 5. 追踪 session（添加到活跃集合）
       void SessionTracker.trackSession(sessionId, keyId).catch((err) => {
-        logger.error('[ProxySessionGuard] Failed to track session:', err);
+        logger.error("[ProxySessionGuard] Failed to track session:", err);
       });
 
       // 6. 存储 session 详细信息到 Redis（用于实时监控）
@@ -57,7 +57,7 @@ export class ProxySessionGuard {
             }
           }
         } catch (error) {
-          logger.error('[ProxySessionGuard] Failed to store session info:', error);
+          logger.error("[ProxySessionGuard] Failed to store session info:", error);
         }
       })();
 
@@ -65,7 +65,7 @@ export class ProxySessionGuard {
         `[ProxySessionGuard] Session assigned: ${sessionId} (key=${keyId}, messagesLength=${session.getMessagesLength()}, clientProvided=${!!clientSessionId})`
       );
     } catch (error) {
-      logger.error('[ProxySessionGuard] Failed to assign session:', error);
+      logger.error("[ProxySessionGuard] Failed to assign session:", error);
       // 降级：生成新 session（不阻塞请求）
       const fallbackSessionId = SessionManager.generateSessionId();
       session.setSessionId(fallbackSessionId);

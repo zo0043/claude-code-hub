@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/drizzle/db";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import { providers } from "@/drizzle/schema";
 import { eq, isNull, and, desc, sql } from "drizzle-orm";
 import type { Provider, CreateProviderData, UpdateProviderData } from "@/types/provider";

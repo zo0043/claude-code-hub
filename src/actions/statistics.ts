@@ -1,7 +1,7 @@
 "use server";
 
 import { getSession } from "@/lib/auth";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import {
   getUserStatisticsFromDB,
   getActiveUsersFromDB,
@@ -149,7 +149,7 @@ export async function getUserStatistics(
       data: result,
     };
   } catch (error) {
-    logger.error('Failed to get user statistics:', error);
+    logger.error("Failed to get user statistics:", error);
 
     // 提供更具体的错误信息
     const errorMessage = error instanceof Error ? error.message : "未知错误";

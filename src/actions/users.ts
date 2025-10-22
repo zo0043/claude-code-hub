@@ -1,7 +1,7 @@
 "use server";
 
 import { findUserList, createUser, updateUser, deleteUser } from "@/repository/user";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import { findKeyList, findKeyUsageToday, findKeysWithStatistics } from "@/repository/key";
 import { revalidatePath } from "next/cache";
 import { randomBytes } from "node:crypto";
@@ -87,7 +87,7 @@ export async function getUsers(): Promise<UserDisplay[]> {
             }),
           };
         } catch (error) {
-          logger.error('获取用户 ${user.id} 的密钥失败:', error);
+          logger.error("获取用户 ${user.id} 的密钥失败:", error);
           return {
             id: user.id,
             name: user.name,
@@ -104,7 +104,7 @@ export async function getUsers(): Promise<UserDisplay[]> {
 
     return userDisplays;
   } catch (error) {
-    logger.error('获取用户数据失败:', error);
+    logger.error("获取用户数据失败:", error);
     return [];
   }
 }
@@ -153,7 +153,7 @@ export async function addUser(data: {
     revalidatePath("/dashboard");
     return { ok: true };
   } catch (error) {
-    logger.error('添加用户失败:', error);
+    logger.error("添加用户失败:", error);
     const message = error instanceof Error ? error.message : "添加用户失败，请稍后重试";
     return { ok: false, error: message };
   }
@@ -189,7 +189,7 @@ export async function editUser(
     revalidatePath("/dashboard");
     return { ok: true };
   } catch (error) {
-    logger.error('更新用户失败:', error);
+    logger.error("更新用户失败:", error);
     const message = error instanceof Error ? error.message : "更新用户失败，请稍后重试";
     return { ok: false, error: message };
   }
@@ -207,7 +207,7 @@ export async function removeUser(userId: number): Promise<ActionResult> {
     revalidatePath("/dashboard");
     return { ok: true };
   } catch (error) {
-    logger.error('删除用户失败:', error);
+    logger.error("删除用户失败:", error);
     const message = error instanceof Error ? error.message : "删除用户失败，请稍后重试";
     return { ok: false, error: message };
   }

@@ -4,7 +4,7 @@ import {
   updateMessageRequestDetails,
 } from "@/repository/message";
 import { findLatestPriceByModel } from "@/repository/model-price";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import { parseSSEData } from "@/lib/utils/sse";
 import { calculateRequestCost } from "@/lib/utils/cost-calculation";
 import { RateLimitService } from "@/lib/rate-limit";
@@ -61,7 +61,7 @@ export class ProxyResponseHandler {
         // 转换为 OpenAI 格式
         const openAIResponse = ResponseTransformer.transform(responseData);
 
-        logger.debug('[ResponseHandler] Transformed Response API → OpenAI format (non-stream)');
+        logger.debug("[ResponseHandler] Transformed Response API → OpenAI format (non-stream)");
 
         // 构建新的响应
         finalResponse = new Response(JSON.stringify(openAIResponse), {
@@ -70,7 +70,7 @@ export class ProxyResponseHandler {
           headers: new Headers(response.headers),
         });
       } catch (error) {
-        logger.error('[ResponseHandler] Failed to transform response:', error);
+        logger.error("[ResponseHandler] Failed to transform response:", error);
         // 转换失败时返回原始响应
         finalResponse = response;
       }
@@ -135,7 +135,7 @@ export class ProxyResponseHandler {
             status: statusCode >= 200 && statusCode < 300 ? "completed" : "error",
             statusCode: statusCode,
           }).catch((error: unknown) => {
-            logger.error('[ResponseHandler] Failed to update session usage:', error);
+            logger.error("[ResponseHandler] Failed to update session usage:", error);
           });
         }
 
@@ -164,7 +164,7 @@ export class ProxyResponseHandler {
           statusCode,
         });
       } catch (error) {
-        logger.error('Failed to handle non-stream log:', error);
+        logger.error("Failed to handle non-stream log:", error);
       }
     })();
 
@@ -184,7 +184,7 @@ export class ProxyResponseHandler {
     let processedStream: ReadableStream<Uint8Array> = response.body;
 
     if (needsTransform) {
-      logger.debug('[ResponseHandler] Transforming Response API → OpenAI format (stream)');
+      logger.debug("[ResponseHandler] Transforming Response API → OpenAI format (stream)");
 
       // 创建转换流
       const streamTransformer = new StreamTransformer();
@@ -231,7 +231,7 @@ export class ProxyResponseHandler {
               }
             }
           } catch (error) {
-            logger.error('[ResponseHandler] Stream transform error:', error);
+            logger.error("[ResponseHandler] Stream transform error:", error);
             // 出错时传递原始 chunk
             controller.enqueue(chunk);
           }
@@ -326,7 +326,7 @@ export class ProxyResponseHandler {
             status: statusCode >= 200 && statusCode < 300 ? "completed" : "error",
             statusCode: statusCode,
           }).catch((error: unknown) => {
-            logger.error('[ResponseHandler] Failed to update session usage:', error);
+            logger.error("[ResponseHandler] Failed to update session usage:", error);
           });
         }
 
@@ -340,7 +340,7 @@ export class ProxyResponseHandler {
           providerChain: session.getProviderChain(),
         });
       } catch (error) {
-        logger.error('Failed to save SSE content:', error);
+        logger.error("Failed to save SSE content:", error);
       } finally {
         reader.releaseLock();
       }
@@ -437,6 +437,6 @@ async function trackCostToRedis(session: ProxySession, usage: UsageMetrics | nul
 
   // 刷新 session 时间戳（滑动窗口）
   void SessionTracker.refreshSession(session.sessionId, key.id, provider.id).catch((error) => {
-    logger.error('[ResponseHandler] Failed to refresh session tracker:', error);
+    logger.error("[ResponseHandler] Failed to refresh session tracker:", error);
   });
 }

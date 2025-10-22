@@ -1,5 +1,5 @@
 import { getRedisClient } from "@/lib/redis";
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 import { SessionTracker } from "@/lib/session-tracker";
 import { CHECK_AND_TRACK_SESSION } from "@/lib/redis/lua-scripts";
 
@@ -52,7 +52,7 @@ export class RateLimitService {
 
         const [err, value] = results[index] || [];
         if (err) {
-          logger.error('[RateLimit] Redis error:', err);
+          logger.error("[RateLimit] Redis error:", err);
           return { allowed: true }; // Fail Open
         }
 
@@ -69,7 +69,7 @@ export class RateLimitService {
 
       return { allowed: true };
     } catch (error) {
-      logger.error('[RateLimit] Check failed:', error);
+      logger.error("[RateLimit] Check failed:", error);
       return { allowed: true }; // Fail Open
     }
   }
@@ -105,7 +105,7 @@ export class RateLimitService {
 
       return { allowed: true };
     } catch (error) {
-      logger.error('[RateLimit] Session check failed:', error);
+      logger.error("[RateLimit] Session check failed:", error);
       return { allowed: true }; // Fail Open
     }
   }
@@ -130,7 +130,7 @@ export class RateLimitService {
     }
 
     if (!this.redis || this.redis.status !== "ready") {
-      logger.warn('[RateLimit] Redis not ready, Fail Open');
+      logger.warn("[RateLimit] Redis not ready, Fail Open");
       return { allowed: true, count: 0, tracked: false };
     }
 
@@ -165,7 +165,7 @@ export class RateLimitService {
         tracked: true, // Lua 脚本中已追踪
       };
     } catch (error) {
-      logger.error('[RateLimit] Atomic check-and-track failed:', error);
+      logger.error("[RateLimit] Atomic check-and-track failed:", error);
       return { allowed: true, count: 0, tracked: false }; // Fail Open
     }
   }
@@ -206,7 +206,7 @@ export class RateLimitService {
 
       await pipeline.exec();
     } catch (error) {
-      logger.error('[RateLimit] Track cost failed:', error);
+      logger.error("[RateLimit] Track cost failed:", error);
       // 不抛出错误，静默失败
     }
   }
@@ -225,7 +225,7 @@ export class RateLimitService {
       const value = await this.redis.get(`${type}:${id}:cost_${period}`);
       return parseFloat(value || "0");
     } catch (error) {
-      logger.error('[RateLimit] Get cost failed:', error);
+      logger.error("[RateLimit] Get cost failed:", error);
       return 0;
     }
   }

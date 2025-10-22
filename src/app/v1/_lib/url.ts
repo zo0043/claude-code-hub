@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+import { logger } from "@/lib/logger";
 
 /**
  * 构建代理目标URL
@@ -23,7 +23,7 @@ export function buildProxyUrl(baseUrl: string, requestUrl: URL): string {
 
     return baseUrlObj.toString();
   } catch (error) {
-    logger.error('URL构建失败:', error);
+    logger.error("URL构建失败:", error);
     // 降级到字符串拼接
     const normalizedBaseUrl = baseUrl.replace(/\/$/, "");
     return `${normalizedBaseUrl}${requestUrl.pathname}${requestUrl.search}`;
