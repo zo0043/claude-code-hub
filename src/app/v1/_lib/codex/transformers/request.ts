@@ -27,64 +27,21 @@ export class RequestTransformer {
   /**
    * 转换 Compatible 请求为 Response 请求
    *
-   * 关键:
-   * 1. 完整映射所有支持的参数
-   * 2. 字段名映射: max_tokens → max_output_tokens
-   * 3. 避免 undefined 值(使用条件属性)
-   * 4. reasoning 从请求读取,而非硬编码
+   * 极简实现（参考 codex2api）：
+   * - 只发送 4 个字段：model, input, reasoning, stream
+   * - reasoning 总是硬编码为 { effort: 'medium', summary: 'auto' }
+   * - 其他所有参数全部丢弃（避免 Codex 供应商拒绝不支持的字段）
    */
   static transform(request: ChatCompletionRequest): ResponseRequest {
-    // 构建基础请求(必需字段)
-    const responseRequest: ResponseRequest = {
+    return {
       model: request.model,
       input: this.transformMessages(request.messages),
+      reasoning: {
+        effort: 'medium' as const,
+        summary: 'auto' as const
+      },
+      stream: request.stream
     };
-
-    // 条件添加可选参数
-    if (request.temperature !== undefined) {
-      responseRequest.temperature = request.temperature;
-    }
-
-    if (request.top_p !== undefined) {
-      responseRequest.top_p = request.top_p;
-    }
-
-    if (request.max_tokens !== undefined) {
-      // 字段名映射: max_tokens → max_output_tokens
-      responseRequest.max_output_tokens = request.max_tokens;
-    }
-
-    if (request.tools !== undefined && request.tools.length > 0) {
-      responseRequest.tools = this.transformTools(request.tools);
-    }
-
-    if (request.tool_choice !== undefined) {
-      responseRequest.tool_choice = this.transformToolChoice(request.tool_choice);
-    }
-
-    if (request.parallel_tool_calls !== undefined) {
-      responseRequest.parallel_tool_calls = request.parallel_tool_calls;
-    }
-
-    if (request.user !== undefined) {
-      responseRequest.user = request.user;
-    }
-
-    if (request.metadata !== undefined) {
-      responseRequest.metadata = request.metadata;
-    }
-
-    // reasoning: 从请求读取,如果没有则不设置(让 API 使用默认值)
-    if (request.reasoning !== undefined) {
-      responseRequest.reasoning = request.reasoning;
-    }
-
-    // stream: 只有明确为 true 时才设置
-    if (request.stream === true) {
-      responseRequest.stream = true;
-    }
-
-    return responseRequest;
   }
 
   /**

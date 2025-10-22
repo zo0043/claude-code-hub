@@ -75,6 +75,11 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
         max_tokens: openAIRequest.max_tokens,
       });
 
+      // 开发模式：输出完整原始请求
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[ChatCompletions] Full OpenAI request:', JSON.stringify(openAIRequest, null, 2));
+      }
+
       try {
         let responseRequest = RequestTransformer.transform(openAIRequest);
 
@@ -89,8 +94,19 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
           stream: responseRequest.stream,
         });
 
+        // 开发模式：输出完整转换后请求
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('[ChatCompletions] Full Response API request:', JSON.stringify(responseRequest, null, 2));
+        }
+
         // 适配 Codex CLI (注入 instructions)
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('[ChatCompletions] Before adaptForCodexCLI:', JSON.stringify(responseRequest, null, 2));
+        }
         responseRequest = adaptForCodexCLI(responseRequest);
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('[ChatCompletions] After adaptForCodexCLI:', JSON.stringify(responseRequest, null, 2));
+        }
 
         // 更新 session（替换为 Response API 格式）
         session.request.message = responseRequest as unknown as Record<string, unknown>;

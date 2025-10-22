@@ -115,6 +115,9 @@ export class ProxyForwarder {
 
     const proxyUrl = buildProxyUrl(provider.url, forwardUrl);
 
+    // 输出最终代理 URL（用于调试）
+    console.debug(`[ProxyForwarder] Final proxy URL: ${proxyUrl}`);
+
     const hasBody = session.method !== "GET" && session.method !== "HEAD";
 
     // 关键修复：使用转换后的 message 而非原始 buffer
@@ -126,10 +129,14 @@ export class ProxyForwarder {
 
       // 调试日志：输出实际转发的请求体（仅在开发环境）
       if (process.env.NODE_ENV === 'development') {
-        console.debug(`[ProxyForwarder] Forwarding request body:`, {
+        console.debug(`[ProxyForwarder] Forwarding request:`, {
           provider: provider.name,
+          providerId: provider.id,
+          proxyUrl: proxyUrl,
           format: session.originalFormat,
-          bodyPreview: bodyString.slice(0, 500)
+          method: session.method,
+          bodyLength: bodyString.length,
+          bodyPreview: bodyString.slice(0, 1000)
         });
       }
     }
@@ -142,7 +149,23 @@ export class ProxyForwarder {
 
     (init as Record<string, unknown>).verbose = true;
 
-    const response = await fetch(proxyUrl, init);
+    let response: Response;
+    try {
+      response = await fetch(proxyUrl, init);
+    } catch (fetchError) {
+      // 捕获 fetch 原始错误（网络错误、DNS 解析失败、JSON 序列化错误等）
+      console.error(`[ProxyForwarder] Fetch failed for provider ${provider.id}:`, {
+        error: fetchError,
+        errorType: fetchError?.constructor?.name,
+        errorMessage: (fetchError as Error)?.message,
+        errorCause: (fetchError as any)?.cause,
+        proxyUrl: proxyUrl,
+        method: session.method,
+        hasBody: !!requestBody,
+      });
+
+      throw fetchError;
+    }
 
     // 检查 HTTP 错误状态（4xx/5xx 均视为失败，触发重试）
     // 注意：用户要求所有 4xx 都重试，包括 401、403、429 等
