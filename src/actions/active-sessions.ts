@@ -25,6 +25,31 @@ export async function getActiveSessions(): Promise<ActionResult<ActiveSessionInf
 }
 
 /**
+ * 获取所有 session（包括活跃和非活跃的）
+ * 用于实时监控页面的完整视图
+ */
+export async function getAllSessions(): Promise<
+  ActionResult<{
+    active: ActiveSessionInfo[];
+    inactive: ActiveSessionInfo[];
+  }>
+> {
+  try {
+    const sessions = await SessionManager.getAllSessionsWithExpiry();
+    return {
+      ok: true,
+      data: sessions,
+    };
+  } catch (error) {
+    console.error('Failed to get all sessions:', error);
+    return {
+      ok: false,
+      error: '获取 session 列表失败',
+    };
+  }
+}
+
+/**
  * 获取指定 session 的 messages 内容
  * 仅当 STORE_SESSION_MESSAGES=true 时可用
  */
@@ -46,6 +71,26 @@ export async function getSessionMessages(sessionId: string): Promise<ActionResul
     return {
       ok: false,
       error: '获取 session messages 失败',
+    };
+  }
+}
+
+/**
+ * 检查指定 session 是否有 messages 数据
+ * 用于判断是否显示"查看详情"按钮
+ */
+export async function hasSessionMessages(sessionId: string): Promise<ActionResult<boolean>> {
+  try {
+    const messages = await SessionManager.getSessionMessages(sessionId);
+    return {
+      ok: true,
+      data: messages !== null,
+    };
+  } catch (error) {
+    console.error('Failed to check session messages:', error);
+    return {
+      ok: true,
+      data: false, // 出错时默认返回 false,避免显示无效按钮
     };
   }
 }

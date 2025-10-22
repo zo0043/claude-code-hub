@@ -6,6 +6,7 @@ import {
   getActiveUsersFromDB,
   getKeyStatisticsFromDB,
   getActiveKeysForUserFromDB,
+  getMixedStatisticsFromDB,
 } from "@/repository/statistics";
 import { getSystemSettings } from "@/repository/system-config";
 import type {
@@ -50,21 +51,54 @@ export async function getUserStatistics(
 
     const settings = await getSystemSettings();
     const isAdmin = session.user.role === 'admin';
-    const mode: 'users' | 'keys' = isAdmin || settings.allowGlobalUsageView
+
+    // 确定显示模式
+    const mode: 'users' | 'keys' | 'mixed' = isAdmin
       ? 'users'
-      : 'keys';
+      : settings.allowGlobalUsageView
+        ? 'mixed'
+        : 'keys';
 
-    const prefix = mode === 'users' ? 'user' : 'key';
+    const prefix = mode === 'mixed' ? 'key' : mode === 'users' ? 'user' : 'key';
 
-    const [statsData, entities] = mode === 'users'
-      ? await Promise.all([
-          getUserStatisticsFromDB(timeRange),
-          getActiveUsersFromDB(),
-        ]) as [DatabaseStatRow[], DatabaseUser[]]
-      : await Promise.all([
-          getKeyStatisticsFromDB(session.user.id, timeRange),
-          getActiveKeysForUserFromDB(session.user.id),
-        ]) as [DatabaseKeyStatRow[], DatabaseKey[]];
+    let statsData: Array<DatabaseStatRow | DatabaseKeyStatRow>;
+    let entities: Array<DatabaseUser | DatabaseKey>;
+
+    if (mode === 'users') {
+      // Admin: 显示所有用户
+      const [userStats, userList] = await Promise.all([
+        getUserStatisticsFromDB(timeRange),
+        getActiveUsersFromDB(),
+      ]);
+      statsData = userStats;
+      entities = userList;
+    } else if (mode === 'mixed') {
+      // 非 Admin + allowGlobalUsageView: 自己的密钥明细 + 其他用户汇总
+      const [ownKeysList, mixedData] = await Promise.all([
+        getActiveKeysForUserFromDB(session.user.id),
+        getMixedStatisticsFromDB(session.user.id, timeRange),
+      ]);
+
+      // 合并数据：自己的密钥 + 其他用户的虚拟条目
+      statsData = [
+        ...mixedData.ownKeys,
+        ...mixedData.othersAggregate,
+      ];
+
+      // 合并实体列表：自己的密钥 + 其他用户虚拟实体
+      entities = [
+        ...ownKeysList,
+        { id: -1, name: '其他用户' },
+      ];
+    } else {
+      // 非 Admin + !allowGlobalUsageView: 仅显示自己的密钥
+      const [keyStats, keyList] = await Promise.all([
+        getKeyStatisticsFromDB(session.user.id, timeRange),
+        getActiveKeysForUserFromDB(session.user.id),
+      ]);
+      statsData = keyStats;
+      entities = keyList;
+    }
 
     // 将数据转换为适合图表的格式
     const dataByDate = new Map<string, ChartDataItem>();

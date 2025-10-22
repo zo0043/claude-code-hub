@@ -72,5 +72,5 @@ export interface UserStatisticsData {
   users: StatisticsUser[];
   timeRange: TimeRange;
   resolution: 'hour' | 'day';
-  mode: 'users' | 'keys';
+  mode: 'users' | 'keys' | 'mixed';
 }

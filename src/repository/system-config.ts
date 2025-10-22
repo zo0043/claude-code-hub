@@ -72,7 +72,7 @@ function createFallbackSettings(): SystemSettings {
   return {
     id: 0,
     siteTitle: DEFAULT_SITE_TITLE,
-    allowGlobalUsageView: true,
+    allowGlobalUsageView: false,
     createdAt: now,
     updatedAt: now,
   };
@@ -102,7 +102,7 @@ export async function getSystemSettings(): Promise<SystemSettings> {
       .insert(systemSettings)
       .values({
         siteTitle: DEFAULT_SITE_TITLE,
-        allowGlobalUsageView: true,
+        allowGlobalUsageView: false,
       })
       .onConflictDoNothing()
       .returning({

@@ -419,6 +419,57 @@ export class SessionManager {
   }
 
   /**
+   * 辅助方法：从 Redis Hash 数据构建 ActiveSessionInfo 对象
+   *
+   * @private
+   */
+  private static buildSessionInfo(
+    sessionId: string,
+    info: Record<string, string>,
+    usage: Record<string, string>
+  ): ActiveSessionInfo {
+    const startTime = parseInt(info.startTime || '0', 10);
+    const now = Date.now();
+
+    const session: ActiveSessionInfo = {
+      sessionId,
+      userName: info.userName || 'unknown',
+      userId: parseInt(info.userId || '0', 10),
+      keyId: parseInt(info.keyId || '0', 10),
+      keyName: info.keyName || 'unknown',
+      providerId: info.providerId ? parseInt(info.providerId, 10) : null,
+      providerName: info.providerName || null,
+      model: info.model || null,
+      apiType: (info.apiType as 'chat' | 'codex') || 'chat',
+      startTime,
+      status: (usage.status || info.status || 'in_progress') as 'in_progress' | 'completed' | 'error',
+      durationMs: startTime > 0 ? now - startTime : undefined,
+    };
+
+    // 添加 usage 数据（如果存在）
+    if (usage && Object.keys(usage).length > 0) {
+      if (usage.inputTokens) session.inputTokens = parseInt(usage.inputTokens, 10);
+      if (usage.outputTokens) session.outputTokens = parseInt(usage.outputTokens, 10);
+      if (usage.cacheCreationInputTokens)
+        session.cacheCreationInputTokens = parseInt(usage.cacheCreationInputTokens, 10);
+      if (usage.cacheReadInputTokens)
+        session.cacheReadInputTokens = parseInt(usage.cacheReadInputTokens, 10);
+      if (usage.costUsd) session.costUsd = usage.costUsd;
+      if (usage.statusCode) session.statusCode = parseInt(usage.statusCode, 10);
+      if (usage.errorMessage) session.errorMessage = usage.errorMessage;
+
+      // 计算总 token
+      const input = session.inputTokens || 0;
+      const output = session.outputTokens || 0;
+      const cacheCreate = session.cacheCreationInputTokens || 0;
+      const cacheRead = session.cacheReadInputTokens || 0;
+      session.totalTokens = input + output + cacheCreate + cacheRead;
+    }
+
+    return session;
+  }
+
+  /**
    * 获取活跃 session 列表（用于实时监控页面）
    */
   static async getActiveSessions(): Promise<ActiveSessionInfo[]> {
@@ -469,43 +520,8 @@ export class SessionManager {
         // 跳过空的 info（session 可能已过期）
         if (!info || Object.keys(info).length === 0) continue;
 
-        // 解析并构建 ActiveSessionInfo
-        const startTime = parseInt(info.startTime || '0', 10);
-        const now = Date.now();
-
-        const session: ActiveSessionInfo = {
-          sessionId: sessionIds[i],
-          userName: info.userName || 'unknown',
-          userId: parseInt(info.userId || '0', 10),
-          keyId: parseInt(info.keyId || '0', 10),
-          keyName: info.keyName || 'unknown',
-          providerId: info.providerId ? parseInt(info.providerId, 10) : null,
-          providerName: info.providerName || null,
-          model: info.model || null,
-          apiType: (info.apiType as 'chat' | 'codex') || 'chat',
-          startTime,
-          status: (usage.status || info.status || 'in_progress') as 'in_progress' | 'completed' | 'error',
-          durationMs: startTime > 0 ? now - startTime : undefined,
-        };
-
-        // 添加 usage 数据（如果存在）
-        if (usage && Object.keys(usage).length > 0) {
-          if (usage.inputTokens) session.inputTokens = parseInt(usage.inputTokens, 10);
-          if (usage.outputTokens) session.outputTokens = parseInt(usage.outputTokens, 10);
-          if (usage.cacheCreationInputTokens) session.cacheCreationInputTokens = parseInt(usage.cacheCreationInputTokens, 10);
-          if (usage.cacheReadInputTokens) session.cacheReadInputTokens = parseInt(usage.cacheReadInputTokens, 10);
-          if (usage.costUsd) session.costUsd = usage.costUsd;
-          if (usage.statusCode) session.statusCode = parseInt(usage.statusCode, 10);
-          if (usage.errorMessage) session.errorMessage = usage.errorMessage;
-
-          // 计算总 token
-          const input = session.inputTokens || 0;
-          const output = session.outputTokens || 0;
-          const cacheCreate = session.cacheCreationInputTokens || 0;
-          const cacheRead = session.cacheReadInputTokens || 0;
-          session.totalTokens = input + output + cacheCreate + cacheRead;
-        }
-
+        // 使用辅助方法构建 session 对象
+        const session = this.buildSessionInfo(sessionIds[i], info, usage);
         sessions.push(session);
       }
 
@@ -514,6 +530,108 @@ export class SessionManager {
     } catch (error) {
       console.error('[SessionManager] Failed to get active sessions:', error);
       return [];
+    }
+  }
+
+  /**
+   * 获取所有 session（包括非活跃的）
+   *
+   * 使用 SCAN 扫描 Redis 中所有 session:*:info key，
+   * 按最后活跃时间分为活跃（5 分钟内）和非活跃两组。
+   *
+   * @returns { active: 活跃 session 列表, inactive: 非活跃 session 列表 }
+   */
+  static async getAllSessionsWithExpiry(): Promise<{
+    active: ActiveSessionInfo[];
+    inactive: ActiveSessionInfo[];
+  }> {
+    const redis = getRedisClient();
+    if (!redis || redis.status !== 'ready') {
+      console.warn('[SessionManager] Redis not ready, returning empty lists');
+      return { active: [], inactive: [] };
+    }
+
+    try {
+      const now = Date.now();
+      const fiveMinutesAgo = now - this.SESSION_TTL * 1000; // SESSION_TTL 是秒，转为毫秒
+
+      // 1. 使用 SCAN 扫描所有 session:*:info key
+      const allSessions: ActiveSessionInfo[] = [];
+      let cursor = '0';
+
+      do {
+        const [nextCursor, keys] = (await redis.scan(
+          cursor,
+          'MATCH',
+          'session:*:info',
+          'COUNT',
+          100
+        )) as [string, string[]];
+
+        cursor = nextCursor;
+
+        if (keys.length > 0) {
+          // 2. 批量获取 session info 和 usage
+          const pipeline = redis.pipeline();
+
+          for (const key of keys) {
+            pipeline.hgetall(key);
+            // 提取 sessionId
+            const sessionId = key.replace('session:', '').replace(':info', '');
+            pipeline.hgetall(`session:${sessionId}:usage`);
+          }
+
+          const results = await pipeline.exec();
+          if (!results) continue;
+
+          // 3. 解析结果
+          for (let i = 0; i < keys.length; i++) {
+            const infoIndex = i * 2;
+            const usageIndex = i * 2 + 1;
+
+            const infoResult = results[infoIndex];
+            const usageResult = results[usageIndex];
+
+            // 检查结果有效性
+            if (!infoResult || infoResult[0] !== null) continue;
+            if (!usageResult || usageResult[0] !== null) continue;
+
+            const info = infoResult[1] as Record<string, string>;
+            const usage = usageResult[1] as Record<string, string>;
+
+            // 跳过空的 info
+            if (!info || Object.keys(info).length === 0) continue;
+
+            // 提取 sessionId
+            const sessionId = keys[i].replace('session:', '').replace(':info', '');
+
+            // 使用辅助方法构建 session 对象
+            const session = this.buildSessionInfo(sessionId, info, usage);
+            allSessions.push(session);
+          }
+        }
+      } while (cursor !== '0');
+
+      // 4. 按最后活跃时间分组
+      const active: ActiveSessionInfo[] = [];
+      const inactive: ActiveSessionInfo[] = [];
+
+      for (const session of allSessions) {
+        if (session.startTime >= fiveMinutesAgo) {
+          active.push(session);
+        } else {
+          inactive.push(session);
+        }
+      }
+
+      console.debug(
+        `[SessionManager] Found ${active.length} active, ${inactive.length} inactive sessions (from ${allSessions.length} total)`
+      );
+
+      return { active, inactive };
+    } catch (error) {
+      console.error('[SessionManager] Failed to get all sessions:', error);
+      return { active: [], inactive: [] };
     }
   }
 

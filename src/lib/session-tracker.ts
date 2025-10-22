@@ -18,6 +18,44 @@ export class SessionTracker {
   private static readonly SESSION_TTL = 300000; // 5 分钟（毫秒）
 
   /**
+   * 初始化 SessionTracker，自动清理旧格式数据
+   *
+   * 应在应用启动时调用一次，清理重构前的 Set 类型数据，
+   * 确保所有集合都是 ZSET 格式。
+   */
+  static async initialize(): Promise<void> {
+    const redis = getRedisClient();
+    if (!redis || redis.status !== 'ready') {
+      console.warn('[SessionTracker] Redis not ready, skipping initialization');
+      return;
+    }
+
+    try {
+      const key = 'global:active_sessions';
+      const exists = await redis.exists(key);
+
+      if (exists === 1) {
+        const type = await redis.type(key);
+
+        if (type === 'set') {
+          console.warn(`[SessionTracker] Found legacy Set: ${key}, migrating to ZSET...`);
+          await redis.del(key);
+          console.info(`[SessionTracker] ✅ Successfully migrated ${key} to ZSET format`);
+        } else if (type === 'zset') {
+          console.debug(`[SessionTracker] ${key} is already ZSET format, no migration needed`);
+        } else {
+          console.warn(`[SessionTracker] Unexpected type for ${key}: ${type}, deleting...`);
+          await redis.del(key);
+        }
+      } else {
+        console.debug(`[SessionTracker] ${key} does not exist, will be created on first use`);
+      }
+    } catch (error) {
+      console.error('[SessionTracker] Initialization failed:', error);
+    }
+  }
+
+  /**
    * 追踪 session（添加到全局和 key 级集合）
    *
    * 调用时机：SessionGuard 分配 sessionId 后
@@ -41,7 +79,23 @@ export class SessionTracker {
       pipeline.zadd(`key:${keyId}:active_sessions`, now, sessionId);
       pipeline.expire(`key:${keyId}:active_sessions`, 3600);
 
-      await pipeline.exec();
+      const results = await pipeline.exec();
+
+      // 检查执行结果，捕获类型冲突错误
+      if (results) {
+        for (const [err] of results) {
+          if (err) {
+            console.error('[SessionTracker] Pipeline command failed:', err);
+            // 如果是类型冲突（WRONGTYPE），自动修复
+            if (err.message?.includes('WRONGTYPE')) {
+              console.warn('[SessionTracker] Type conflict detected, auto-fixing...');
+              await this.initialize(); // 重新初始化，清理旧数据
+              return; // 本次追踪失败，下次请求会成功
+            }
+          }
+        }
+      }
+
       console.debug(`[SessionTracker] Tracked session: ${sessionId} (key=${keyId})`);
     } catch (error) {
       console.error('[SessionTracker] Failed to track session:', error);
@@ -71,7 +125,22 @@ export class SessionTracker {
       pipeline.zadd(`provider:${providerId}:active_sessions`, now, sessionId);
       pipeline.expire(`provider:${providerId}:active_sessions`, 3600);
 
-      await pipeline.exec();
+      const results = await pipeline.exec();
+
+      // 检查执行结果，捕获类型冲突错误
+      if (results) {
+        for (const [err] of results) {
+          if (err) {
+            console.error('[SessionTracker] Pipeline command failed:', err);
+            if (err.message?.includes('WRONGTYPE')) {
+              console.warn('[SessionTracker] Type conflict detected, auto-fixing...');
+              await this.initialize();
+              return;
+            }
+          }
+        }
+      }
+
       console.debug(`[SessionTracker] Updated provider: ${sessionId} → ${providerId}`);
     } catch (error) {
       console.error('[SessionTracker] Failed to update provider:', error);
@@ -104,7 +173,22 @@ export class SessionTracker {
       pipeline.zadd(`key:${keyId}:active_sessions`, now, sessionId);
       pipeline.zadd(`provider:${providerId}:active_sessions`, now, sessionId);
 
-      await pipeline.exec();
+      const results = await pipeline.exec();
+
+      // 检查执行结果，捕获类型冲突错误
+      if (results) {
+        for (const [err] of results) {
+          if (err) {
+            console.error('[SessionTracker] Pipeline command failed:', err);
+            if (err.message?.includes('WRONGTYPE')) {
+              console.warn('[SessionTracker] Type conflict detected, auto-fixing...');
+              await this.initialize();
+              return;
+            }
+          }
+        }
+      }
+
       console.debug(`[SessionTracker] Refreshed session: ${sessionId}`);
     } catch (error) {
       console.error('[SessionTracker] Failed to refresh session:', error);

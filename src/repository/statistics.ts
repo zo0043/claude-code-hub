@@ -305,3 +305,249 @@ export async function getActiveKeysForUserFromDB(userId: number): Promise<Databa
   const result = await db.execute(query);
   return Array.from(result) as unknown as DatabaseKey[];
 }
+
+/**
+ * 获取混合统计数据：当前用户的密钥明细 + 其他用户的汇总
+ * 用于非 admin 用户在 allowGlobalUsageView=true 时的数据展示
+ */
+export async function getMixedStatisticsFromDB(
+  userId: number,
+  timeRange: TimeRange
+): Promise<{
+  ownKeys: DatabaseKeyStatRow[];
+  othersAggregate: DatabaseStatRow[];
+}> {
+  let ownKeysQuery;
+  let othersQuery;
+
+  switch (timeRange) {
+    case 'today':
+      // 自己的密钥明细（小时分辨率）
+      ownKeysQuery = sql`
+        WITH hour_range AS (
+          SELECT generate_series(
+            DATE_TRUNC('day', NOW()),
+            DATE_TRUNC('day', NOW()) + INTERVAL '23 hours',
+            '1 hour'::interval
+          ) AS hour
+        ),
+        user_keys AS (
+          SELECT id, name, key
+          FROM keys
+          WHERE user_id = ${userId}
+            AND deleted_at IS NULL
+        ),
+        hourly_stats AS (
+          SELECT
+            k.id AS key_id,
+            k.name AS key_name,
+            hr.hour,
+            COUNT(mr.id) AS api_calls,
+            COALESCE(SUM(mr.cost_usd), 0) AS total_cost
+          FROM user_keys k
+          CROSS JOIN hour_range hr
+          LEFT JOIN message_request mr ON mr.key = k.key
+            AND mr.user_id = ${userId}
+            AND DATE_TRUNC('hour', mr.created_at) = hr.hour
+            AND mr.deleted_at IS NULL
+          GROUP BY k.id, k.name, hr.hour
+        )
+        SELECT
+          key_id,
+          key_name,
+          hour AS date,
+          api_calls::integer,
+          total_cost::numeric
+        FROM hourly_stats
+        ORDER BY hour ASC, key_name ASC
+      `;
+
+      // 其他用户汇总（小时分辨率）
+      othersQuery = sql`
+        WITH hour_range AS (
+          SELECT generate_series(
+            DATE_TRUNC('day', NOW()),
+            DATE_TRUNC('day', NOW()) + INTERVAL '23 hours',
+            '1 hour'::interval
+          ) AS hour
+        ),
+        hourly_stats AS (
+          SELECT
+            hr.hour,
+            COUNT(mr.id) AS api_calls,
+            COALESCE(SUM(mr.cost_usd), 0) AS total_cost
+          FROM hour_range hr
+          LEFT JOIN message_request mr ON DATE_TRUNC('hour', mr.created_at) = hr.hour
+            AND mr.user_id != ${userId}
+            AND mr.deleted_at IS NULL
+          GROUP BY hr.hour
+        )
+        SELECT
+          -1 AS user_id,
+          '其他用户' AS user_name,
+          hour AS date,
+          api_calls::integer,
+          total_cost::numeric
+        FROM hourly_stats
+        ORDER BY hour ASC
+      `;
+      break;
+
+    case '7days':
+      // 自己的密钥明细（天分辨率）
+      ownKeysQuery = sql`
+        WITH date_range AS (
+          SELECT generate_series(
+            CURRENT_DATE - INTERVAL '6 days',
+            CURRENT_DATE,
+            '1 day'::interval
+          )::date AS date
+        ),
+        user_keys AS (
+          SELECT id, name, key
+          FROM keys
+          WHERE user_id = ${userId}
+            AND deleted_at IS NULL
+        ),
+        daily_stats AS (
+          SELECT
+            k.id AS key_id,
+            k.name AS key_name,
+            dr.date,
+            COUNT(mr.id) AS api_calls,
+            COALESCE(SUM(mr.cost_usd), 0) AS total_cost
+          FROM user_keys k
+          CROSS JOIN date_range dr
+          LEFT JOIN message_request mr ON mr.key = k.key
+            AND mr.user_id = ${userId}
+            AND DATE(mr.created_at) = dr.date
+            AND mr.deleted_at IS NULL
+          GROUP BY k.id, k.name, dr.date
+        )
+        SELECT
+          key_id,
+          key_name,
+          date,
+          api_calls::integer,
+          total_cost::numeric
+        FROM daily_stats
+        ORDER BY date ASC, key_name ASC
+      `;
+
+      // 其他用户汇总（天分辨率）
+      othersQuery = sql`
+        WITH date_range AS (
+          SELECT generate_series(
+            CURRENT_DATE - INTERVAL '6 days',
+            CURRENT_DATE,
+            '1 day'::interval
+          )::date AS date
+        ),
+        daily_stats AS (
+          SELECT
+            dr.date,
+            COUNT(mr.id) AS api_calls,
+            COALESCE(SUM(mr.cost_usd), 0) AS total_cost
+          FROM date_range dr
+          LEFT JOIN message_request mr ON DATE(mr.created_at) = dr.date
+            AND mr.user_id != ${userId}
+            AND mr.deleted_at IS NULL
+          GROUP BY dr.date
+        )
+        SELECT
+          -1 AS user_id,
+          '其他用户' AS user_name,
+          date,
+          api_calls::integer,
+          total_cost::numeric
+        FROM daily_stats
+        ORDER BY date ASC
+      `;
+      break;
+
+    case '30days':
+      // 自己的密钥明细（天分辨率）
+      ownKeysQuery = sql`
+        WITH date_range AS (
+          SELECT generate_series(
+            CURRENT_DATE - INTERVAL '29 days',
+            CURRENT_DATE,
+            '1 day'::interval
+          )::date AS date
+        ),
+        user_keys AS (
+          SELECT id, name, key
+          FROM keys
+          WHERE user_id = ${userId}
+            AND deleted_at IS NULL
+        ),
+        daily_stats AS (
+          SELECT
+            k.id AS key_id,
+            k.name AS key_name,
+            dr.date,
+            COUNT(mr.id) AS api_calls,
+            COALESCE(SUM(mr.cost_usd), 0) AS total_cost
+          FROM user_keys k
+          CROSS JOIN date_range dr
+          LEFT JOIN message_request mr ON mr.key = k.key
+            AND mr.user_id = ${userId}
+            AND DATE(mr.created_at) = dr.date
+            AND mr.deleted_at IS NULL
+          GROUP BY k.id, k.name, dr.date
+        )
+        SELECT
+          key_id,
+          key_name,
+          date,
+          api_calls::integer,
+          total_cost::numeric
+        FROM daily_stats
+        ORDER BY date ASC, key_name ASC
+      `;
+
+      // 其他用户汇总（天分辨率）
+      othersQuery = sql`
+        WITH date_range AS (
+          SELECT generate_series(
+            CURRENT_DATE - INTERVAL '29 days',
+            CURRENT_DATE,
+            '1 day'::interval
+          )::date AS date
+        ),
+        daily_stats AS (
+          SELECT
+            dr.date,
+            COUNT(mr.id) AS api_calls,
+            COALESCE(SUM(mr.cost_usd), 0) AS total_cost
+          FROM date_range dr
+          LEFT JOIN message_request mr ON DATE(mr.created_at) = dr.date
+            AND mr.user_id != ${userId}
+            AND mr.deleted_at IS NULL
+          GROUP BY dr.date
+        )
+        SELECT
+          -1 AS user_id,
+          '其他用户' AS user_name,
+          date,
+          api_calls::integer,
+          total_cost::numeric
+        FROM daily_stats
+        ORDER BY date ASC
+      `;
+      break;
+
+    default:
+      throw new Error(`Unsupported time range: ${timeRange}`);
+  }
+
+  const [ownKeysResult, othersResult] = await Promise.all([
+    db.execute(ownKeysQuery),
+    db.execute(othersQuery),
+  ]);
+
+  return {
+    ownKeys: Array.from(ownKeysResult) as unknown as DatabaseKeyStatRow[],
+    othersAggregate: Array.from(othersResult) as unknown as DatabaseStatRow[],
+  };
+}

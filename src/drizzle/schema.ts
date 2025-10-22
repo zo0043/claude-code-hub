@@ -169,7 +169,7 @@ export const modelPrices = pgTable('model_prices', {
 export const systemSettings = pgTable('system_settings', {
   id: serial('id').primaryKey(),
   siteTitle: varchar('site_title', { length: 128 }).notNull().default('Claude Code Hub'),
-  allowGlobalUsageView: boolean('allow_global_usage_view').notNull().default(true),
+  allowGlobalUsageView: boolean('allow_global_usage_view').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });

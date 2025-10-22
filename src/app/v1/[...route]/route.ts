@@ -2,8 +2,14 @@ import { Hono } from "hono";
 import { handle } from "hono/vercel";
 import { handleProxyRequest } from "@/app/v1/_lib/proxy-handler";
 import { handleChatCompletions } from "@/app/v1/_lib/codex/chat-completions-handler";
+import { SessionTracker } from "@/lib/session-tracker";
 
 export const runtime = "nodejs";
+
+// 初始化 SessionTracker（清理旧 Set 格式数据）
+SessionTracker.initialize().catch((err) => {
+  console.error('[App] SessionTracker initialization failed:', err);
+});
 
 const app = new Hono().basePath("/v1");
 

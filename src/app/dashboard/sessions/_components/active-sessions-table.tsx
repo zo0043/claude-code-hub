@@ -12,11 +12,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 import type { ActiveSessionInfo } from "@/types/session";
 
 interface ActiveSessionsTableProps {
   sessions: ActiveSessionInfo[];
   isLoading: boolean;
+  inactive?: boolean; // 标记是否为非活跃 session
 }
 
 function formatDuration(durationMs: number | undefined): string {
@@ -46,6 +48,7 @@ function getStatusBadge(status: 'in_progress' | 'completed' | 'error', statusCod
 export function ActiveSessionsTable({
   sessions,
   isLoading,
+  inactive = false,
 }: ActiveSessionsTableProps) {
   // 按开始时间降序排序（最新的在前）
   const sortedSessions = [...sessions].sort((a, b) => b.startTime - a.startTime);
@@ -54,7 +57,8 @@ export function ActiveSessionsTable({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
-          共 {sessions.length} 个活跃 Session
+          共 {sessions.length} 个{inactive ? '非活跃' : '活跃'} Session
+          {inactive && <span className="ml-2 text-xs">(不计入并发数)</span>}
         </div>
         {isLoading && (
           <div className="text-sm text-muted-foreground animate-pulse">
@@ -63,7 +67,12 @@ export function ActiveSessionsTable({
         )}
       </div>
 
-      <div className="rounded-md border">
+      <div
+        className={cn(
+          "rounded-md border",
+          inactive && "opacity-60" // 非活跃 session 半透明显示
+        )}
+      >
         <Table>
           <TableHeader>
             <TableRow>

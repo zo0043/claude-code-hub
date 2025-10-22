@@ -65,6 +65,45 @@ export interface UserStatisticsChartProps {
 export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsChartProps) {
   const [activeChart, setActiveChart] = React.useState<"cost" | "calls">("cost")
 
+  // 用户选择状态(仅 Admin 用 users 模式时启用)
+  const [selectedUserIds, setSelectedUserIds] = React.useState<Set<number>>(
+    () => new Set(data.users.map(u => u.id))
+  )
+
+  // 重置选择状态(当 data.users 变化时)
+  React.useEffect(() => {
+    setSelectedUserIds(new Set(data.users.map(u => u.id)))
+  }, [data.users])
+
+  const isAdminMode = data.mode === 'users'
+  const enableUserFilter = isAdminMode && data.users.length > 1
+
+  const toggleUserSelection = (userId: number) => {
+    setSelectedUserIds(prev => {
+      const next = new Set(prev)
+      if (next.has(userId)) {
+        // 至少保留一个用户
+        if (next.size > 1) {
+          next.delete(userId)
+        }
+      } else {
+        next.add(userId)
+      }
+      return next
+    })
+  }
+
+  const selectAllUsers = () => {
+    setSelectedUserIds(new Set(data.users.map(u => u.id)))
+  }
+
+  const deselectAllUsers = () => {
+    // 保留第一个用户
+    if (data.users.length > 0) {
+      setSelectedUserIds(new Set([data.users[0].id]))
+    }
+  }
+
   // 动态生成图表配置
   const chartConfig = React.useMemo(() => {
     const config: ChartConfig = {
@@ -90,11 +129,20 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
     return new Map(data.users.map((user) => [user.dataKey, user]))
   }, [data.users])
 
+  // 过滤可见用户(如果启用过滤)
+  const visibleUsers = React.useMemo(() => {
+    if (!enableUserFilter) {
+      return data.users
+    }
+    return data.users.filter(u => selectedUserIds.has(u.id))
+  }, [data.users, selectedUserIds, enableUserFilter])
+
   const numericChartData = React.useMemo(() => {
     return data.chartData.map((day) => {
       const normalized: Record<string, string | number> = { ...day };
 
-      data.users.forEach((user) => {
+      // 只处理可见用户的数据
+      visibleUsers.forEach((user) => {
         const costKey = `${user.dataKey}_cost`;
         const costDecimal = toDecimal(day[costKey]);
         normalized[costKey] = costDecimal
@@ -108,9 +156,9 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
 
       return normalized;
     });
-  }, [data.chartData, data.users]);
+  }, [data.chartData, visibleUsers]);
 
-  // 计算每个用户的总数据
+  // 计算每个用户的总数据(包括所有用户,用于 legend 排序)
   const userTotals = React.useMemo(() => {
     const totals: Record<string, { cost: Decimal; calls: number }> = {}
 
@@ -134,6 +182,27 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
 
     return totals
   }, [data.chartData, data.users])
+
+  // 计算可见用户的总计(用于顶部统计卡片)
+  const visibleTotals = React.useMemo(() => {
+    const costTotal = data.chartData.reduce((sum, day) => {
+      const dayTotal = visibleUsers.reduce((daySum, user) => {
+        const costValue = toDecimal(day[`${user.dataKey}_cost`])
+        return costValue ? daySum.plus(costValue) : daySum
+      }, new Decimal(0))
+      return sum.plus(dayTotal)
+    }, new Decimal(0))
+
+    const callsTotal = data.chartData.reduce((sum, day) => {
+      const dayTotal = visibleUsers.reduce((daySum, user) => {
+        const callsValue = day[`${user.dataKey}_calls`]
+        return daySum + (typeof callsValue === 'number' ? callsValue : 0);
+      }, 0)
+      return sum + dayTotal
+    }, 0)
+
+    return { cost: costTotal, calls: callsTotal }
+  }, [data.chartData, visibleUsers])
 
   const sortedLegendUsers = React.useMemo(() => {
     return data.users
@@ -160,27 +229,6 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
         return totalsB.calls - totalsA.calls
       })
   }, [data.users, userTotals, activeChart])
-
-  // 计算总计
-  const totals = React.useMemo(() => {
-    const costTotal = data.chartData.reduce((sum, day) => {
-      const dayTotal = data.users.reduce((daySum, user) => {
-        const costValue = toDecimal(day[`${user.dataKey}_cost`])
-        return costValue ? daySum.plus(costValue) : daySum
-      }, new Decimal(0))
-      return sum.plus(dayTotal)
-    }, new Decimal(0))
-
-    const callsTotal = data.chartData.reduce((sum, day) => {
-      const dayTotal = data.users.reduce((daySum, user) => {
-        const callsValue = day[`${user.dataKey}_calls`]
-        return daySum + (typeof callsValue === 'number' ? callsValue : 0);
-      }, 0)
-      return sum + dayTotal
-    }, 0)
-
-    return { cost: costTotal, calls: callsTotal }
-  }, [data.chartData, data.users])
 
   // 格式化日期显示（根据分辨率）
   const formatDate = (dateStr: string) => {
@@ -232,9 +280,13 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
   }
 
   const getAggregationLabel = () => {
-    return data.mode === 'keys'
-      ? '仅显示您名下各密钥的使用统计'
-      : '展示所有用户的使用统计'
+    if (data.mode === 'keys') {
+      return '仅显示您名下各密钥的使用统计'
+    } else if (data.mode === 'mixed') {
+      return '展示您的密钥明细和其他用户汇总'
+    } else {
+      return '展示所有用户的使用统计'
+    }
   }
 
   return (
@@ -271,7 +323,7 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
                 总消费金额
               </span>
               <span className="text-lg leading-none font-bold sm:text-3xl">
-                {formatCurrency(totals.cost)}
+                {formatCurrency(visibleTotals.cost)}
               </span>
             </button>
             <button
@@ -283,7 +335,7 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
                 总API调用次数
               </span>
               <span className="text-lg leading-none font-bold sm:text-3xl">
-                {totals.calls.toLocaleString()}
+                {visibleTotals.calls.toLocaleString()}
               </span>
             </button>
           </div>
@@ -301,7 +353,7 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
               总消费金额
             </span>
             <span className="text-lg leading-none font-bold sm:text-xl">
-              {formatCurrency(totals.cost)}
+              {formatCurrency(visibleTotals.cost)}
             </span>
           </button>
           <button
@@ -313,7 +365,7 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
               总API调用次数
             </span>
             <span className="text-lg leading-none font-bold sm:text-xl">
-              {totals.calls.toLocaleString()}
+              {visibleTotals.calls.toLocaleString()}
             </span>
           </button>
         </div>
@@ -437,8 +489,9 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
                 )
               }}
             />
-            {data.users.map((user, index) => {
-              const color = getUserColor(index)
+            {visibleUsers.map((user, index) => {
+              const originalIndex = data.users.findIndex(u => u.id === user.id)
+              const color = getUserColor(originalIndex)
               return (
                 <Area
                   key={user.dataKey}
@@ -454,15 +507,45 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
             <ChartLegend
               content={() => (
                 <div className="px-1">
+                  {/* 全选/清空按钮 (仅 Admin 且用户数 > 1 时显示) */}
+                  {enableUserFilter && (
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <button
+                        onClick={selectAllUsers}
+                        className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted/50 transition-colors"
+                      >
+                        全选 ({data.users.length})
+                      </button>
+                      <span className="text-muted-foreground">·</span>
+                      <button
+                        onClick={deselectAllUsers}
+                        className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted/50 transition-colors"
+                      >
+                        清空
+                      </button>
+                      <span className="text-muted-foreground">·</span>
+                      <span className="text-xs text-muted-foreground">
+                        已选 {selectedUserIds.size}/{data.users.length}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex flex-wrap justify-center gap-1">
                     {sortedLegendUsers.map(({ user, index }) => {
                       const color = getUserColor(index)
                       const userTotal = userTotals[user.dataKey] ?? { cost: new Decimal(0), calls: 0 }
+                      const isSelected = selectedUserIds.has(user.id)
 
                       return (
                         <div
                           key={user.dataKey}
-                          className="bg-muted/30 rounded-md px-3 py-2 text-center transition-all hover:bg-muted/50 min-w-16"
+                          onClick={() => enableUserFilter && toggleUserSelection(user.id)}
+                          className={cn(
+                            "rounded-md px-3 py-2 text-center transition-all min-w-16",
+                            enableUserFilter && "cursor-pointer",
+                            isSelected
+                              ? "bg-muted/50 hover:bg-muted/70 ring-1 ring-border"
+                              : "bg-muted/10 hover:bg-muted/30 opacity-50"
+                          )}
                         >
                           {/* 上方：颜色点 + 用户名 */}
                           <div className="flex items-center justify-center gap-1 mb-1">

@@ -15,6 +15,13 @@
       "when": 1761113092032,
       "tag": "0001_ambiguous_bromley",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1761148729518,
+      "tag": "0002_fancy_preak",
+      "breakpoints": true
     }
   ]
 }
