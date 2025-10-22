@@ -28,7 +28,7 @@ export function EditKeyForm({ keyData, onSuccess }: EditKeyFormProps) {
   const formatExpiresAt = (expiresAt: string) => {
     if (!expiresAt || expiresAt === "永不过期") return "";
     try {
-      return new Date(expiresAt).toISOString().split('T')[0];
+      return new Date(expiresAt).toISOString().split("T")[0];
     } catch {
       return "";
     }
@@ -37,7 +37,7 @@ export function EditKeyForm({ keyData, onSuccess }: EditKeyFormProps) {
   const form = useZodForm({
     schema: KeyFormSchema,
     defaultValues: {
-      name: keyData?.name || '',
+      name: keyData?.name || "",
       expiresAt: formatExpiresAt(keyData?.expiresAt || ""),
       limit5hUsd: keyData?.limit5hUsd ?? null,
       limitWeeklyUsd: keyData?.limitWeeklyUsd ?? null,
@@ -56,7 +56,7 @@ export function EditKeyForm({ keyData, onSuccess }: EditKeyFormProps) {
             expiresAt: data.expiresAt || undefined,
           });
           if (!res.ok) {
-            toast.error(res.error || '保存失败');
+            toast.error(res.error || "保存失败");
             return;
           }
           onSuccess?.();
@@ -66,7 +66,7 @@ export function EditKeyForm({ keyData, onSuccess }: EditKeyFormProps) {
           toast.error("保存失败，请稍后重试");
         }
       });
-    }
+    },
   });
 
   return (
@@ -75,7 +75,7 @@ export function EditKeyForm({ keyData, onSuccess }: EditKeyFormProps) {
         title: "编辑 Key",
         description: "修改密钥的名称、过期时间和限流配置。",
         submitText: "保存修改",
-        loadingText: "保存中..."
+        loadingText: "保存中...",
       }}
       onSubmit={form.handleSubmit}
       isSubmitting={isPending}
@@ -88,14 +88,14 @@ export function EditKeyForm({ keyData, onSuccess }: EditKeyFormProps) {
         maxLength={64}
         autoFocus
         placeholder="请输入Key名称"
-        {...form.getFieldProps('name')}
+        {...form.getFieldProps("name")}
       />
 
       <DateField
         label="过期时间"
         placeholder="选择过期时间"
         description="留空表示永不过期"
-        {...form.getFieldProps('expiresAt')}
+        {...form.getFieldProps("expiresAt")}
       />
 
       <NumberField
@@ -104,7 +104,7 @@ export function EditKeyForm({ keyData, onSuccess }: EditKeyFormProps) {
         description="5小时内最大消费金额"
         min={0}
         step={0.01}
-        {...form.getFieldProps('limit5hUsd')}
+        {...form.getFieldProps("limit5hUsd")}
       />
 
       <NumberField
@@ -113,7 +113,7 @@ export function EditKeyForm({ keyData, onSuccess }: EditKeyFormProps) {
         description="每周最大消费金额"
         min={0}
         step={0.01}
-        {...form.getFieldProps('limitWeeklyUsd')}
+        {...form.getFieldProps("limitWeeklyUsd")}
       />
 
       <NumberField
@@ -122,7 +122,7 @@ export function EditKeyForm({ keyData, onSuccess }: EditKeyFormProps) {
         description="每月最大消费金额"
         min={0}
         step={0.01}
-        {...form.getFieldProps('limitMonthlyUsd')}
+        {...form.getFieldProps("limitMonthlyUsd")}
       />
 
       <NumberField
@@ -131,7 +131,7 @@ export function EditKeyForm({ keyData, onSuccess }: EditKeyFormProps) {
         description="同时运行的对话数量"
         min={0}
         step={1}
-        {...form.getFieldProps('limitConcurrentSessions')}
+        {...form.getFieldProps("limitConcurrentSessions")}
       />
     </DialogFormLayout>
   );

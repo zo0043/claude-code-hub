@@ -1,11 +1,11 @@
-import { config } from '@/lib/config/config';
-import { cookies } from 'next/headers';
-import { findActiveKeyByKeyString } from '@/repository/key';
-import { findUserById } from '@/repository/user';
-import type { Key } from '@/types/key';
-import type { User } from '@/types/user';
+import { config } from "@/lib/config/config";
+import { cookies } from "next/headers";
+import { findActiveKeyByKeyString } from "@/repository/key";
+import { findUserById } from "@/repository/user";
+import type { Key } from "@/types/key";
+import type { User } from "@/types/user";
 
-const AUTH_COOKIE_NAME = 'auth-token';
+const AUTH_COOKIE_NAME = "auth-token";
 const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
 export interface AuthSession {
@@ -19,9 +19,9 @@ export async function validateKey(keyString: string): Promise<AuthSession | null
     const now = new Date();
     const adminUser: User = {
       id: -1,
-      name: 'Admin Token',
-      description: 'Environment admin session',
-      role: 'admin',
+      name: "Admin Token",
+      description: "Environment admin session",
+      role: "admin",
       rpm: 0,
       dailyQuota: 0,
       providerGroup: null,
@@ -32,7 +32,7 @@ export async function validateKey(keyString: string): Promise<AuthSession | null
     const adminKey: Key = {
       id: -1,
       userId: adminUser.id,
-      name: 'ADMIN_TOKEN',
+      name: "ADMIN_TOKEN",
       key: keyString,
       isEnabled: true,
       limit5hUsd: null,
@@ -63,10 +63,10 @@ export async function setAuthCookie(keyString: string) {
   const cookieStore = await cookies();
   cookieStore.set(AUTH_COOKIE_NAME, keyString, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
     maxAge: AUTH_COOKIE_MAX_AGE,
-    path: '/',
+    path: "/",
   });
 }
 

@@ -1,6 +1,7 @@
-import type { ProxySession } from './session';
-import { SessionManager } from '@/lib/session-manager';
-import { SessionTracker } from '@/lib/session-tracker';
+import type { ProxySession } from "./session";
+import { logger } from '@/lib/logger';
+import { SessionManager } from "@/lib/session-manager";
+import { SessionTracker } from "@/lib/session-tracker";
 
 /**
  * Session 守卫：负责为请求分配 Session ID
@@ -14,7 +15,7 @@ export class ProxySessionGuard {
   static async ensure(session: ProxySession): Promise<void> {
     const keyId = session.authState?.key?.id;
     if (!keyId) {
-      console.warn('[ProxySessionGuard] No key ID, skipping session assignment');
+      logger.warn('[ProxySessionGuard] No key ID, skipping session assignment');
       return;
     }
 
@@ -26,18 +27,14 @@ export class ProxySessionGuard {
       const messages = session.getMessages();
 
       // 3. 获取或创建 session_id
-      const sessionId = await SessionManager.getOrCreateSessionId(
-        keyId,
-        messages,
-        clientSessionId
-      );
+      const sessionId = await SessionManager.getOrCreateSessionId(keyId, messages, clientSessionId);
 
       // 4. 设置到 session 对象
       session.setSessionId(sessionId);
 
       // 5. 追踪 session（添加到活跃集合）
       void SessionTracker.trackSession(sessionId, keyId).catch((err) => {
-        console.error('[ProxySessionGuard] Failed to track session:', err);
+        logger.error('[ProxySessionGuard] Failed to track session:', err);
       });
 
       // 6. 存储 session 详细信息到 Redis（用于实时监控）
@@ -50,7 +47,7 @@ export class ProxySessionGuard {
               keyId: session.authState.key.id,
               keyName: session.authState.key.name,
               model: session.request.model,
-              apiType: session.originalFormat === 'openai' ? 'codex' : 'chat',
+              apiType: session.originalFormat === "openai" ? "codex" : "chat",
             });
 
             // 可选：存储 messages（受环境变量控制）
@@ -60,7 +57,7 @@ export class ProxySessionGuard {
             }
           }
         } catch (error) {
-          console.error('[ProxySessionGuard] Failed to store session info:', error);
+          logger.error('[ProxySessionGuard] Failed to store session info:', error);
         }
       })();
 
@@ -68,7 +65,7 @@ export class ProxySessionGuard {
         `[ProxySessionGuard] Session assigned: ${sessionId} (key=${keyId}, messagesLength=${session.getMessagesLength()}, clientProvided=${!!clientSessionId})`
       );
     } catch (error) {
-      console.error('[ProxySessionGuard] Failed to assign session:', error);
+      logger.error('[ProxySessionGuard] Failed to assign session:', error);
       // 降级：生成新 session（不阻塞请求）
       const fallbackSessionId = SessionManager.generateSessionId();
       session.setSessionId(fallbackSessionId);

@@ -1,4 +1,4 @@
-import { getEnvConfig } from './env.schema';
+import { getEnvConfig } from "./env.schema";
 
 /**
  * 简化的配置访问

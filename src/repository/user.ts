@@ -31,10 +31,7 @@ export async function createUser(userData: CreateUserData): Promise<User> {
   return toUser(user);
 }
 
-export async function findUserList(
-  limit: number = 50,
-  offset: number = 0,
-): Promise<User[]> {
+export async function findUserList(limit: number = 50, offset: number = 0): Promise<User[]> {
   const result = await db
     .select({
       id: users.id,
@@ -50,10 +47,7 @@ export async function findUserList(
     })
     .from(users)
     .where(isNull(users.deletedAt))
-    .orderBy(
-      sql`CASE WHEN ${users.role} = 'admin' THEN 0 ELSE 1 END`,
-      users.id
-    )
+    .orderBy(sql`CASE WHEN ${users.role} = 'admin' THEN 0 ELSE 1 END`, users.id)
     .limit(limit)
     .offset(offset);
 
@@ -82,10 +76,7 @@ export async function findUserById(id: number): Promise<User | null> {
   return toUser(user);
 }
 
-export async function updateUser(
-  id: number,
-  userData: UpdateUserData,
-): Promise<User | null> {
+export async function updateUser(id: number, userData: UpdateUserData): Promise<User | null> {
   if (Object.keys(userData).length === 0) {
     return findUserById(id);
   }

@@ -29,11 +29,11 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
   const form = useZodForm({
     schema: CreateUserSchema, // Use CreateUserSchema for both, it has all fields with defaults
     defaultValues: {
-      name: user?.name || '',
-      note: user?.note || '',
+      name: user?.name || "",
+      note: user?.note || "",
       rpm: user?.rpm || USER_DEFAULTS.RPM,
       dailyQuota: user?.dailyQuota || USER_DEFAULTS.DAILY_QUOTA,
-      providerGroup: user?.providerGroup || '',
+      providerGroup: user?.providerGroup || "",
     },
     onSubmit: async (data) => {
       startTransition(async () => {
@@ -66,7 +66,7 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
           onSuccess?.();
           router.refresh();
         } catch (err) {
-          console.error(`${isEdit ? '编辑' : '添加'}用户失败:`, err);
+          console.error(`${isEdit ? "编辑" : "添加"}用户失败:`, err);
           toast.error(isEdit ? "保存失败，请稍后重试" : "创建失败，请稍后重试");
         }
       });

@@ -1,6 +1,12 @@
 "use client";
 import { useTransition } from "react";
-import { DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import {
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { removeUser } from "@/actions/users";
@@ -14,7 +20,10 @@ interface DeleteUserConfirmProps {
   };
 }
 
-export function DeleteUserConfirm({ user, onSuccess }: DeleteUserConfirmProps & { onSuccess?: () => void }) {
+export function DeleteUserConfirm({
+  user,
+  onSuccess,
+}: DeleteUserConfirmProps & { onSuccess?: () => void }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -24,14 +33,14 @@ export function DeleteUserConfirm({ user, onSuccess }: DeleteUserConfirmProps & 
       try {
         const res = await removeUser(user.id);
         if (!res.ok) {
-          toast.error(res.error || '删除失败');
+          toast.error(res.error || "删除失败");
           return;
         }
         onSuccess?.();
         router.refresh();
       } catch (error) {
         console.error("删除用户失败:", error);
-        toast.error('删除失败，请稍后重试');
+        toast.error("删除失败，请稍后重试");
       }
     });
   };
@@ -46,18 +55,14 @@ export function DeleteUserConfirm({ user, onSuccess }: DeleteUserConfirmProps & 
           此操作将同时删除该用户的 {user?.keys.length || 0} 个密钥，且无法撤销。
         </DialogDescription>
       </DialogHeader>
-      
+
       <DialogFooter>
         <DialogClose asChild>
           <Button type="button" variant="outline" disabled={isPending}>
             取消
           </Button>
         </DialogClose>
-        <Button 
-          variant="destructive" 
-          onClick={handleConfirm}
-          disabled={isPending}
-        >
+        <Button variant="destructive" onClick={handleConfirm} disabled={isPending}>
           {isPending ? "删除中..." : "确认删除"}
         </Button>
       </DialogFooter>

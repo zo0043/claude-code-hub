@@ -1,13 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { AlertCircle } from 'lucide-react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { useEffect, useState } from "react";
+import { AlertCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface VersionInfo {
   current: string;
@@ -21,7 +16,7 @@ export function VersionUpdateNotifier() {
 
   useEffect(() => {
     // 静默检查版本，不显示加载状态
-    fetch('/api/version')
+    fetch("/api/version")
       .then((res) => res.json())
       .then((data) => {
         // 只有确实有更新时才设置状态

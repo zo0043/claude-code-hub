@@ -5,7 +5,11 @@ import type { Provider } from "@/types/provider";
 import type { ProxySession } from "./session";
 
 export class ProxyLogger {
-  static async logNonStream(session: ProxySession, provider: Provider, responseBody: string): Promise<void> {
+  static async logNonStream(
+    session: ProxySession,
+    provider: Provider,
+    responseBody: string
+  ): Promise<void> {
     if (!isDevelopment()) {
       return;
     }
@@ -17,7 +21,8 @@ export class ProxyLogger {
 
     const requestLogHeader = session.request.note ? `${session.request.note}\n` : "";
     const requestLogBody = session.request.log || "(empty)";
-    const logContent = `=== Non-Stream API Call ${fileName} ===\n` +
+    const logContent =
+      `=== Non-Stream API Call ${fileName} ===\n` +
       `User: ${session.userName}\n` +
       `Provider: ${provider.name} (${provider.url})\n` +
       `Timestamp: ${timestamp.toISOString()}\n\n` +
@@ -54,7 +59,8 @@ export class ProxyLogger {
       ? `${session.provider.name}${session.provider.url ? ` (${session.provider.url})` : ""}`
       : "unavailable";
     const requestLogHeader = session.request.note ? `${session.request.note}\n` : "";
-    const logContent = `=== Proxy Failure ${fileName} ===\n` +
+    const logContent =
+      `=== Proxy Failure ${fileName} ===\n` +
       `Timestamp: ${timestamp.toISOString()}\n` +
       `Request: ${session.method} ${session.requestUrl.toString()}\n` +
       `User: ${session.userName}\n` +
@@ -77,7 +83,10 @@ export class ProxyLogger {
   }
 
   private static buildFileName(timestamp: Date, suffix: "nonstream" | "failure"): string {
-    const dateStr = String(timestamp.getMonth() + 1).padStart(2, "0") + "-" + String(timestamp.getDate()).padStart(2, "0");
+    const dateStr =
+      String(timestamp.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(timestamp.getDate()).padStart(2, "0");
     const timeStr = [timestamp.getHours(), timestamp.getMinutes(), timestamp.getSeconds()]
       .map((value) => String(value).padStart(2, "0"))
       .join("-");

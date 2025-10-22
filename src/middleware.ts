@@ -1,15 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { isDevelopment } from '@/lib/config/env.schema';
+import { NextRequest, NextResponse } from "next/server";
+import { isDevelopment } from "@/lib/config/env.schema";
 
-const PUBLIC_PATHS = [
-  '/login',
-  '/api/auth/login',
-  '/api/auth/logout',
-  '/_next',
-  '/favicon.ico',
-];
+const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/auth/logout", "/_next", "/favicon.ico"];
 
-const API_PROXY_PATH = '/v1';
+const API_PROXY_PATH = "/v1";
 
 export function middleware(request: NextRequest) {
   const method = request.method;
@@ -25,19 +19,19 @@ export function middleware(request: NextRequest) {
   }
 
   // 公开路径不需要鉴权
-  const isPublicPath = PUBLIC_PATHS.some(path => pathname.startsWith(path));
+  const isPublicPath = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
   if (isPublicPath) {
     return NextResponse.next();
   }
 
   // 检查认证 cookie
-  const authToken = request.cookies.get('auth-token');
+  const authToken = request.cookies.get("auth-token");
 
   if (!authToken) {
     // 未登录，重定向到登录页
     const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('from', pathname);
+    url.pathname = "/login";
+    url.searchParams.set("from", pathname);
     return NextResponse.redirect(url);
   }
 
@@ -53,6 +47,6 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
 };

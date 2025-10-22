@@ -1,27 +1,27 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { cn } from '@/lib/utils'
-import { Skeleton } from '@/components/ui/skeleton'
+import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * 文档目录项
  */
 interface TocItem {
-  id: string
-  text: string
-  level: number
+  id: string;
+  text: string;
+  level: number;
 }
 
 const headingClasses = {
-  h2: 'scroll-m-20 text-2xl font-semibold leading-snug text-foreground',
-  h3: 'scroll-m-20 mt-8 text-xl font-semibold leading-snug text-foreground',
-  h4: 'scroll-m-20 mt-6 text-lg font-semibold leading-snug text-foreground',
-} as const
+  h2: "scroll-m-20 text-2xl font-semibold leading-snug text-foreground",
+  h3: "scroll-m-20 mt-8 text-xl font-semibold leading-snug text-foreground",
+  h4: "scroll-m-20 mt-6 text-lg font-semibold leading-snug text-foreground",
+} as const;
 
 interface CodeBlockProps {
-  code: string
-  language: string
+  code: string;
+  language: string;
 }
 
 function CodeBlock({ code, language }: CodeBlockProps) {
@@ -32,19 +32,18 @@ function CodeBlock({ code, language }: CodeBlockProps) {
     >
       <code className="block whitespace-pre leading-relaxed">{code.trim()}</code>
     </pre>
-  )
+  );
 }
 
 interface UsageDocContentProps {
-  origin: string
+  origin: string;
 }
 
 function UsageDocContent({ origin }: UsageDocContentProps) {
-  const resolvedOrigin = origin || '当前站点地址'
+  const resolvedOrigin = origin || "当前站点地址";
 
   return (
     <article className="space-y-12 text-[15px] leading-6 text-muted-foreground">
-
       <section className="space-y-6">
         <h2 id="quick-start" className={headingClasses.h2}>
           🚀 快速开始
@@ -83,7 +82,13 @@ function UsageDocContent({ origin }: UsageDocContentProps) {
           </h3>
           <div className="space-y-3">
             <h4 className={headingClasses.h4}>1. 创建配置文件</h4>
-            <p>根据您的操作系统，在对应位置创建 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">settings.json</code> 文件：</p>
+            <p>
+              根据您的操作系统，在对应位置创建{" "}
+              <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
+                settings.json
+              </code>{" "}
+              文件：
+            </p>
             <div className="space-y-3">
               <div>
                 <p className="font-semibold text-foreground">macOS / Linux</p>
@@ -98,7 +103,13 @@ function UsageDocContent({ origin }: UsageDocContentProps) {
 
           <div className="space-y-3">
             <h4 className={headingClasses.h4}>2. 添加配置内容</h4>
-            <p>将以下配置复制到 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">settings.json</code> 文件中：</p>
+            <p>
+              将以下配置复制到{" "}
+              <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
+                settings.json
+              </code>{" "}
+              文件中：
+            </p>
             <CodeBlock
               language="json"
               code={`{
@@ -120,7 +131,13 @@ function UsageDocContent({ origin }: UsageDocContentProps) {
             <h4 className={headingClasses.h4}>3. 替换 API 密钥</h4>
             <blockquote className="space-y-2 rounded-lg border-l-2 border-primary/50 bg-muted/40 px-4 py-3">
               <p className="font-semibold text-foreground">重要</p>
-              <p>请将配置中的 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">your-api-key-here</code> 替换为您的实际 API 密钥。</p>
+              <p>
+                请将配置中的{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
+                  your-api-key-here
+                </code>{" "}
+                替换为您的实际 API 密钥。
+              </p>
               <p>密钥获取方式：登录控制台 → API 密钥管理 → 创建 / 查看密钥。</p>
             </blockquote>
           </div>
@@ -145,18 +162,15 @@ function UsageDocContent({ origin }: UsageDocContentProps) {
           </h3>
 
           <p>
-            Droid 是 Factory AI 开发的交互式终端 AI 编程助手，支持通过 Claude Code Hub 代理服务使用。
-            本指南将帮助你在 5 分钟内完成 Droid 的安装和配置。
+            Droid 是 Factory AI 开发的交互式终端 AI 编程助手，支持通过 Claude Code Hub
+            代理服务使用。 本指南将帮助你在 5 分钟内完成 Droid 的安装和配置。
           </p>
 
           <div className="space-y-3">
             <h4 className={headingClasses.h4}>安装 Droid</h4>
 
             <p className="font-semibold text-foreground">macOS / Linux</p>
-            <CodeBlock
-              language="bash"
-              code={`curl -fsSL https://app.factory.ai/cli | sh`}
-            />
+            <CodeBlock language="bash" code={`curl -fsSL https://app.factory.ai/cli | sh`} />
 
             <p className="font-semibold text-foreground">Windows</p>
             <CodeBlock
@@ -166,11 +180,14 @@ function UsageDocContent({ origin }: UsageDocContentProps) {
 
             <blockquote className="space-y-1 rounded-lg border-l-2 border-primary/50 bg-muted/40 px-4 py-3">
               <p className="font-semibold text-foreground">提示</p>
-              <p>Linux 用户需确保已安装 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">xdg-utils</code>：</p>
-              <CodeBlock
-                language="bash"
-                code={`sudo apt-get install xdg-utils`}
-              />
+              <p>
+                Linux 用户需确保已安装{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
+                  xdg-utils
+                </code>
+                ：
+              </p>
+              <CodeBlock language="bash" code={`sudo apt-get install xdg-utils`} />
             </blockquote>
           </div>
 
@@ -189,21 +206,53 @@ droid`}
             <h4 className={headingClasses.h4}>基本使用</h4>
             <p>启动后，你可以直接与 Droid 对话：</p>
             <ul className="list-disc space-y-2 pl-6">
-              <li>分析代码：<code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">analyze this codebase and explain the overall architecture</code></li>
-              <li>修改代码：<code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">add comprehensive logging to the main application startup</code></li>
-              <li>安全审计：<code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">audit this codebase for security vulnerabilities</code></li>
-              <li>Git 操作：<code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">review my uncommitted changes and suggest improvements</code></li>
+              <li>
+                分析代码：
+                <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
+                  analyze this codebase and explain the overall architecture
+                </code>
+              </li>
+              <li>
+                修改代码：
+                <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
+                  add comprehensive logging to the main application startup
+                </code>
+              </li>
+              <li>
+                安全审计：
+                <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
+                  audit this codebase for security vulnerabilities
+                </code>
+              </li>
+              <li>
+                Git 操作：
+                <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
+                  review my uncommitted changes and suggest improvements
+                </code>
+              </li>
             </ul>
           </div>
 
           <div className="space-y-3">
             <h4 className={headingClasses.h4}>常用快捷键</h4>
             <ul className="list-disc space-y-2 pl-6">
-              <li><strong>Enter</strong>: 发送消息</li>
-              <li><strong>Shift+Enter</strong>: 多行输入</li>
-              <li><strong>Shift+Tab</strong>: 切换模式</li>
-              <li><strong>?</strong>: 查看所有快捷键</li>
-              <li><strong>Ctrl+C</strong> 或输入 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">exit</code>: 退出</li>
+              <li>
+                <strong>Enter</strong>: 发送消息
+              </li>
+              <li>
+                <strong>Shift+Enter</strong>: 多行输入
+              </li>
+              <li>
+                <strong>Shift+Tab</strong>: 切换模式
+              </li>
+              <li>
+                <strong>?</strong>: 查看所有快捷键
+              </li>
+              <li>
+                <strong>Ctrl+C</strong> 或输入{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">exit</code>:
+                退出
+              </li>
             </ul>
           </div>
         </div>
@@ -213,15 +262,17 @@ droid`}
             🔗 Droid 使用 Claude Code Hub 接入
           </h3>
 
-          <p>
-            配置 Droid 连接到 Claude Code Hub 代理服务，使用自己的 API 密钥。
-          </p>
+          <p>配置 Droid 连接到 Claude Code Hub 代理服务，使用自己的 API 密钥。</p>
 
           <div className="space-y-3">
             <h4 className={headingClasses.h4}>1. 注册并登录 Droid</h4>
             <ol className="list-decimal space-y-2 pl-6">
               <li>下载并安装 Droid（参考上一节）</li>
-              <li>运行 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">droid</code> 命令</li>
+              <li>
+                运行{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">droid</code>{" "}
+                命令
+              </li>
               <li>按提示注册并登录 Factory 账号</li>
             </ol>
           </div>
@@ -232,8 +283,18 @@ droid`}
 
             <p className="font-semibold text-foreground">配置文件路径</p>
             <ul className="list-disc space-y-2 pl-6">
-              <li>macOS / Linux: <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">~/.factory/config.json</code></li>
-              <li>Windows: <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">%USERPROFILE%\.factory\config.json</code></li>
+              <li>
+                macOS / Linux:{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
+                  ~/.factory/config.json
+                </code>
+              </li>
+              <li>
+                Windows:{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
+                  %USERPROFILE%\.factory\config.json
+                </code>
+              </li>
             </ul>
 
             <p className="font-semibold text-foreground mt-3">配置内容</p>
@@ -264,7 +325,13 @@ droid`}
             <h4 className={headingClasses.h4}>3. 替换 API 密钥</h4>
             <blockquote className="space-y-2 rounded-lg border-l-2 border-primary/50 bg-muted/40 px-4 py-3">
               <p className="font-semibold text-foreground">重要</p>
-              <p>将 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">your-api-key-here</code> 替换为你在 Claude Code Hub 控制台创建的 API 密钥。</p>
+              <p>
+                将{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
+                  your-api-key-here
+                </code>{" "}
+                替换为你在 Claude Code Hub 控制台创建的 API 密钥。
+              </p>
               <p>密钥获取：登录控制台 → 设置 → API 密钥管理 → 创建密钥</p>
             </blockquote>
           </div>
@@ -273,8 +340,14 @@ droid`}
             <h4 className={headingClasses.h4}>4. 选择模型</h4>
             <ol className="list-decimal space-y-2 pl-6">
               <li>重启 Droid</li>
-              <li>输入 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">/model</code> 命令</li>
-              <li>选择 <strong>GPT-5-Codex [CCH]</strong> 或 <strong>Sonnet 4.5 [CCH]</strong></li>
+              <li>
+                输入{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">/model</code>{" "}
+                命令
+              </li>
+              <li>
+                选择 <strong>GPT-5-Codex [CCH]</strong> 或 <strong>Sonnet 4.5 [CCH]</strong>
+              </li>
               <li>开始使用！</li>
             </ol>
           </div>
@@ -285,16 +358,24 @@ droid`}
             💻 Codex CLI Windows 部署指南
           </h3>
 
-          <p>
-            Codex CLI 是 OpenAI 官方的命令行 AI 编程助手，支持通过 Claude Code Hub 代理使用。
-          </p>
+          <p>Codex CLI 是 OpenAI 官方的命令行 AI 编程助手，支持通过 Claude Code Hub 代理使用。</p>
 
           <div className="space-y-3">
             <h4 className={headingClasses.h4}>一、安装 Node.js 环境</h4>
 
             <p className="font-semibold text-foreground">方法一：官网下载（推荐）</p>
             <ol className="list-decimal space-y-2 pl-6">
-              <li>访问 <a href="https://nodejs.org/" target="_blank" rel="noopener noreferrer" className="font-medium text-primary underline">https://nodejs.org/</a></li>
+              <li>
+                访问{" "}
+                <a
+                  href="https://nodejs.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-primary underline"
+                >
+                  https://nodejs.org/
+                </a>
+              </li>
               <li>下载 LTS 版本（需 v18 或更高）</li>
               <li>双击 .msi 文件，按向导安装</li>
               <li>验证安装：</li>
@@ -324,10 +405,7 @@ scoop install nodejs`}
               code={`npm i -g @openai/codex --registry=https://registry.npmmirror.com`}
             />
             <p>验证安装：</p>
-            <CodeBlock
-              language="powershell"
-              code={`codex --version`}
-            />
+            <CodeBlock language="powershell" code={`codex --version`} />
           </div>
 
           <div className="space-y-3">
@@ -335,8 +413,20 @@ scoop install nodejs`}
 
             <p className="font-semibold text-foreground">方法一：编辑配置文件（推荐）</p>
             <ol className="list-decimal space-y-2 pl-6">
-              <li>打开文件资源管理器，找到 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">C:\Users\你的用户名\.codex</code> 文件夹（不存在则创建）</li>
-              <li>创建 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">config.toml</code> 文件</li>
+              <li>
+                打开文件资源管理器，找到{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
+                  C:\Users\你的用户名\.codex
+                </code>{" "}
+                文件夹（不存在则创建）
+              </li>
+              <li>
+                创建{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
+                  config.toml
+                </code>{" "}
+                文件
+              </li>
               <li>使用 Notepad 打开，添加以下内容：</li>
             </ol>
             <CodeBlock
@@ -373,7 +463,13 @@ network_access = true`}
             />
 
             <ol className="list-decimal space-y-2 pl-6" start={4}>
-              <li>创建 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">auth.json</code> 文件，添加：</li>
+              <li>
+                创建{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
+                  auth.json
+                </code>{" "}
+                文件，添加：
+              </li>
             </ol>
             <CodeBlock
               language="json"
@@ -392,7 +488,13 @@ network_access = true`}
             <blockquote className="space-y-2 rounded-lg border-l-2 border-primary/50 bg-muted/40 px-4 py-3">
               <p className="font-semibold text-foreground">重要提示</p>
               <ul className="list-disc space-y-2 pl-4">
-                <li>将 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">your-api-key-here</code> 替换为你的 Claude Code Hub API 密钥</li>
+                <li>
+                  将{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
+                    your-api-key-here
+                  </code>{" "}
+                  替换为你的 Claude Code Hub API 密钥
+                </li>
                 <li>使用与 Claude Code 相同的密钥体系</li>
                 <li>设置环境变量后需重新打开 PowerShell 窗口</li>
               </ul>
@@ -414,7 +516,13 @@ codex`}
 
             <p className="font-semibold text-foreground">1. 命令未找到</p>
             <ul className="list-disc space-y-2 pl-6">
-              <li>确保 npm 全局路径（通常是 <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">C:\Users\你的用户名\AppData\Roaming\npm</code>）已添加到系统 PATH</li>
+              <li>
+                确保 npm 全局路径（通常是{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
+                  C:\Users\你的用户名\AppData\Roaming\npm
+                </code>
+                ）已添加到系统 PATH
+              </li>
               <li>重新打开 PowerShell 窗口</li>
             </ul>
 
@@ -425,7 +533,7 @@ codex`}
 echo $env:CCH_API_KEY
 
 # 测试网络连接
-Test-NetConnection -ComputerName ${resolvedOrigin.replace('https://', '').replace('http://', '')} -Port 443`}
+Test-NetConnection -ComputerName ${resolvedOrigin.replace("https://", "").replace("http://", "")} -Port 443`}
             />
 
             <p className="font-semibold text-foreground">3. 更新 Codex</p>
@@ -445,10 +553,22 @@ Test-NetConnection -ComputerName ${resolvedOrigin.replace('https://', '').replac
         </h2>
         <p>启动 Claude Code 后，您可以使用以下常用命令：</p>
         <ul className="list-disc space-y-2 pl-6">
-          <li><code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">/help</code> - 查看帮助信息</li>
-          <li><code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">/clear</code> - 清空对话历史，并开启新的对话</li>
-          <li><code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">/compact</code> - 总结当前对话</li>
-          <li><code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">/cost</code> - 查看当前对话已经使用的金额</li>
+          <li>
+            <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">/help</code> -
+            查看帮助信息
+          </li>
+          <li>
+            <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">/clear</code> -
+            清空对话历史，并开启新的对话
+          </li>
+          <li>
+            <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">/compact</code> -
+            总结当前对话
+          </li>
+          <li>
+            <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">/cost</code> -
+            查看当前对话已经使用的金额
+          </li>
           <li>
             ... 其他更多命令查看
             <a
@@ -488,7 +608,7 @@ Test-NetConnection -ComputerName ${resolvedOrigin.replace('https://', '').replac
         </div>
       </section>
     </article>
-  )
+  );
 }
 
 /**
@@ -496,81 +616,78 @@ Test-NetConnection -ComputerName ${resolvedOrigin.replace('https://', '').replac
  * 使用客户端组件渲染静态文档内容，并提供目录导航
  */
 export default function UsageDocPage() {
-  const [activeId, setActiveId] = useState<string>('')
-  const [tocItems, setTocItems] = useState<TocItem[]>([])
-  const [tocReady, setTocReady] = useState(false)
-  const [serviceOrigin, setServiceOrigin] = useState(() =>
-    (typeof window !== 'undefined' && window.location.origin) || ''
-  )
+  const [activeId, setActiveId] = useState<string>("");
+  const [tocItems, setTocItems] = useState<TocItem[]>([]);
+  const [tocReady, setTocReady] = useState(false);
+  const [serviceOrigin, setServiceOrigin] = useState(
+    () => (typeof window !== "undefined" && window.location.origin) || ""
+  );
 
   useEffect(() => {
-    setServiceOrigin(window.location.origin)
-  }, [])
+    setServiceOrigin(window.location.origin);
+  }, []);
 
   // 生成目录并监听滚动
   useEffect(() => {
     // 获取所有标题
-    const headings = document.querySelectorAll('h2, h3')
-    const items: TocItem[] = []
+    const headings = document.querySelectorAll("h2, h3");
+    const items: TocItem[] = [];
 
     headings.forEach((heading) => {
       // 为标题添加 id（如果没有的话）
       if (!heading.id) {
-        heading.id = heading.textContent?.toLowerCase().replace(/\s+/g, '-') || ''
+        heading.id = heading.textContent?.toLowerCase().replace(/\s+/g, "-") || "";
       }
 
       items.push({
         id: heading.id,
-        text: heading.textContent || '',
-        level: parseInt(heading.tagName[1])
-      })
-    })
+        text: heading.textContent || "",
+        level: parseInt(heading.tagName[1]),
+      });
+    });
 
-    setTocItems(items)
-    setTocReady(true)
+    setTocItems(items);
+    setTocReady(true);
 
     // 监听滚动，高亮当前章节
     const handleScroll = () => {
-      const scrollPosition = window.scrollY + 100
+      const scrollPosition = window.scrollY + 100;
 
       for (const item of items) {
-        const element = document.getElementById(item.id)
+        const element = document.getElementById(item.id);
         if (element && element.offsetTop <= scrollPosition) {
-          setActiveId(item.id)
+          setActiveId(item.id);
         }
       }
-    }
+    };
 
-    window.addEventListener('scroll', handleScroll)
-    handleScroll() // 初始化
+    window.addEventListener("scroll", handleScroll);
+    handleScroll(); // 初始化
 
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // 点击目录项滚动到对应位置
   const scrollToSection = (id: string) => {
-    const element = document.getElementById(id)
+    const element = document.getElementById(id);
     if (element) {
-      const offsetTop = element.offsetTop - 80
+      const offsetTop = element.offsetTop - 80;
       window.scrollTo({
         top: offsetTop,
-        behavior: 'smooth'
-      })
+        behavior: "smooth",
+      });
     }
-  }
+  };
 
   return (
     <div className="relative flex gap-8">
       {/* 左侧主文档 */}
       <div className="flex-1">
-        
-
         {/* 文档容器 */}
         <div className="relative bg-card rounded-xl shadow-sm border p-8 md:p-12">
           {/* 文档内容 */}
           <UsageDocContent origin={serviceOrigin} />
         </div>
-
       </div>
 
       {/* 右侧目录导航 */}
@@ -589,7 +706,8 @@ export default function UsageDocPage() {
               {tocReady && tocItems.length === 0 && (
                 <p className="text-xs text-muted-foreground">本页暂无可用章节</p>
               )}
-              {tocReady && tocItems.length > 0 &&
+              {tocReady &&
+                tocItems.length > 0 &&
                 tocItems.map((item) => (
                   <button
                     key={item.id}
@@ -612,11 +730,20 @@ export default function UsageDocPage() {
           <div className="bg-card rounded-lg border p-4">
             <h4 className="font-semibold text-sm mb-3">快速链接</h4>
             <div className="space-y-2">
-              <a href="/dashboard" className="block text-sm text-muted-foreground hover:text-primary transition-colors">
+              <a
+                href="/dashboard"
+                className="block text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
                 返回仪表盘
               </a>
-              <a href="#" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-                 className="block text-sm text-muted-foreground hover:text-primary transition-colors">
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="block text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
                 回到顶部
               </a>
             </div>
@@ -624,5 +751,5 @@ export default function UsageDocPage() {
         </div>
       </aside>
     </div>
-  )
+  );
 }

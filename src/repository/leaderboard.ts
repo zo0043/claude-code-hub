@@ -41,10 +41,7 @@ export async function findMonthlyLeaderboard(): Promise<LeaderboardEntry[]> {
 /**
  * 通用排行榜查询函数（不限制返回数量）
  */
-async function findLeaderboard(
-  startTime: Date,
-  endTime: Date
-): Promise<LeaderboardEntry[]> {
+async function findLeaderboard(startTime: Date, endTime: Date): Promise<LeaderboardEntry[]> {
   const rankings = await db
     .select({
       userId: messageRequest.userId,
@@ -61,10 +58,7 @@ async function findLeaderboard(
       )::int`,
     })
     .from(messageRequest)
-    .innerJoin(users, and(
-      sql`${messageRequest.userId} = ${users.id}`,
-      isNull(users.deletedAt)
-    ))
+    .innerJoin(users, and(sql`${messageRequest.userId} = ${users.id}`, isNull(users.deletedAt)))
     .where(
       and(
         isNull(messageRequest.deletedAt),
@@ -74,7 +68,7 @@ async function findLeaderboard(
     )
     .groupBy(messageRequest.userId, users.name)
     .orderBy(desc(sql`sum(${messageRequest.costUsd})`));
-    // 移除 .limit(50)，不限制返回数量
+  // 移除 .limit(50)，不限制返回数量
 
   // 将 totalCost 从字符串转为数字
   return rankings.map((entry) => ({

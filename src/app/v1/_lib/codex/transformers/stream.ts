@@ -3,7 +3,7 @@
  * 有状态的转换器，需要维护元数据和 <think> 标签状态
  */
 
-import type { ChatCompletionChunk } from '../types/compatible';
+import type { ChatCompletionChunk } from "../types/compatible";
 import type {
   SSEEvent,
   ResponseCreatedEvent,
@@ -11,12 +11,12 @@ import type {
   ReasoningSummaryTextDeltaEvent,
   ReasoningSummaryTextDoneEvent,
   ReasoningSummaryPartDoneEvent,
-} from '../types/response';
+} from "../types/response";
 
 export class StreamTransformer {
-  private chunkId: string = '';
+  private chunkId: string = "";
   private created: number = Math.floor(Date.now() / 1000); // Unix 秒时间戳
-  private model: string = 'gpt-5';
+  private model: string = "gpt-5";
 
   // 状态追踪：用于 reasoning 标签包装
   private isInReasoning: boolean = false;
@@ -27,11 +27,14 @@ export class StreamTransformer {
    * 返回 null 表示跳过该事件
    * 返回数组表示需要发送多个 chunk（如在 completed 时关闭 think 标签）
    */
-  transform(
-    event: SSEEvent
-  ): ChatCompletionChunk | ChatCompletionChunk[] | null {
+  transform(event: SSEEvent): ChatCompletionChunk | ChatCompletionChunk[] | null {
     // 懒初始化：从任何事件中提取 ID
-    if (!this.chunkId && typeof event.data === 'object' && event.data !== null && 'item_id' in event.data) {
+    if (
+      !this.chunkId &&
+      typeof event.data === "object" &&
+      event.data !== null &&
+      "item_id" in event.data
+    ) {
       const itemId = (event.data as { item_id?: string }).item_id;
       if (itemId) {
         this.chunkId = this.convertItemId(itemId);
@@ -39,31 +42,25 @@ export class StreamTransformer {
     }
 
     switch (event.event) {
-      case 'response.created':
+      case "response.created":
         return this.handleCreated(event.data as ResponseCreatedEvent);
 
-      case 'response.output_text.delta':
+      case "response.output_text.delta":
         return this.handleTextDelta(event.data as OutputTextDeltaEvent);
 
-      case 'response.reasoning_summary_text.delta':
-        return this.handleReasoningDelta(
-          event.data as ReasoningSummaryTextDeltaEvent
-        );
+      case "response.reasoning_summary_text.delta":
+        return this.handleReasoningDelta(event.data as ReasoningSummaryTextDeltaEvent);
 
-      case 'response.reasoning_summary_text.done':
-        return this.handleReasoningDone(
-          event.data as ReasoningSummaryTextDoneEvent
-        );
+      case "response.reasoning_summary_text.done":
+        return this.handleReasoningDone(event.data as ReasoningSummaryTextDoneEvent);
 
-      case 'response.reasoning_summary_part.done':
-        return this.handleReasoningPartDone(
-          event.data as ReasoningSummaryPartDoneEvent
-        );
+      case "response.reasoning_summary_part.done":
+        return this.handleReasoningPartDone(event.data as ReasoningSummaryPartDoneEvent);
 
-      case 'response.completed':
+      case "response.completed":
         return this.handleCompleted();
 
-      case 'response.failed':
+      case "response.failed":
         this.resetAfterCompletion();
         return null;
 
@@ -85,13 +82,13 @@ export class StreamTransformer {
 
     return {
       id: this.chunkId,
-      object: 'chat.completion.chunk',
+      object: "chat.completion.chunk",
       created: this.created,
       model: this.model,
       choices: [
         {
           index: 0,
-          delta: { role: 'assistant' },
+          delta: { role: "assistant" },
           finish_reason: null,
         },
       ],
@@ -104,43 +101,37 @@ export class StreamTransformer {
    * 根据 item_id 前缀判断是否需要添加 <think> 标签
    */
   private handleTextDelta(data: OutputTextDeltaEvent): ChatCompletionChunk {
-    const itemId = data.item_id || '';
-    return this.emitContentDelta(itemId, data.delta, 'message');
+    const itemId = data.item_id || "";
+    return this.emitContentDelta(itemId, data.delta, "message");
   }
 
   /**
    * 处理 reasoning summary 的增量事件
    */
-  private handleReasoningDelta(
-    data: ReasoningSummaryTextDeltaEvent
-  ): ChatCompletionChunk {
-    const itemId = data.item_id || '';
-    return this.emitContentDelta(itemId, data.delta, 'reasoning');
+  private handleReasoningDelta(data: ReasoningSummaryTextDeltaEvent): ChatCompletionChunk {
+    const itemId = data.item_id || "";
+    return this.emitContentDelta(itemId, data.delta, "reasoning");
   }
 
   /**
    * 处理 reasoning summary 的完成事件（可能只有最终文本）
    */
-  private handleReasoningDone(
-    data: ReasoningSummaryTextDoneEvent
-  ): ChatCompletionChunk | null {
-    const itemId = data.item_id || '';
+  private handleReasoningDone(data: ReasoningSummaryTextDoneEvent): ChatCompletionChunk | null {
+    const itemId = data.item_id || "";
     if (!data.text) {
       return null;
     }
     if (itemId && this.reasoningItemsWithOutput.has(itemId)) {
       return null;
     }
-    return this.emitContentDelta(itemId, data.text, 'reasoning');
+    return this.emitContentDelta(itemId, data.text, "reasoning");
   }
 
   /**
    * 处理 reasoning summary part 完成事件（部分文本）
    */
-  private handleReasoningPartDone(
-    data: ReasoningSummaryPartDoneEvent
-  ): ChatCompletionChunk | null {
-    const itemId = data.item_id || '';
+  private handleReasoningPartDone(data: ReasoningSummaryPartDoneEvent): ChatCompletionChunk | null {
+    const itemId = data.item_id || "";
     const text = data.part?.text;
     if (!text) {
       return null;
@@ -148,7 +139,7 @@ export class StreamTransformer {
     if (itemId && this.reasoningItemsWithOutput.has(itemId)) {
       return null;
     }
-    return this.emitContentDelta(itemId, text, 'reasoning');
+    return this.emitContentDelta(itemId, text, "reasoning");
   }
 
   /**
@@ -163,13 +154,13 @@ export class StreamTransformer {
     if (this.isInReasoning) {
       chunks.push({
         id: this.chunkId,
-        object: 'chat.completion.chunk',
+        object: "chat.completion.chunk",
         created: this.created,
         model: this.model,
         choices: [
           {
             index: 0,
-            delta: { content: '</think>' },
+            delta: { content: "</think>" },
             finish_reason: null,
           },
         ],
@@ -180,14 +171,14 @@ export class StreamTransformer {
     // 添加结束 chunk
     const endChunk: ChatCompletionChunk = {
       id: this.chunkId,
-      object: 'chat.completion.chunk',
+      object: "chat.completion.chunk",
       created: this.created,
       model: this.model,
       choices: [
         {
           index: 0,
           delta: {},
-          finish_reason: 'stop',
+          finish_reason: "stop",
         },
       ],
     };
@@ -201,32 +192,32 @@ export class StreamTransformer {
   private emitContentDelta(
     rawItemId: string,
     delta: string,
-    source: 'reasoning' | 'message'
+    source: "reasoning" | "message"
   ): ChatCompletionChunk {
     this.ensureChunkMetadata(rawItemId);
 
-    const itemId = rawItemId || '';
-    const isReasoning = source === 'reasoning' || itemId.startsWith('rs_');
-    const isMessage = source === 'message' || itemId.startsWith('msg_');
+    const itemId = rawItemId || "";
+    const isReasoning = source === "reasoning" || itemId.startsWith("rs_");
+    const isMessage = source === "message" || itemId.startsWith("msg_");
 
     let content = delta;
 
     if (isReasoning) {
       if (!this.isInReasoning) {
-        content = '<think>' + content;
+        content = "<think>" + content;
         this.isInReasoning = true;
       }
       if (itemId) {
         this.reasoningItemsWithOutput.add(itemId);
       }
     } else if (isMessage && this.isInReasoning) {
-      content = '</think>\n' + content;
+      content = "</think>\n" + content;
       this.isInReasoning = false;
     }
 
     return {
-      id: this.chunkId || 'chatcmpl-unknown',
-      object: 'chat.completion.chunk',
+      id: this.chunkId || "chatcmpl-unknown",
+      object: "chat.completion.chunk",
       created: this.created,
       model: this.model,
       choices: [
@@ -241,15 +232,15 @@ export class StreamTransformer {
 
   private ensureChunkMetadata(itemId?: string) {
     if (!this.chunkId) {
-      this.chunkId = itemId ? this.convertItemId(itemId) : 'chatcmpl-unknown';
+      this.chunkId = itemId ? this.convertItemId(itemId) : "chatcmpl-unknown";
     }
   }
 
   private resetAfterCompletion() {
     this.isInReasoning = false;
     this.reasoningItemsWithOutput.clear();
-    this.chunkId = '';
-    this.model = 'gpt-5';
+    this.chunkId = "";
+    this.model = "gpt-5";
     this.created = Math.floor(Date.now() / 1000);
   }
 
@@ -258,9 +249,9 @@ export class StreamTransformer {
    */
   private convertId(id: string): string {
     if (!id) {
-      return 'chatcmpl-unknown';
+      return "chatcmpl-unknown";
     }
-    return id.replace('resp_', 'chatcmpl-');
+    return id.replace("resp_", "chatcmpl-");
   }
 
   /**
@@ -269,10 +260,10 @@ export class StreamTransformer {
    */
   private convertItemId(itemId: string): string {
     if (!itemId) {
-      return 'chatcmpl-unknown';
+      return "chatcmpl-unknown";
     }
     // 提取 msg_ 或 rs_ 后面的部分
-    const id = itemId.replace(/^(msg_|rs_)/, 'chatcmpl-');
+    const id = itemId.replace(/^(msg_|rs_)/, "chatcmpl-");
     return id;
   }
 }

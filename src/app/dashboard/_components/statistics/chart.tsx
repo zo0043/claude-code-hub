@@ -1,22 +1,11 @@
-"use client"
+"use client";
 
 import * as React from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn, Decimal, formatCurrency, toDecimal } from "@/lib/utils";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartLegend,
-  ChartTooltip,
-} from "@/components/ui/chart";
+import { ChartConfig, ChartContainer, ChartLegend, ChartTooltip } from "@/components/ui/chart";
 
 import type { UserStatisticsData, TimeRange } from "@/types/statistics";
 import { TimeRangeSelector } from "./time-range-selector";
@@ -50,8 +39,7 @@ const USER_COLOR_PALETTE = [
 ] as const;
 
 // 根据索引循环分配颜色，避免重复定义数组
-const getUserColor = (index: number) =>
-  USER_COLOR_PALETTE[index % USER_COLOR_PALETTE.length];
+const getUserColor = (index: number) => USER_COLOR_PALETTE[index % USER_COLOR_PALETTE.length];
 
 export interface UserStatisticsChartProps {
   data: UserStatisticsData;
@@ -63,46 +51,46 @@ export interface UserStatisticsChartProps {
  * 展示用户的消费金额和API调用次数
  */
 export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsChartProps) {
-  const [activeChart, setActiveChart] = React.useState<"cost" | "calls">("cost")
+  const [activeChart, setActiveChart] = React.useState<"cost" | "calls">("cost");
 
   // 用户选择状态(仅 Admin 用 users 模式时启用)
   const [selectedUserIds, setSelectedUserIds] = React.useState<Set<number>>(
-    () => new Set(data.users.map(u => u.id))
-  )
+    () => new Set(data.users.map((u) => u.id))
+  );
 
   // 重置选择状态(当 data.users 变化时)
   React.useEffect(() => {
-    setSelectedUserIds(new Set(data.users.map(u => u.id)))
-  }, [data.users])
+    setSelectedUserIds(new Set(data.users.map((u) => u.id)));
+  }, [data.users]);
 
-  const isAdminMode = data.mode === 'users'
-  const enableUserFilter = isAdminMode && data.users.length > 1
+  const isAdminMode = data.mode === "users";
+  const enableUserFilter = isAdminMode && data.users.length > 1;
 
   const toggleUserSelection = (userId: number) => {
-    setSelectedUserIds(prev => {
-      const next = new Set(prev)
+    setSelectedUserIds((prev) => {
+      const next = new Set(prev);
       if (next.has(userId)) {
         // 至少保留一个用户
         if (next.size > 1) {
-          next.delete(userId)
+          next.delete(userId);
         }
       } else {
-        next.add(userId)
+        next.add(userId);
       }
-      return next
-    })
-  }
+      return next;
+    });
+  };
 
   const selectAllUsers = () => {
-    setSelectedUserIds(new Set(data.users.map(u => u.id)))
-  }
+    setSelectedUserIds(new Set(data.users.map((u) => u.id)));
+  };
 
   const deselectAllUsers = () => {
     // 保留第一个用户
     if (data.users.length > 0) {
-      setSelectedUserIds(new Set([data.users[0].id]))
+      setSelectedUserIds(new Set([data.users[0].id]));
     }
-  }
+  };
 
   // 动态生成图表配置
   const chartConfig = React.useMemo(() => {
@@ -113,29 +101,29 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
       calls: {
         label: "API调用次数",
       },
-    }
+    };
 
     data.users.forEach((user, index) => {
       config[user.dataKey] = {
         label: user.name,
         color: getUserColor(index),
-      }
-    })
+      };
+    });
 
-    return config
-  }, [data.users])
+    return config;
+  }, [data.users]);
 
   const userMap = React.useMemo(() => {
-    return new Map(data.users.map((user) => [user.dataKey, user]))
-  }, [data.users])
+    return new Map(data.users.map((user) => [user.dataKey, user]));
+  }, [data.users]);
 
   // 过滤可见用户(如果启用过滤)
   const visibleUsers = React.useMemo(() => {
     if (!enableUserFilter) {
-      return data.users
+      return data.users;
     }
-    return data.users.filter(u => selectedUserIds.has(u.id))
-  }, [data.users, selectedUserIds, enableUserFilter])
+    return data.users.filter((u) => selectedUserIds.has(u.id));
+  }, [data.users, selectedUserIds, enableUserFilter]);
 
   const numericChartData = React.useMemo(() => {
     return data.chartData.map((day) => {
@@ -145,13 +133,12 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
       visibleUsers.forEach((user) => {
         const costKey = `${user.dataKey}_cost`;
         const costDecimal = toDecimal(day[costKey]);
-        normalized[costKey] = costDecimal
-          ? Number(costDecimal.toDecimalPlaces(6).toString())
-          : 0;
+        normalized[costKey] = costDecimal ? Number(costDecimal.toDecimalPlaces(6).toString()) : 0;
 
         const callsKey = `${user.dataKey}_calls`;
         const callsValue = day[callsKey];
-        normalized[callsKey] = typeof callsValue === "number" ? callsValue : Number(callsValue ?? 0);
+        normalized[callsKey] =
+          typeof callsValue === "number" ? callsValue : Number(callsValue ?? 0);
       });
 
       return normalized;
@@ -160,134 +147,135 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
 
   // 计算每个用户的总数据(包括所有用户,用于 legend 排序)
   const userTotals = React.useMemo(() => {
-    const totals: Record<string, { cost: Decimal; calls: number }> = {}
+    const totals: Record<string, { cost: Decimal; calls: number }> = {};
 
-    data.users.forEach(user => {
-      totals[user.dataKey] = { cost: new Decimal(0), calls: 0 }
-    })
+    data.users.forEach((user) => {
+      totals[user.dataKey] = { cost: new Decimal(0), calls: 0 };
+    });
 
-    data.chartData.forEach(day => {
-      data.users.forEach(user => {
-        const costValue = toDecimal(day[`${user.dataKey}_cost`])
-        const callsValue = day[`${user.dataKey}_calls`]
+    data.chartData.forEach((day) => {
+      data.users.forEach((user) => {
+        const costValue = toDecimal(day[`${user.dataKey}_cost`]);
+        const callsValue = day[`${user.dataKey}_calls`];
 
         if (costValue) {
-          const current = totals[user.dataKey]
-          current.cost = current.cost.plus(costValue)
+          const current = totals[user.dataKey];
+          current.cost = current.cost.plus(costValue);
         }
 
-        totals[user.dataKey].calls += typeof callsValue === 'number' ? callsValue : Number(callsValue ?? 0)
-      })
-    })
+        totals[user.dataKey].calls +=
+          typeof callsValue === "number" ? callsValue : Number(callsValue ?? 0);
+      });
+    });
 
-    return totals
-  }, [data.chartData, data.users])
+    return totals;
+  }, [data.chartData, data.users]);
 
   // 计算可见用户的总计(用于顶部统计卡片)
   const visibleTotals = React.useMemo(() => {
     const costTotal = data.chartData.reduce((sum, day) => {
       const dayTotal = visibleUsers.reduce((daySum, user) => {
-        const costValue = toDecimal(day[`${user.dataKey}_cost`])
-        return costValue ? daySum.plus(costValue) : daySum
-      }, new Decimal(0))
-      return sum.plus(dayTotal)
-    }, new Decimal(0))
+        const costValue = toDecimal(day[`${user.dataKey}_cost`]);
+        return costValue ? daySum.plus(costValue) : daySum;
+      }, new Decimal(0));
+      return sum.plus(dayTotal);
+    }, new Decimal(0));
 
     const callsTotal = data.chartData.reduce((sum, day) => {
       const dayTotal = visibleUsers.reduce((daySum, user) => {
-        const callsValue = day[`${user.dataKey}_calls`]
-        return daySum + (typeof callsValue === 'number' ? callsValue : 0);
-      }, 0)
-      return sum + dayTotal
-    }, 0)
+        const callsValue = day[`${user.dataKey}_calls`];
+        return daySum + (typeof callsValue === "number" ? callsValue : 0);
+      }, 0);
+      return sum + dayTotal;
+    }, 0);
 
-    return { cost: costTotal, calls: callsTotal }
-  }, [data.chartData, visibleUsers])
+    return { cost: costTotal, calls: callsTotal };
+  }, [data.chartData, visibleUsers]);
 
   const sortedLegendUsers = React.useMemo(() => {
     return data.users
       .map((user, index) => ({ user, index }))
       .sort((a, b) => {
-        const totalsA = userTotals[a.user.dataKey]
-        const totalsB = userTotals[b.user.dataKey]
+        const totalsA = userTotals[a.user.dataKey];
+        const totalsB = userTotals[b.user.dataKey];
         if (!totalsA && !totalsB) {
-          return a.index - b.index
+          return a.index - b.index;
         }
 
-        if (!totalsA) return 1
-        if (!totalsB) return -1
+        if (!totalsA) return 1;
+        if (!totalsB) return -1;
 
         if (activeChart === "cost") {
-          const result = totalsB.cost.comparedTo(totalsA.cost)
-          return result !== 0 ? result : a.index - b.index
+          const result = totalsB.cost.comparedTo(totalsA.cost);
+          return result !== 0 ? result : a.index - b.index;
         }
 
         if (totalsB.calls === totalsA.calls) {
-          return a.index - b.index
+          return a.index - b.index;
         }
 
-        return totalsB.calls - totalsA.calls
-      })
-  }, [data.users, userTotals, activeChart])
+        return totalsB.calls - totalsA.calls;
+      });
+  }, [data.users, userTotals, activeChart]);
 
   // 格式化日期显示（根据分辨率）
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    if (data.resolution === 'hour') {
+    const date = new Date(dateStr);
+    if (data.resolution === "hour") {
       return date.toLocaleTimeString("zh-CN", {
         hour: "2-digit",
         minute: "2-digit",
-      })
+      });
     } else {
       return date.toLocaleDateString("zh-CN", {
         month: "numeric",
         day: "numeric",
-      })
+      });
     }
-  }
+  };
 
   // 格式化tooltip日期
   const formatTooltipDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    if (data.resolution === 'hour') {
+    const date = new Date(dateStr);
+    if (data.resolution === "hour") {
       return date.toLocaleString("zh-CN", {
         month: "long",
         day: "numeric",
         hour: "2-digit",
         minute: "2-digit",
-      })
+      });
     } else {
       return date.toLocaleDateString("zh-CN", {
         year: "numeric",
         month: "long",
         day: "numeric",
-      })
+      });
     }
-  }
+  };
 
   // 获取时间范围的描述文本
   const getTimeRangeDescription = () => {
     switch (data.timeRange) {
-      case 'today':
-        return '今天的使用情况'
-      case '7days':
-        return '过去 7 天的使用情况'
-      case '30days':
-        return '过去 30 天的使用情况'
+      case "today":
+        return "今天的使用情况";
+      case "7days":
+        return "过去 7 天的使用情况";
+      case "30days":
+        return "过去 30 天的使用情况";
       default:
-        return '使用情况'
+        return "使用情况";
     }
-  }
+  };
 
   const getAggregationLabel = () => {
-    if (data.mode === 'keys') {
-      return '仅显示您名下各密钥的使用统计'
-    } else if (data.mode === 'mixed') {
-      return '展示您的密钥明细和其他用户汇总'
+    if (data.mode === "keys") {
+      return "仅显示您名下各密钥的使用统计";
+    } else if (data.mode === "mixed") {
+      return "展示您的密钥明细和其他用户汇总";
     } else {
-      return '展示所有用户的使用统计'
+      return "展示所有用户的使用统计";
     }
-  }
+  };
 
   return (
     <Card className="gap-0 py-0">
@@ -319,9 +307,7 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
               className="data-[active=true]:bg-muted/50 relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l lg:border-t-0 lg:border-l lg:px-8 lg:py-6"
               onClick={() => setActiveChart("cost")}
             >
-              <span className="text-muted-foreground text-xs">
-                总消费金额
-              </span>
+              <span className="text-muted-foreground text-xs">总消费金额</span>
               <span className="text-lg leading-none font-bold sm:text-3xl">
                 {formatCurrency(visibleTotals.cost)}
               </span>
@@ -331,9 +317,7 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
               className="data-[active=true]:bg-muted/50 relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l lg:border-t-0 lg:border-l lg:px-8 lg:py-6"
               onClick={() => setActiveChart("calls")}
             >
-              <span className="text-muted-foreground text-xs">
-                总API调用次数
-              </span>
+              <span className="text-muted-foreground text-xs">总API调用次数</span>
               <span className="text-lg leading-none font-bold sm:text-3xl">
                 {visibleTotals.calls.toLocaleString()}
               </span>
@@ -349,9 +333,7 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
             className="data-[active=true]:bg-muted/50 relative z-30 flex flex-1 flex-col justify-center gap-1 px-6 py-3 text-left even:border-l transition-colors hover:bg-muted/30"
             onClick={() => setActiveChart("cost")}
           >
-            <span className="text-muted-foreground text-xs">
-              总消费金额
-            </span>
+            <span className="text-muted-foreground text-xs">总消费金额</span>
             <span className="text-lg leading-none font-bold sm:text-xl">
               {formatCurrency(visibleTotals.cost)}
             </span>
@@ -361,9 +343,7 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
             className="data-[active=true]:bg-muted/50 relative z-30 flex flex-1 flex-col justify-center gap-1 px-6 py-3 text-left even:border-l transition-colors hover:bg-muted/30"
             onClick={() => setActiveChart("calls")}
           >
-            <span className="text-muted-foreground text-xs">
-              总API调用次数
-            </span>
+            <span className="text-muted-foreground text-xs">总API调用次数</span>
             <span className="text-lg leading-none font-bold sm:text-xl">
               {visibleTotals.calls.toLocaleString()}
             </span>
@@ -371,10 +351,7 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
         </div>
       )}
       <CardContent className="px-1 sm:p-6">
-        <ChartContainer
-          config={chartConfig}
-          className="aspect-auto h-[280px] w-full"
-        >
+        <ChartContainer config={chartConfig} className="aspect-auto h-[280px] w-full">
           <AreaChart
             data={numericChartData}
             margin={{
@@ -384,7 +361,7 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
           >
             <defs>
               {data.users.map((user, index) => {
-                const color = getUserColor(index)
+                const color = getUserColor(index);
                 return (
                   <linearGradient
                     key={user.dataKey}
@@ -394,18 +371,10 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
                     x2="0"
                     y2="1"
                   >
-                    <stop
-                      offset="5%"
-                      stopColor={color}
-                      stopOpacity={0.8}
-                    />
-                    <stop
-                      offset="95%"
-                      stopColor={color}
-                      stopOpacity={0.1}
-                    />
+                    <stop offset="5%" stopColor={color} stopOpacity={0.8} />
+                    <stop offset="95%" stopColor={color} stopOpacity={0.1} />
                   </linearGradient>
-                )
+                );
               })}
             </defs>
             <CartesianGrid vertical={false} />
@@ -422,76 +391,78 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
               tickMargin={8}
               tickFormatter={(value) => {
                 if (activeChart === "cost") {
-                  return formatCurrency(value)
+                  return formatCurrency(value);
                 }
-                return Number(value).toLocaleString()
+                return Number(value).toLocaleString();
               }}
             />
             <ChartTooltip
               cursor={false}
               content={({ active, payload, label }) => {
-                if (!active || !payload || !payload.length) return null
+                if (!active || !payload || !payload.length) return null;
 
-                const filteredPayload = payload.filter(entry => {
+                const filteredPayload = payload.filter((entry) => {
                   const value =
-                    typeof entry.value === "number"
-                      ? entry.value
-                      : Number(entry.value ?? 0)
-                  return !Number.isNaN(value) && value !== 0
-                })
+                    typeof entry.value === "number" ? entry.value : Number(entry.value ?? 0);
+                  return !Number.isNaN(value) && value !== 0;
+                });
 
                 if (!filteredPayload.length) {
                   return (
                     <div className="rounded-lg border bg-background p-3 shadow-sm min-w-[200px]">
-                      <div className="font-medium text-center">
-                        {formatTooltipDate(label)}
-                      </div>
+                      <div className="font-medium text-center">{formatTooltipDate(label)}</div>
                     </div>
-                  )
+                  );
                 }
 
                 return (
                   <div className="rounded-lg border bg-background p-3 shadow-sm min-w-[200px]">
                     <div className="grid gap-2">
-                      <div className="font-medium text-center">
-                        {formatTooltipDate(label)}
-                      </div>
+                      <div className="font-medium text-center">{formatTooltipDate(label)}</div>
                       <div className="grid gap-1.5">
                         {[...filteredPayload]
                           .sort((a, b) => (Number(b.value ?? 0) || 0) - (Number(a.value ?? 0) || 0))
                           .map((entry, index) => {
-                          const baseKey = entry.dataKey?.toString().replace(`_${activeChart}`, '') || ''
-                          const displayUser = userMap.get(baseKey)
-                          const value = typeof entry.value === "number" ? entry.value : Number(entry.value ?? 0)
-                          const color = entry.color
+                            const baseKey =
+                              entry.dataKey?.toString().replace(`_${activeChart}`, "") || "";
+                            const displayUser = userMap.get(baseKey);
+                            const value =
+                              typeof entry.value === "number"
+                                ? entry.value
+                                : Number(entry.value ?? 0);
+                            const color = entry.color;
 
-                          return (
-                            <div key={index} className="flex items-center justify-between gap-3 text-sm">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <div
-                                  className="h-2 w-2 rounded-full flex-shrink-0"
-                                  style={{ backgroundColor: color }}
-                                />
-                                <span className="font-medium truncate">{displayUser?.name || baseKey}:</span>
+                            return (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between gap-3 text-sm"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div
+                                    className="h-2 w-2 rounded-full flex-shrink-0"
+                                    style={{ backgroundColor: color }}
+                                  />
+                                  <span className="font-medium truncate">
+                                    {displayUser?.name || baseKey}:
+                                  </span>
+                                </div>
+                                <span className="ml-auto font-mono flex-shrink-0">
+                                  {activeChart === "cost"
+                                    ? formatCurrency(value)
+                                    : value.toLocaleString()}
+                                </span>
                               </div>
-                              <span className="ml-auto font-mono flex-shrink-0">
-                                {activeChart === "cost"
-                                  ? formatCurrency(value)
-                                  : value.toLocaleString()
-                                }
-                              </span>
-                            </div>
-                          )
-                        })}
+                            );
+                          })}
                       </div>
                     </div>
                   </div>
-                )
+                );
               }}
             />
             {visibleUsers.map((user, index) => {
-              const originalIndex = data.users.findIndex(u => u.id === user.id)
-              const color = getUserColor(originalIndex)
+              const originalIndex = data.users.findIndex((u) => u.id === user.id);
+              const color = getUserColor(originalIndex);
               return (
                 <Area
                   key={user.dataKey}
@@ -502,7 +473,7 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
                   stroke={color}
                   stackId="a"
                 />
-              )
+              );
             })}
             <ChartLegend
               content={() => (
@@ -531,9 +502,12 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
                   )}
                   <div className="flex flex-wrap justify-center gap-1">
                     {sortedLegendUsers.map(({ user, index }) => {
-                      const color = getUserColor(index)
-                      const userTotal = userTotals[user.dataKey] ?? { cost: new Decimal(0), calls: 0 }
-                      const isSelected = selectedUserIds.has(user.id)
+                      const color = getUserColor(index);
+                      const userTotal = userTotals[user.dataKey] ?? {
+                        cost: new Decimal(0),
+                        calls: 0,
+                      };
+                      const isSelected = selectedUserIds.has(user.id);
 
                       return (
                         <div
@@ -562,11 +536,10 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
                           <div className="text-xs font-bold text-foreground">
                             {activeChart === "cost"
                               ? formatCurrency(userTotal.cost)
-                              : userTotal.calls.toLocaleString()
-                            }
+                              : userTotal.calls.toLocaleString()}
                           </div>
                         </div>
-                      )
+                      );
                     })}
                   </div>
                 </div>
@@ -576,5 +549,5 @@ export function UserStatisticsChart({ data, onTimeRangeChange }: UserStatisticsC
         </ChartContainer>
       </CardContent>
     </Card>
-  )
+  );
 }

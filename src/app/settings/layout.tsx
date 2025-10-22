@@ -26,9 +26,7 @@ export default async function SettingsLayout({ children }: { children: ReactNode
             <aside className="lg:sticky lg:top-24 lg:self-start">
               <SettingsNav items={SETTINGS_NAV_ITEMS} />
             </aside>
-            <div className="space-y-6">
-              {children}
-            </div>
+            <div className="space-y-6">{children}</div>
           </div>
         </div>
       </main>

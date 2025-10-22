@@ -1,11 +1,7 @@
 "use server";
 
-import {
-  findUserList,
-  createUser,
-  updateUser,
-  deleteUser,
-} from "@/repository/user";
+import { findUserList, createUser, updateUser, deleteUser } from "@/repository/user";
+import { logger } from '@/lib/logger';
 import { findKeyList, findKeyUsageToday, findKeysWithStatistics } from "@/repository/key";
 import { revalidatePath } from "next/cache";
 import { randomBytes } from "node:crypto";
@@ -46,16 +42,12 @@ export async function getUsers(): Promise<UserDisplay[]> {
           const [keys, usageRecords, keyStatistics] = await Promise.all([
             findKeyList(user.id),
             findKeyUsageToday(user.id),
-            findKeysWithStatistics(user.id)
+            findKeysWithStatistics(user.id),
           ]);
 
-          const usageMap = new Map(
-            usageRecords.map((item) => [item.keyId, item.totalCost ?? 0])
-          );
+          const usageMap = new Map(usageRecords.map((item) => [item.keyId, item.totalCost ?? 0]));
 
-          const statisticsMap = new Map(
-            keyStatistics.map((stat) => [stat.keyId, stat])
-          );
+          const statisticsMap = new Map(keyStatistics.map((stat) => [stat.keyId, stat]));
 
           return {
             id: user.id,
@@ -75,29 +67,27 @@ export async function getUsers(): Promise<UserDisplay[]> {
                 maskedKey: maskKey(key.key),
                 fullKey: canUserManageKey ? key.key : undefined,
                 canCopy: canUserManageKey,
-                expiresAt: key.expiresAt
-                  ? key.expiresAt.toISOString().split("T")[0]
-                  : "永不过期",
+                expiresAt: key.expiresAt ? key.expiresAt.toISOString().split("T")[0] : "永不过期",
                 status: key.isEnabled ? "enabled" : ("disabled" as const),
                 createdAt: key.createdAt,
-                createdAtFormatted: key.createdAt.toLocaleString('zh-CN', {
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit'
+                createdAtFormatted: key.createdAt.toLocaleString("zh-CN", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
                 }),
                 todayUsage: usageMap.get(key.id) ?? 0,
                 todayCallCount: stats?.todayCallCount ?? 0,
                 lastUsedAt: stats?.lastUsedAt ?? null,
                 lastProviderName: stats?.lastProviderName ?? null,
-                modelStats: stats?.modelStats ?? []
+                modelStats: stats?.modelStats ?? [],
               };
             }),
           };
         } catch (error) {
-          console.error(`获取用户 ${user.id} 的密钥失败:`, error);
+          logger.error('获取用户 ${user.id} 的密钥失败:', error);
           return {
             id: user.id,
             name: user.name,
@@ -109,12 +99,12 @@ export async function getUsers(): Promise<UserDisplay[]> {
             keys: [],
           };
         }
-      }),
+      })
     );
 
     return userDisplays;
   } catch (error) {
-    console.error("获取用户数据失败:", error);
+    logger.error('获取用户数据失败:', error);
     return [];
   }
 }
@@ -163,9 +153,8 @@ export async function addUser(data: {
     revalidatePath("/dashboard");
     return { ok: true };
   } catch (error) {
-    console.error("添加用户失败:", error);
-    const message =
-      error instanceof Error ? error.message : "添加用户失败，请稍后重试";
+    logger.error('添加用户失败:', error);
+    const message = error instanceof Error ? error.message : "添加用户失败，请稍后重试";
     return { ok: false, error: message };
   }
 }
@@ -173,7 +162,13 @@ export async function addUser(data: {
 // 更新用户
 export async function editUser(
   userId: number,
-  data: { name?: string; note?: string; providerGroup?: string | null; rpm?: number; dailyQuota?: number },
+  data: {
+    name?: string;
+    note?: string;
+    providerGroup?: string | null;
+    rpm?: number;
+    dailyQuota?: number;
+  }
 ): Promise<ActionResult> {
   try {
     const session = await getSession();
@@ -194,17 +189,14 @@ export async function editUser(
     revalidatePath("/dashboard");
     return { ok: true };
   } catch (error) {
-    console.error("更新用户失败:", error);
-    const message =
-      error instanceof Error ? error.message : "更新用户失败，请稍后重试";
+    logger.error('更新用户失败:', error);
+    const message = error instanceof Error ? error.message : "更新用户失败，请稍后重试";
     return { ok: false, error: message };
   }
 }
 
 // 删除用户
-export async function removeUser(
-  userId: number,
-): Promise<ActionResult> {
+export async function removeUser(userId: number): Promise<ActionResult> {
   try {
     const session = await getSession();
     if (!session || session.user.role !== "admin") {
@@ -215,9 +207,8 @@ export async function removeUser(
     revalidatePath("/dashboard");
     return { ok: true };
   } catch (error) {
-    console.error("删除用户失败:", error);
-    const message =
-      error instanceof Error ? error.message : "删除用户失败，请稍后重试";
+    logger.error('删除用户失败:', error);
+    const message = error instanceof Error ? error.message : "删除用户失败，请稍后重试";
     return { ok: false, error: message };
   }
 }

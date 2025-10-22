@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React, { Component, ReactNode } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import React, { Component, ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -32,7 +32,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error Boundary caught an error:', error, errorInfo);
+    console.error("Error Boundary caught an error:", error, errorInfo);
   }
 
   resetError = () => {
@@ -42,12 +42,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   render() {
     if (this.state.hasError) {
       const FallbackComponent = this.props.fallback || DefaultErrorFallback;
-      return (
-        <FallbackComponent
-          error={this.state.error}
-          resetError={this.resetError}
-        />
-      );
+      return <FallbackComponent error={this.state.error} resetError={this.resetError} />;
     }
 
     return this.props.children;
@@ -66,7 +61,7 @@ function DefaultErrorFallback({ error, resetError }: { error?: Error; resetError
         </div>
         <CardTitle className="text-destructive">出现了错误</CardTitle>
         <CardDescription>
-          {error?.message || '页面加载时发生了未知错误，请尝试刷新页面。'}
+          {error?.message || "页面加载时发生了未知错误，请尝试刷新页面。"}
         </CardDescription>
       </CardHeader>
       <CardFooter className="flex gap-2 justify-center">
@@ -74,11 +69,7 @@ function DefaultErrorFallback({ error, resetError }: { error?: Error; resetError
           <RefreshCw className="w-4 h-4 mr-2" />
           重试
         </Button>
-        <Button 
-          variant="secondary" 
-          onClick={() => window.location.reload()} 
-          size="sm"
-        >
+        <Button variant="secondary" onClick={() => window.location.reload()} size="sm">
           刷新页面
         </Button>
       </CardFooter>
@@ -99,14 +90,9 @@ export function ListErrorBoundary({ children }: { children: ReactNode }) {
             <span className="text-sm font-medium">加载数据时出错</span>
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            {error?.message || '无法加载数据，请稍后重试'}
+            {error?.message || "无法加载数据，请稍后重试"}
           </p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="mt-3"
-            onClick={resetError}
-          >
+          <Button variant="outline" size="sm" className="mt-3" onClick={resetError}>
             <RefreshCw className="w-3 h-3 mr-1" />
             重试
           </Button>

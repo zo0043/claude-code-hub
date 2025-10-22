@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
-import { getSession } from '@/lib/auth';
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth";
 import { Section } from "@/components/section";
 import { UserKeyManager } from "./_components/user/user-key-manager";
 import { getUsers } from "@/actions/users";
@@ -16,7 +16,7 @@ export default async function DashboardPage() {
   // 检查价格表是否存在，如果不存在则跳转到价格上传页面
   const hasPrices = await hasPriceTable();
   if (!hasPrices) {
-    redirect('/settings/prices?required=true');
+    redirect("/settings/prices?required=true");
   }
 
   const [users, session, statistics] = await Promise.all([
@@ -32,15 +32,10 @@ export default async function DashboardPage() {
       </div>
 
       <div>
-        <StatisticsWrapper
-          initialData={statistics.ok ? statistics.data : undefined}
-        />
+        <StatisticsWrapper initialData={statistics.ok ? statistics.data : undefined} />
       </div>
 
-      <Section
-        title="客户端"
-        description="用户和密钥管理"
-      >
+      <Section title="客户端" description="用户和密钥管理">
         <ListErrorBoundary>
           <UserKeyManager users={users} currentUser={session?.user} />
         </ListErrorBoundary>

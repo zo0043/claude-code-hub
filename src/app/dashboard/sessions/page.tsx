@@ -18,7 +18,7 @@ async function fetchAllSessions(): Promise<{
 }> {
   const result = await getAllSessions();
   if (!result.ok) {
-    throw new Error(result.error || '获取 session 列表失败');
+    throw new Error(result.error || "获取 session 列表失败");
   }
   return result.data;
 }
@@ -29,11 +29,7 @@ async function fetchAllSessions(): Promise<{
 export default function ActiveSessionsPage() {
   const router = useRouter();
 
-  const {
-    data,
-    isLoading,
-    error,
-  } = useQuery<
+  const { data, isLoading, error } = useQuery<
     { active: ActiveSessionInfo[]; inactive: ActiveSessionInfo[] },
     Error
   >({
@@ -61,27 +57,18 @@ export default function ActiveSessionsPage() {
       </div>
 
       {error ? (
-        <div className="text-center text-destructive py-8">
-          加载失败: {error.message}
-        </div>
+        <div className="text-center text-destructive py-8">加载失败: {error.message}</div>
       ) : (
         <>
           {/* 活跃 Session 区域 */}
           <Section title="活跃 Session（最近 5 分钟）">
-            <ActiveSessionsTable
-              sessions={activeSessions}
-              isLoading={isLoading}
-            />
+            <ActiveSessionsTable sessions={activeSessions} isLoading={isLoading} />
           </Section>
 
           {/* 非活跃 Session 区域 */}
           {inactiveSessions.length > 0 && (
             <Section title="非活跃 Session（超过 5 分钟，仅供查看）">
-              <ActiveSessionsTable
-                sessions={inactiveSessions}
-                isLoading={isLoading}
-                inactive
-              />
+              <ActiveSessionsTable sessions={inactiveSessions} isLoading={isLoading} inactive />
             </Section>
           )}
         </>

@@ -43,7 +43,7 @@ export function toProvider(dbProvider: any): Provider {
     priority: dbProvider?.priority ?? 0,
     costMultiplier: dbProvider?.costMultiplier ? parseFloat(dbProvider.costMultiplier) : 1.0,
     groupTag: dbProvider?.groupTag ?? null,
-    providerType: dbProvider?.providerType ?? 'claude',
+    providerType: dbProvider?.providerType ?? "claude",
     modelRedirects: dbProvider?.modelRedirects ?? null,
     limit5hUsd: dbProvider?.limit5hUsd ? parseFloat(dbProvider.limit5hUsd) : null,
     limitWeeklyUsd: dbProvider?.limitWeeklyUsd ? parseFloat(dbProvider.limitWeeklyUsd) : null,

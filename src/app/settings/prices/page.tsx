@@ -11,20 +11,15 @@ interface SettingsPricesPageProps {
   searchParams: Promise<{ required?: string }>;
 }
 
-export default async function SettingsPricesPage({
-  searchParams
-}: SettingsPricesPageProps) {
+export default async function SettingsPricesPage({ searchParams }: SettingsPricesPageProps) {
   const params = await searchParams;
   const prices = await getModelPrices();
-  const isRequired = params.required === 'true';
+  const isRequired = params.required === "true";
   const isEmpty = prices.length === 0;
 
   return (
     <>
-      <SettingsPageHeader
-        title="价格表"
-        description="管理平台基础配置与模型价格"
-      />
+      <SettingsPageHeader title="价格表" description="管理平台基础配置与模型价格" />
 
       <Section
         title="模型价格"

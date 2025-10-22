@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
+import { useRouter } from "next/navigation";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 
 interface UserMenuProps {
   user: {
@@ -18,18 +18,18 @@ export function UserMenu({ user }: UserMenuProps) {
 
   const handleLogout = () => {
     // 立即跳转到登录页面，避免延迟
-    router.push('/login');
+    router.push("/login");
     // 异步调用登出接口，不等待响应
-    fetch('/api/auth/logout', { method: 'POST' }).then(() => {
+    fetch("/api/auth/logout", { method: "POST" }).then(() => {
       router.refresh();
     });
   };
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };

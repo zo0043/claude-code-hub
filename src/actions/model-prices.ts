@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { logger } from '@/lib/logger';
 import { getSession } from "@/lib/auth";
 import {
   findLatestPriceByModel,
@@ -20,10 +21,7 @@ import { getPriceTableJson } from "@/lib/price-sync";
 /**
  * 检查价格数据是否相同
  */
-function isPriceDataEqual(
-  data1: ModelPriceData,
-  data2: ModelPriceData
-): boolean {
+function isPriceDataEqual(data1: ModelPriceData, data2: ModelPriceData): boolean {
   // 深度比较两个价格对象
   return JSON.stringify(data1) === JSON.stringify(data2);
 }
@@ -62,7 +60,7 @@ export async function uploadPriceTable(
         lowerName.startsWith("claude-") ||
         lowerName.startsWith("gpt-") ||
         lowerName.startsWith("o1-") ||
-        lowerName.startsWith("o3-")  // OpenAI 推理模型
+        lowerName.startsWith("o3-") // OpenAI 推理模型
       );
     });
 
@@ -99,7 +97,7 @@ export async function uploadPriceTable(
           result.unchanged.push(modelName);
         }
       } catch (error) {
-        console.error(`处理模型 ${modelName} 失败:`, error);
+        logger.error('处理模型 ${modelName} 失败:', error);
         result.failed.push(modelName);
       }
     }
@@ -109,9 +107,8 @@ export async function uploadPriceTable(
 
     return { ok: true, data: result };
   } catch (error) {
-    console.error("上传价格表失败:", error);
-    const message =
-      error instanceof Error ? error.message : "上传失败，请稍后重试";
+    logger.error('上传价格表失败:', error);
+    const message = error instanceof Error ? error.message : "上传失败，请稍后重试";
     return { ok: false, error: message };
   }
 }
@@ -129,7 +126,7 @@ export async function getModelPrices(): Promise<ModelPrice[]> {
 
     return await findAllLatestPrices();
   } catch (error) {
-    console.error("获取模型价格失败:", error);
+    logger.error('获取模型价格失败:', error);
     return [];
   }
 }
@@ -148,7 +145,7 @@ export async function hasPriceTable(): Promise<boolean> {
 
     return await hasAnyPriceRecords();
   } catch (error) {
-    console.error("检查价格表失败:", error);
+    logger.error('检查价格表失败:', error);
     return false;
   }
 }
@@ -169,16 +166,16 @@ export async function syncLiteLLMPrices(): Promise<ActionResult<PriceUpdateResul
       return { ok: false, error: "无权限执行此操作" };
     }
 
-    console.log('🔄 Starting LiteLLM price sync...');
+    logger.info('🔄 Starting LiteLLM price sync...');
 
     // 获取价格表 JSON（优先 CDN，降级缓存）
     const jsonContent = await getPriceTableJson();
 
     if (!jsonContent) {
-      console.error('❌ Failed to get price table from both CDN and cache');
+      logger.error('❌ Failed to get price table from both CDN and cache');
       return {
         ok: false,
-        error: '无法从 CDN 或缓存获取价格表，请检查网络连接或稍后重试'
+        error: "无法从 CDN 或缓存获取价格表，请检查网络连接或稍后重试",
       };
     }
 
@@ -186,17 +183,15 @@ export async function syncLiteLLMPrices(): Promise<ActionResult<PriceUpdateResul
     const result = await uploadPriceTable(jsonContent);
 
     if (result.ok) {
-      console.log('LiteLLM price sync completed:', result.data);
+      console.log("LiteLLM price sync completed:", result.data);
     } else {
-      console.error('❌ LiteLLM price sync failed:', result.error);
+      logger.error('❌ LiteLLM price sync failed:', { context: result.error });
     }
 
     return result;
   } catch (error) {
-    console.error('❌ Sync LiteLLM prices failed:', error);
-    const message =
-      error instanceof Error ? error.message : '同步失败，请稍后重试';
+    logger.error('❌ Sync LiteLLM prices failed:', error);
+    const message = error instanceof Error ? error.message : "同步失败，请稍后重试";
     return { ok: false, error: message };
   }
 }
-

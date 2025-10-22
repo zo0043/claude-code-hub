@@ -9,11 +9,7 @@ import type { User } from "@/types/user";
 import { format } from "timeago.js";
 import { formatCurrency } from "@/lib/utils/currency";
 import Link from "next/link";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Table,
   TableBody,
@@ -54,12 +50,12 @@ export function KeyList({ keys, currentUser, keyOwnerUserId }: KeyListProps) {
       setCopiedKeyId(key.id);
       setTimeout(() => setCopiedKeyId(null), 2000);
     } catch (err) {
-      console.error('复制失败:', err);
+      console.error("复制失败:", err);
     }
   };
 
   const columns = [
-    TableColumnTypes.text<UserKeyDisplay>('name', '名称', {
+    TableColumnTypes.text<UserKeyDisplay>("name", "名称", {
       render: (value, record) => (
         <div className="space-y-1">
           <div className="truncate font-medium">{value}</div>
@@ -92,7 +88,9 @@ export function KeyList({ keys, currentUser, keyOwnerUserId }: KeyListProps) {
                       {record.modelStats.map((stat) => (
                         <TableRow key={stat.model}>
                           <TableCell className="text-xs py-1.5 font-mono">{stat.model}</TableCell>
-                          <TableCell className="text-xs py-1.5 text-right">{stat.callCount}</TableCell>
+                          <TableCell className="text-xs py-1.5 text-right">
+                            {stat.callCount}
+                          </TableCell>
                           <TableCell className="text-xs py-1.5 text-right font-mono">
                             {formatCurrency(stat.totalCost)}
                           </TableCell>
@@ -105,14 +103,12 @@ export function KeyList({ keys, currentUser, keyOwnerUserId }: KeyListProps) {
             </Collapsible>
           )}
         </div>
-      )
+      ),
     }),
-    TableColumnTypes.text<UserKeyDisplay>('maskedKey', 'Key', {
+    TableColumnTypes.text<UserKeyDisplay>("maskedKey", "Key", {
       render: (_, record: UserKeyDisplay) => (
         <div className="group inline-flex items-center gap-1">
-          <div className="font-mono truncate">
-            {record.maskedKey || "-"}
-          </div>
+          <div className="font-mono truncate">{record.maskedKey || "-"}</div>
           {record.canCopy && record.fullKey && (
             <Button
               variant="ghost"
@@ -129,29 +125,25 @@ export function KeyList({ keys, currentUser, keyOwnerUserId }: KeyListProps) {
             </Button>
           )}
         </div>
-      )
+      ),
     }),
-    TableColumnTypes.text<UserKeyDisplay>('todayCallCount', '今日调用', {
+    TableColumnTypes.text<UserKeyDisplay>("todayCallCount", "今日调用", {
       render: (value) => (
-        <div className="text-sm">
-          {typeof value === 'number' ? value.toLocaleString() : 0} 次
-        </div>
-      )
+        <div className="text-sm">{typeof value === "number" ? value.toLocaleString() : 0} 次</div>
+      ),
     }),
-    TableColumnTypes.number<UserKeyDisplay>('todayUsage', '今日消耗', {
+    TableColumnTypes.number<UserKeyDisplay>("todayUsage", "今日消耗", {
       render: (value) => {
-        const amount = typeof value === 'number' ? value : 0;
+        const amount = typeof value === "number" ? value : 0;
         return formatCurrency(amount);
-      }
+      },
     }),
-    TableColumnTypes.text<UserKeyDisplay>('lastUsedAt', '最后使用', {
+    TableColumnTypes.text<UserKeyDisplay>("lastUsedAt", "最后使用", {
       render: (_, record: UserKeyDisplay) => (
         <div className="space-y-0.5">
           {record.lastUsedAt ? (
             <>
-              <div className="text-sm">
-                {format(record.lastUsedAt, 'zh_CN')}
-              </div>
+              <div className="text-sm">{format(record.lastUsedAt, "zh_CN")}</div>
               {record.lastProviderName && (
                 <div className="text-xs text-muted-foreground">
                   供应商: {record.lastProviderName}
@@ -162,17 +154,12 @@ export function KeyList({ keys, currentUser, keyOwnerUserId }: KeyListProps) {
             <div className="text-sm text-muted-foreground">未使用</div>
           )}
         </div>
-      )
+      ),
     }),
-    TableColumnTypes.actions<UserKeyDisplay>('操作', (value, record) => (
+    TableColumnTypes.actions<UserKeyDisplay>("操作", (value, record) => (
       <div className="flex items-center gap-1">
         <Link href={`/dashboard/logs?keyId=${record.id}`}>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs"
-            title="查看详细日志"
-          >
+          <Button variant="ghost" size="sm" className="h-7 text-xs" title="查看详细日志">
             <ExternalLink className="h-3.5 w-3.5 mr-1" />
             日志
           </Button>
@@ -184,7 +171,7 @@ export function KeyList({ keys, currentUser, keyOwnerUserId }: KeyListProps) {
           canDelete={canDeleteKeys}
         />
       </div>
-    ))
+    )),
   ];
 
   return (
@@ -193,7 +180,7 @@ export function KeyList({ keys, currentUser, keyOwnerUserId }: KeyListProps) {
       data={keys}
       emptyState={{
         title: "暂无 Key",
-        description: '可点击右上角 "新增 Key" 按钮添加密钥'
+        description: '可点击右上角 "新增 Key" 按钮添加密钥',
       }}
       maxHeight="600px"
       stickyHeader

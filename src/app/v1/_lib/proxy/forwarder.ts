@@ -4,6 +4,7 @@ import { recordFailure, recordSuccess, getCircuitState } from "@/lib/circuit-bre
 import { ProxyProviderResolver } from "./provider-selector";
 import { ProxyError } from "./errors";
 import { ModelRedirector } from "./model-redirector";
+import { logger } from "@/lib/logger";
 import type { ProxySession } from "./session";
 
 const MAX_RETRY_ATTEMPTS = 3;
@@ -17,7 +18,7 @@ export class ProxyForwarder {
     let lastError: Error | null = null;
     let attemptCount = 0;
     let currentProvider = session.provider;
-    const failedProviderIds: number[] = [];  // 记录已失败的供应商ID
+    const failedProviderIds: number[] = []; // 记录已失败的供应商ID
 
     // 智能重试循环
     while (attemptCount <= MAX_RETRY_ATTEMPTS) {
@@ -27,60 +28,68 @@ export class ProxyForwarder {
         // 成功：记录健康状态
         recordSuccess(currentProvider.id);
 
-        console.debug(`[ProxyForwarder] Request successful with provider ${currentProvider.id} (attempt ${attemptCount + 1})`);
+        logger.debug("ProxyForwarder: Request successful", {
+          providerId: currentProvider.id,
+          attempt: attemptCount + 1,
+        });
 
         return response;
-
       } catch (error) {
         attemptCount++;
         lastError = error as Error;
-        failedProviderIds.push(currentProvider.id);  // 记录失败的供应商
+        failedProviderIds.push(currentProvider.id); // 记录失败的供应商
 
         // 提取错误信息（支持 ProxyError 和普通 Error）
-        const errorMessage = error instanceof ProxyError
-          ? error.getDetailedErrorMessage()
-          : (error as Error).message;
+        const errorMessage =
+          error instanceof ProxyError ? error.getDetailedErrorMessage() : (error as Error).message;
 
         // 记录失败的供应商和错误信息到决策链
         session.addProviderToChain(currentProvider, {
-          reason: 'retry_attempt',
+          reason: "retry_attempt",
           circuitState: getCircuitState(currentProvider.id),
           attemptNumber: attemptCount,
-          errorMessage: errorMessage,  // 记录完整上游错误
+          errorMessage: errorMessage, // 记录完整上游错误
         });
 
         // 记录失败
         recordFailure(currentProvider.id, lastError);
 
-        console.warn(
-          `[ProxyForwarder] Provider ${currentProvider.id} failed (attempt ${attemptCount}/${MAX_RETRY_ATTEMPTS + 1}): ${lastError.message}`
-        );
+        logger.warn("ProxyForwarder: Provider failed", {
+          providerId: currentProvider.id,
+          attempt: attemptCount,
+          maxAttempts: MAX_RETRY_ATTEMPTS + 1,
+          error: lastError.message,
+        });
 
         // 如果还有重试机会，选择新的供应商
         if (attemptCount <= MAX_RETRY_ATTEMPTS) {
           const alternativeProvider = await ProxyForwarder.selectAlternative(
             session,
-            failedProviderIds  // 传入所有已失败的供应商ID列表
+            failedProviderIds // 传入所有已失败的供应商ID列表
           );
 
           if (!alternativeProvider) {
-            console.error(`[ProxyForwarder] No alternative provider available, stopping retries`);
+            logger.error("ProxyForwarder: No alternative provider available, stopping retries");
             break;
           }
 
           currentProvider = alternativeProvider;
           session.setProvider(currentProvider);
 
-          console.info(`[ProxyForwarder] Retry ${attemptCount}: Switched to provider ${currentProvider.id}`);
+          logger.info("ProxyForwarder: Switched to alternative provider", {
+            retryAttempt: attemptCount,
+            newProviderId: currentProvider.id,
+          });
         }
       }
     }
 
     // 所有重试都失败
     // 如果最后一个错误是 ProxyError，提取详细信息（包含上游响应）
-    const errorDetails = lastError instanceof ProxyError
-      ? lastError.getDetailedErrorMessage()
-      : (lastError?.message || 'Unknown error');
+    const errorDetails =
+      lastError instanceof ProxyError
+        ? lastError.getDetailedErrorMessage()
+        : lastError?.message || "Unknown error";
 
     throw new Error(
       `All providers failed after ${attemptCount} attempts. Last error: ${errorDetails}`
@@ -90,7 +99,10 @@ export class ProxyForwarder {
   /**
    * 实际转发请求
    */
-  private static async doForward(session: ProxySession, provider: typeof session.provider): Promise<Response> {
+  private static async doForward(
+    session: ProxySession,
+    provider: typeof session.provider
+  ): Promise<Response> {
     if (!provider) {
       throw new Error("Provider is required");
     }
@@ -98,17 +110,17 @@ export class ProxyForwarder {
     // 应用模型重定向（如果配置了）
     const wasRedirected = ModelRedirector.apply(session, provider);
     if (wasRedirected) {
-      console.debug(`[ProxyForwarder] Model redirected for provider ${provider.id}`);
+      logger.debug("ProxyForwarder: Model redirected", { providerId: provider.id });
     }
 
     const processedHeaders = ProxyForwarder.buildHeaders(session, provider);
 
     // 开发模式：输出最终请求头
-    if (process.env.NODE_ENV === 'development') {
-      console.debug(`[ProxyForwarder] Final request headers:`, {
+    if (process.env.NODE_ENV === "development") {
+      logger.trace("ProxyForwarder: Final request headers", {
         provider: provider.name,
         providerType: provider.providerType,
-        headers: Object.fromEntries(processedHeaders.entries())
+        headers: Object.fromEntries(processedHeaders.entries()),
       });
     }
 
@@ -116,16 +128,19 @@ export class ProxyForwarder {
     let forwardUrl = session.requestUrl;
 
     // OpenAI Compatible 请求：自动替换为 Response API 端点
-    if (session.originalFormat === 'openai') {
+    if (session.originalFormat === "openai") {
       forwardUrl = new URL(session.requestUrl);
-      forwardUrl.pathname = '/v1/responses';
-      console.debug(`[ProxyForwarder] Codex request: rewriting path ${session.requestUrl.pathname} → /v1/responses`);
+      forwardUrl.pathname = "/v1/responses";
+      logger.debug("ProxyForwarder: Codex request path rewrite", {
+        from: session.requestUrl.pathname,
+        to: "/v1/responses",
+      });
     }
 
     const proxyUrl = buildProxyUrl(provider.url, forwardUrl);
 
     // 输出最终代理 URL（用于调试）
-    console.debug(`[ProxyForwarder] Final proxy URL: ${proxyUrl}`);
+    logger.debug("ProxyForwarder: Final proxy URL", { url: proxyUrl });
 
     const hasBody = session.method !== "GET" && session.method !== "HEAD";
 
@@ -137,15 +152,15 @@ export class ProxyForwarder {
       requestBody = bodyString;
 
       // 调试日志：输出实际转发的请求体（仅在开发环境）
-      if (process.env.NODE_ENV === 'development') {
-        console.debug(`[ProxyForwarder] Forwarding request:`, {
+      if (process.env.NODE_ENV === "development") {
+        logger.trace("ProxyForwarder: Forwarding request", {
           provider: provider.name,
           providerId: provider.id,
           proxyUrl: proxyUrl,
           format: session.originalFormat,
           method: session.method,
           bodyLength: bodyString.length,
-          bodyPreview: bodyString.slice(0, 1000)
+          bodyPreview: bodyString.slice(0, 1000),
         });
       }
     }
@@ -153,7 +168,7 @@ export class ProxyForwarder {
     const init: RequestInit = {
       method: session.method,
       headers: processedHeaders,
-      ...(requestBody ? { body: requestBody } : {})
+      ...(requestBody ? { body: requestBody } : {}),
     };
 
     (init as Record<string, unknown>).verbose = true;
@@ -163,7 +178,8 @@ export class ProxyForwarder {
       response = await fetch(proxyUrl, init);
     } catch (fetchError) {
       // 捕获 fetch 原始错误（网络错误、DNS 解析失败、JSON 序列化错误等）
-      console.error(`[ProxyForwarder] Fetch failed for provider ${provider.id}:`, {
+      logger.error("ProxyForwarder: Fetch failed", {
+        providerId: provider.id,
         error: fetchError,
         errorType: fetchError?.constructor?.name,
         errorMessage: (fetchError as Error)?.message,
@@ -181,7 +197,7 @@ export class ProxyForwarder {
     if (!response.ok) {
       throw await ProxyError.fromUpstreamResponse(response, {
         id: provider.id,
-        name: provider.name
+        name: provider.name,
       });
     }
 
@@ -193,7 +209,7 @@ export class ProxyForwarder {
    */
   private static async selectAlternative(
     session: ProxySession,
-    excludeProviderIds: number[]  // 改为数组，排除所有失败的供应商
+    excludeProviderIds: number[] // 改为数组，排除所有失败的供应商
   ): Promise<typeof session.provider | null> {
     // 使用公开的选择方法，传入排除列表
     const alternativeProvider = await ProxyProviderResolver.pickRandomProviderWithExclusion(
@@ -202,44 +218,48 @@ export class ProxyForwarder {
     );
 
     if (!alternativeProvider) {
-      console.warn(
-        `[ProxyForwarder] No alternative provider available (excluded: ${excludeProviderIds.join(', ')})`
-      );
+      logger.warn("ProxyForwarder: No alternative provider available", {
+        excludedProviders: excludeProviderIds,
+      });
       return null;
     }
 
     // 确保不是已失败的供应商之一
     if (excludeProviderIds.includes(alternativeProvider.id)) {
-      console.error(
-        `[ProxyForwarder] Selector returned excluded provider ${alternativeProvider.id}, this should not happen`
-      );
+      logger.error("ProxyForwarder: Selector returned excluded provider", {
+        providerId: alternativeProvider.id,
+        message: "This should not happen",
+      });
       return null;
     }
 
     return alternativeProvider;
   }
 
-  private static buildHeaders(session: ProxySession, provider: NonNullable<typeof session.provider>): Headers {
+  private static buildHeaders(
+    session: ProxySession,
+    provider: NonNullable<typeof session.provider>
+  ): Headers {
     const outboundKey = provider.key;
 
     // 构建请求头覆盖规则
     const overrides: Record<string, string> = {
-      "host": HeaderProcessor.extractHost(provider.url),
-      "authorization": `Bearer ${outboundKey}`,
+      host: HeaderProcessor.extractHost(provider.url),
+      authorization: `Bearer ${outboundKey}`,
       "x-api-key": outboundKey,
-      "content-type": "application/json"  // 确保 Content-Type
+      "content-type": "application/json", // 确保 Content-Type
     };
 
     // Codex 特殊处理：强制设置 User-Agent
     // Codex 供应商检测 User-Agent，只接受 codex_cli_rs 客户端
-    if (provider.providerType === 'codex') {
+    if (provider.providerType === "codex") {
       overrides["user-agent"] = "codex_cli_rs/1.0.0 (Mac OS 14.0.0; arm64)";
-      console.debug(`[ProxyForwarder] Codex provider detected, forcing User-Agent: codex_cli_rs/1.0.0`);
+      logger.debug("ProxyForwarder: Codex provider detected, forcing User-Agent");
     }
 
     const headerProcessor = HeaderProcessor.createForProxy({
       blacklist: [],
-      overrides
+      overrides,
     });
 
     return headerProcessor.process(session.headers);

@@ -17,7 +17,7 @@ const STATISTICS_REFRESH_INTERVAL = 5000; // 5秒刷新一次
 async function fetchStatistics(timeRange: TimeRange): Promise<UserStatisticsData> {
   const result = await getUserStatistics(timeRange);
   if (!result.ok) {
-    throw new Error(result.error || '获取统计数据失败');
+    throw new Error(result.error || "获取统计数据失败");
   }
   return result.data;
 }
@@ -52,17 +52,8 @@ export function StatisticsWrapper({ initialData }: StatisticsWrapperProps) {
 
   // 如果没有数据，显示空状态
   if (!data) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
-        暂无统计数据
-      </div>
-    );
+    return <div className="text-center py-8 text-muted-foreground">暂无统计数据</div>;
   }
 
-  return (
-    <UserStatisticsChart
-      data={data}
-      onTimeRangeChange={handleTimeRangeChange}
-    />
-  );
+  return <UserStatisticsChart data={data} onTimeRangeChange={handleTimeRangeChange} />;
 }

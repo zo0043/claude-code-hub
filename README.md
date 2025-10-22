@@ -53,19 +53,19 @@
 
 ![首页](/public/readme/首页.png)
 
-*首页面板 - 系统概览与快速访问*
+_首页面板 - 系统概览与快速访问_
 
 ![供应商管理](/public/readme/供应商管理.png)
 
-*供应商管理 - 配置上游服务、权重分配、流量限制*
+_供应商管理 - 配置上游服务、权重分配、流量限制_
 
 ![排行榜](/public/readme/排行榜.png)
 
-*统计排行榜 - 用户和供应商使用情况一目了然*
+_统计排行榜 - 用户和供应商使用情况一目了然_
 
 ![日志](/public/readme/日志.png)
 
-*详细日志记录 - Token 使用、成本计算、调用链追踪*
+_详细日志记录 - Token 使用、成本计算、调用链追踪_
 
 </div>
 
@@ -107,6 +107,7 @@ docker compose ps
 ```
 
 确保三个容器都是 `healthy` 或 `running` 状态：
+
 - `claude-code-hub-db` (PostgreSQL)
 - `claude-code-hub-redis` (Redis)
 - `claude-code-hub-app` (应用服务)
@@ -139,6 +140,7 @@ tar -czf backup_$(date +%Y%m%d_%H%M%S).tar.gz ./data/
 <summary><b>更多管理命令</b></summary>
 
 **服务管理**：
+
 ```bash
 docker compose stop             # 停止服务
 docker compose down             # 停止并删除容器
@@ -146,6 +148,7 @@ docker compose restart redis    # 重启 Redis
 ```
 
 **数据库操作**：
+
 ```bash
 # SQL 备份
 docker exec claude-code-hub-db pg_dump -U postgres claude_code_hub > backup.sql
@@ -155,6 +158,7 @@ docker exec -i claude-code-hub-db psql -U postgres claude_code_hub < backup.sql
 ```
 
 **Redis 操作**：
+
 ```bash
 docker compose exec redis redis-cli ping           # 检查连接
 docker compose exec redis redis-cli info stats     # 查看统计
@@ -163,6 +167,7 @@ docker compose exec redis redis-cli FLUSHALL       # ⚠️ 清空数据
 ```
 
 **完全重置**（⚠️ 会删除所有数据）：
+
 ```bash
 docker compose down && rm -rf ./data/ && docker compose up -d
 ```
@@ -187,6 +192,7 @@ docker compose down && rm -rf ./data/ && docker compose up -d
 ### 3️⃣ 创建用户和密钥
 
 **添加用户**：
+
 1. 进入 **设置 → 用户管理**
 2. 点击"添加用户"
 3. 配置：
@@ -196,6 +202,7 @@ docker compose down && rm -rf ./data/ && docker compose up -d
    - 每日额度（USD）
 
 **生成 API 密钥**：
+
 1. 选择用户，点击"生成密钥"
 2. 设置密钥名称
 3. 设置过期时间（可选）
@@ -209,6 +216,7 @@ docker compose down && rm -rf ./data/ && docker compose up -d
 ### 5️⃣ 监控和统计
 
 **仪表盘**页面提供：
+
 - 📈 实时请求量趋势
 - 💰 成本统计和分析
 - 👤 用户活跃度排行
@@ -225,6 +233,7 @@ docker compose down && rm -rf ./data/ && docker compose up -d
 - 导出成本报表
 
 **OpenAI 模型价格配置示例**：
+
 - 模型名称：`gpt-5-codex`
 - 输入价格（USD/M tokens）：`0.003`
 - 输出价格（USD/M tokens）：`0.006`
@@ -251,7 +260,7 @@ docker compose restart app
 services:
   app:
     ports:
-      - "8080:23000"  # 修改左侧端口为可用端口
+      - "8080:23000" # 修改左侧端口为可用端口
 ```
 
 </details>
@@ -260,11 +269,13 @@ services:
 <summary><b>❓ 数据库迁移失败怎么办？</b></summary>
 
 1. 检查应用日志：
+
    ```bash
    docker compose logs app | grep -i migration
    ```
 
 2. 手动执行迁移：
+
    ```bash
    docker compose exec app pnpm db:migrate
    ```
@@ -300,9 +311,11 @@ Redis 不可用时，限流功能会自动降级，所有请求仍然正常通�
 **本服务仅支持 Claude Code 格式的 API 接口。**
 
 **直接支持**：
+
 - 原生提供 Claude Code 格式接口的服务商
 
 **间接支持**（需要先部署 [claude-code-router](https://github.com/zsio/claude-code-router) 进行协议转换）：
+
 - 🔄 智谱 AI (GLM)、Moonshot AI (Kimi)、Packy 等
 - 🔄 阿里通义千问、百度文心一言等
 - 🔄 其他非 Claude Code 格式的 AI 服务

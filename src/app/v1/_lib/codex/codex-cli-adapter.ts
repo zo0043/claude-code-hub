@@ -13,8 +13,9 @@
  * - 默认开启,如测试发现问题可通过 ENABLE_CODEX_CLI_INJECTION 关闭
  */
 
-import type { ResponseRequest } from './types/response';
-import { CODEX_CLI_INSTRUCTIONS, isCodexCLIRequest } from './constants/codex-cli-instructions';
+import type { ResponseRequest } from "./types/response";
+import { logger } from '@/lib/logger';
+import { CODEX_CLI_INSTRUCTIONS, isCodexCLIRequest } from "./constants/codex-cli-instructions";
 
 /**
  * 功能开关
@@ -33,10 +34,10 @@ export const ENABLE_CODEX_CLI_INJECTION = false;
  * Codex CLI 不支持以下字段,需要在注入 instructions 时删除
  */
 const INCOMPATIBLE_FIELDS: Array<keyof ResponseRequest> = [
-  'temperature',
-  'top_p',
-  'user',
-  'truncation',
+  "temperature",
+  "top_p",
+  "user",
+  "truncation",
   // 注意: max_output_tokens 根据测试决定是否删除
   // 注意: reasoning 保留(Codex 核心功能)
   // 注意: tools 保留(Codex 支持 function calls)
@@ -60,12 +61,12 @@ export function adaptForCodexCLI(request: ResponseRequest): ResponseRequest {
 
   // 步骤 1: 注入 instructions (如果开关启用)
   if (ENABLE_CODEX_CLI_INJECTION && !isCodexCLIRequest(request.instructions)) {
-    console.info('[CodexCLI] Non-Codex CLI request detected, injecting instructions');
+    logger.info('[CodexCLI] Non-Codex CLI request detected, injecting instructions');
     adaptedRequest.instructions = CODEX_CLI_INSTRUCTIONS;
   } else if (ENABLE_CODEX_CLI_INJECTION) {
-    console.info('[CodexCLI] Codex CLI request detected, skipping injection');
+    logger.info('[CodexCLI] Codex CLI request detected, skipping injection');
   } else {
-    console.info('[CodexCLI] Injection disabled, skipping instructions');
+    logger.info('[CodexCLI] Injection disabled, skipping instructions');
   }
 
   // 步骤 2: 删除不兼容字段 (总是执行)
@@ -78,10 +79,10 @@ export function adaptForCodexCLI(request: ResponseRequest): ResponseRequest {
   }
 
   if (removedFields.length > 0) {
-    console.debug(`[CodexCLI] Removed incompatible fields: ${removedFields.join(', ')}`);
+    console.debug(`[CodexCLI] Removed incompatible fields: ${removedFields.join(", ")}`);
   }
 
-  console.debug('[CodexCLI] Adapted request:', {
+  logger.debug('[CodexCLI] Adapted request:', {
     hasInstructions: !!adaptedRequest.instructions,
     instructionsLength: adaptedRequest.instructions?.length,
     removedFields,

@@ -11,14 +11,14 @@ export class ProxyError extends Error {
     message: string,
     public readonly statusCode: number,
     public readonly upstreamError?: {
-      body: string;          // 原始响应体（智能截断）
-      parsed?: unknown;      // 解析后的 JSON（如果有）
+      body: string; // 原始响应体（智能截断）
+      parsed?: unknown; // 解析后的 JSON（如果有）
       providerId?: number;
       providerName?: string;
     }
   ) {
     super(message);
-    this.name = 'ProxyError';
+    this.name = "ProxyError";
   }
 
   /**
@@ -34,8 +34,8 @@ export class ProxyError extends Error {
     response: Response,
     provider: { id: number; name: string }
   ): Promise<ProxyError> {
-    const contentType = response.headers.get('content-type') || '';
-    let body = '';
+    const contentType = response.headers.get("content-type") || "";
+    let body = "";
     let parsed: unknown = undefined;
 
     // 1. 读取响应体
@@ -46,7 +46,7 @@ export class ProxyError extends Error {
     }
 
     // 2. 尝试解析 JSON
-    if (contentType.includes('application/json') && body) {
+    if (contentType.includes("application/json") && body) {
       try {
         parsed = JSON.parse(body);
       } catch {
@@ -66,7 +66,7 @@ export class ProxyError extends Error {
       body: truncatedBody,
       parsed,
       providerId: provider.id,
-      providerName: provider.name
+      providerName: provider.name,
     });
   }
 
@@ -78,32 +78,32 @@ export class ProxyError extends Error {
    * - Generic: { "message": "..." } 或 { "error": "..." }
    */
   private static extractErrorMessage(parsed: unknown): string | null {
-    if (!parsed || typeof parsed !== 'object') return null;
+    if (!parsed || typeof parsed !== "object") return null;
 
     const obj = parsed as Record<string, unknown>;
 
     // Claude/OpenAI 格式：{ "error": { "message": "..." } }
-    if (obj.error && typeof obj.error === 'object') {
+    if (obj.error && typeof obj.error === "object") {
       const errorObj = obj.error as Record<string, unknown>;
 
       // Claude 格式：带 type
-      if (typeof errorObj.message === 'string' && typeof errorObj.type === 'string') {
+      if (typeof errorObj.message === "string" && typeof errorObj.type === "string") {
         return `${errorObj.type}: ${errorObj.message}`;
       }
 
       // OpenAI 格式：仅 message
-      if (typeof errorObj.message === 'string') {
+      if (typeof errorObj.message === "string") {
         return errorObj.message;
       }
     }
 
     // 通用格式：{ "message": "..." }
-    if (typeof obj.message === 'string') {
+    if (typeof obj.message === "string") {
       return obj.message;
     }
 
     // 简单格式：{ "error": "..." }
-    if (typeof obj.error === 'string') {
+    if (typeof obj.error === "string") {
       return obj.error;
     }
 
@@ -123,7 +123,7 @@ export class ProxyError extends Error {
 
     // 纯文本：截断到 500 字符
     if (body.length > 500) {
-      return body.substring(0, 500) + '...';
+      return body.substring(0, 500) + "...";
     }
 
     return body;
@@ -138,7 +138,9 @@ export class ProxyError extends Error {
 
     // Part 1: Provider 信息 + 状态码
     if (this.upstreamError?.providerName) {
-      parts.push(`Provider ${this.upstreamError.providerName} returned ${this.statusCode}: ${this.message}`);
+      parts.push(
+        `Provider ${this.upstreamError.providerName} returned ${this.statusCode}: ${this.message}`
+      );
     } else {
       parts.push(this.message);
     }
@@ -148,6 +150,6 @@ export class ProxyError extends Error {
       parts.push(`Upstream: ${this.upstreamError.body}`);
     }
 
-    return parts.join(' | ');
+    return parts.join(" | ");
   }
 }

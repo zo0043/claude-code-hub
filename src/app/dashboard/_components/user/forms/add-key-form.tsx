@@ -20,8 +20,8 @@ export function AddKeyForm({ userId, onSuccess }: AddKeyFormProps) {
   const form = useZodForm({
     schema: KeyFormSchema,
     defaultValues: {
-      name: '',
-      expiresAt: '',
+      name: "",
+      expiresAt: "",
       limit5hUsd: null,
       limitWeeklyUsd: null,
       limitMonthlyUsd: null,
@@ -36,7 +36,7 @@ export function AddKeyForm({ userId, onSuccess }: AddKeyFormProps) {
         const result = await addKey({
           userId: userId!,
           name: data.name,
-          expiresAt: data.expiresAt || undefined
+          expiresAt: data.expiresAt || undefined,
         });
 
         if (!result.ok) {
@@ -60,7 +60,7 @@ export function AddKeyForm({ userId, onSuccess }: AddKeyFormProps) {
         const errorMessage = err instanceof Error ? err.message : "创建失败，请稍后重试";
         toast.error(errorMessage);
       }
-    }
+    },
   });
 
   return (
@@ -69,7 +69,7 @@ export function AddKeyForm({ userId, onSuccess }: AddKeyFormProps) {
         title: "新增 Key",
         description: "为当前用户创建新的API密钥，Key值将自动生成。",
         submitText: "确认创建",
-        loadingText: "创建中..."
+        loadingText: "创建中...",
       }}
       onSubmit={form.handleSubmit}
       isSubmitting={isPending}
@@ -82,14 +82,14 @@ export function AddKeyForm({ userId, onSuccess }: AddKeyFormProps) {
         maxLength={64}
         autoFocus
         placeholder="请输入Key名称"
-        {...form.getFieldProps('name')}
+        {...form.getFieldProps("name")}
       />
 
       <DateField
         label="过期时间"
         placeholder="选择过期时间"
         description="留空表示永不过期"
-        {...form.getFieldProps('expiresAt')}
+        {...form.getFieldProps("expiresAt")}
       />
 
       <NumberField
@@ -98,7 +98,7 @@ export function AddKeyForm({ userId, onSuccess }: AddKeyFormProps) {
         description="5小时内最大消费金额"
         min={0}
         step={0.01}
-        {...form.getFieldProps('limit5hUsd')}
+        {...form.getFieldProps("limit5hUsd")}
       />
 
       <NumberField
@@ -107,7 +107,7 @@ export function AddKeyForm({ userId, onSuccess }: AddKeyFormProps) {
         description="每周最大消费金额"
         min={0}
         step={0.01}
-        {...form.getFieldProps('limitWeeklyUsd')}
+        {...form.getFieldProps("limitWeeklyUsd")}
       />
 
       <NumberField
@@ -116,7 +116,7 @@ export function AddKeyForm({ userId, onSuccess }: AddKeyFormProps) {
         description="每月最大消费金额"
         min={0}
         step={0.01}
-        {...form.getFieldProps('limitMonthlyUsd')}
+        {...form.getFieldProps("limitMonthlyUsd")}
       />
 
       <NumberField
@@ -125,7 +125,7 @@ export function AddKeyForm({ userId, onSuccess }: AddKeyFormProps) {
         description="同时运行的对话数量"
         min={0}
         step={1}
-        {...form.getFieldProps('limitConcurrentSessions')}
+        {...form.getFieldProps("limitConcurrentSessions")}
       />
     </DialogFormLayout>
   );

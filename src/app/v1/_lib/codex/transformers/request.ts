@@ -13,7 +13,7 @@ import type {
   ContentPart,
   ChatCompletionTool,
   ToolChoiceObject,
-} from '../types/compatible';
+} from "../types/compatible";
 import type {
   ResponseRequest,
   InputItem,
@@ -21,7 +21,7 @@ import type {
   MessageInput,
   ResponseTool,
   ToolChoiceObject as ResponseToolChoiceObject,
-} from '../types/response';
+} from "../types/response";
 
 export class RequestTransformer {
   /**
@@ -37,10 +37,10 @@ export class RequestTransformer {
       model: request.model,
       input: this.transformMessages(request.messages),
       reasoning: {
-        effort: 'medium' as const,
-        summary: 'auto' as const
+        effort: "medium" as const,
+        summary: "auto" as const,
       },
-      stream: request.stream
+      stream: request.stream,
     };
   }
 
@@ -56,7 +56,7 @@ export class RequestTransformer {
    * 关键: system role → developer role
    */
   private static transformMessage(message: ChatMessage): MessageInput {
-    const role = message.role === 'system' ? 'developer' : message.role;
+    const role = message.role === "system" ? "developer" : message.role;
     return {
       role: role,
       content: this.transformContent(message.content, role),
@@ -71,13 +71,13 @@ export class RequestTransformer {
    */
   private static transformContent(
     content: string | ContentPart[],
-    role: 'user' | 'assistant' | 'developer'
+    role: "user" | "assistant" | "developer"
   ): ContentItem[] {
     // 字符串 → [{ type: 'input_text' | 'output_text', text }]
-    if (typeof content === 'string') {
+    if (typeof content === "string") {
       return [
         {
-          type: role === 'assistant' ? 'output_text' : 'input_text',
+          type: role === "assistant" ? "output_text" : "input_text",
           text: content,
         },
       ];
@@ -95,17 +95,17 @@ export class RequestTransformer {
    */
   private static transformContentPart(
     part: ContentPart,
-    role: 'user' | 'assistant' | 'developer'
+    role: "user" | "assistant" | "developer"
   ): ContentItem {
-    if (part.type === 'text') {
+    if (part.type === "text") {
       return {
-        type: role === 'assistant' ? 'output_text' : 'input_text',
+        type: role === "assistant" ? "output_text" : "input_text",
         text: part.text!,
       };
     } else {
       // image_url → input_image(图片总是 input)
       return {
-        type: 'input_image',
+        type: "input_image",
         image_url: part.image_url!.url,
       };
     }
@@ -117,7 +117,7 @@ export class RequestTransformer {
    */
   private static transformTools(tools: ChatCompletionTool[]): ResponseTool[] {
     return tools.map((tool) => ({
-      type: 'function',
+      type: "function",
       function: {
         name: tool.function.name,
         description: tool.function.description,
@@ -134,11 +134,11 @@ export class RequestTransformer {
   private static transformToolChoice(
     toolChoice: string | ToolChoiceObject
   ): string | ResponseToolChoiceObject {
-    if (typeof toolChoice === 'string') {
+    if (typeof toolChoice === "string") {
       return toolChoice;
     }
     return {
-      type: 'function',
+      type: "function",
       function: toolChoice.function,
     };
   }

@@ -1,7 +1,14 @@
-'use server';
+"use server";
 
-import { findProviderList, createProvider, updateProvider, deleteProvider, getProviderStatistics } from "@/repository/provider";
+import {
+  findProviderList,
+  createProvider,
+  updateProvider,
+  deleteProvider,
+  getProviderStatistics,
+} from "@/repository/provider";
 import { revalidatePath } from "next/cache";
+import { logger } from '@/lib/logger';
 import { type ProviderDisplay } from "@/types/provider";
 import { maskKey } from "@/lib/utils/validation";
 import { getSession } from "@/lib/auth";
@@ -14,10 +21,10 @@ import { debugLog } from "@/lib/utils/debug-logger";
 export async function getProviders(): Promise<ProviderDisplay[]> {
   try {
     const session = await getSession();
-    debugLog('getProviders:session', { hasSession: !!session, role: session?.user.role });
+    debugLog("getProviders:session", { hasSession: !!session, role: session?.user.role });
 
-    if (!session || session.user.role !== 'admin') {
-      debugLog('getProviders:unauthorized', { hasSession: !!session, role: session?.user.role });
+    if (!session || session.user.role !== "admin") {
+      debugLog("getProviders:unauthorized", { hasSession: !!session, role: session?.user.role });
       return [];
     }
 
@@ -25,28 +32,26 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
     const [providers, statistics] = await Promise.all([
       findProviderList(),
       getProviderStatistics().catch((error) => {
-        debugLog('getProviders:statistics_error', {
+        debugLog("getProviders:statistics_error", {
           message: error.message,
           stack: error.stack,
-          name: error.name
+          name: error.name,
         });
-        console.error('获取供应商统计数据失败:', error);
+        logger.error('获取供应商统计数据失败:', error);
         return []; // 统计查询失败时返回空数组，不影响供应商列表显示
       }),
     ]);
 
-    debugLog('getProviders:raw_data', {
+    debugLog("getProviders:raw_data", {
       providerCount: providers.length,
       statisticsCount: statistics.length,
-      providerIds: providers.map(p => p.id)
+      providerIds: providers.map((p) => p.id),
     });
 
     // 将统计数据按 provider_id 索引
-    const statsMap = new Map(
-      statistics.map(stat => [stat.id, stat])
-    );
+    const statsMap = new Map(statistics.map((stat) => [stat.id, stat]));
 
-    const result = providers.map(provider => {
+    const result = providers.map((provider) => {
       const stats = statsMap.get(provider.id);
 
       // 安全处理 last_call_time: 可能是 Date 对象、字符串或其他类型
@@ -55,7 +60,7 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
         if (stats?.last_call_time) {
           if (stats.last_call_time instanceof Date) {
             lastCallTimeStr = stats.last_call_time.toISOString();
-          } else if (typeof stats.last_call_time === 'string') {
+          } else if (typeof stats.last_call_time === "string") {
             // 原生 SQL 查询返回的是字符串,直接使用
             lastCallTimeStr = stats.last_call_time;
           } else {
@@ -67,10 +72,10 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
           }
         }
       } catch (error) {
-        debugLog('getProviders:last_call_time_conversion_error', {
+        debugLog("getProviders:last_call_time_conversion_error", {
           providerId: provider.id,
           rawValue: stats?.last_call_time,
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         });
         // 转换失败时保持 null,不影响整体数据返回
         lastCallTimeStr = null;
@@ -80,14 +85,14 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
       let createdAtStr: string;
       let updatedAtStr: string;
       try {
-        createdAtStr = provider.createdAt.toISOString().split('T')[0];
-        updatedAtStr = provider.updatedAt.toISOString().split('T')[0];
+        createdAtStr = provider.createdAt.toISOString().split("T")[0];
+        updatedAtStr = provider.updatedAt.toISOString().split("T")[0];
       } catch (error) {
-        debugLog('getProviders:date_conversion_error', {
+        debugLog("getProviders:date_conversion_error", {
           providerId: provider.id,
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         });
-        createdAtStr = new Date().toISOString().split('T')[0];
+        createdAtStr = new Date().toISOString().split("T")[0];
         updatedAtStr = createdAtStr;
       }
 
@@ -114,21 +119,21 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
         createdAt: createdAtStr,
         updatedAt: updatedAtStr,
         // 统计数据（可能为空）
-        todayTotalCostUsd: stats?.today_cost ?? '0',
+        todayTotalCostUsd: stats?.today_cost ?? "0",
         todayCallCount: stats?.today_calls ?? 0,
         lastCallTime: lastCallTimeStr,
         lastCallModel: stats?.last_call_model ?? null,
       };
     });
 
-    debugLog('getProviders:final_result', { count: result.length });
+    debugLog("getProviders:final_result", { count: result.length });
     return result;
   } catch (error) {
-    debugLog('getProviders:catch_error', {
+    debugLog("getProviders:catch_error", {
       message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
-    console.error("获取服务商数据失败:", error);
+    logger.error('获取服务商数据失败:', error);
     return [];
   }
 }
@@ -156,14 +161,18 @@ export async function addProvider(data: {
 }): Promise<ActionResult> {
   try {
     const session = await getSession();
-    if (!session || session.user.role !== 'admin') {
-      return { ok: false, error: '无权限执行此操作' };
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "无权限执行此操作" };
     }
 
-    debugLog('addProvider:input', { name: data.name, url: data.url, provider_type: data.provider_type });
+    debugLog("addProvider:input", {
+      name: data.name,
+      url: data.url,
+      provider_type: data.provider_type,
+    });
 
     const validated = CreateProviderSchema.parse(data);
-    debugLog('addProvider:validated', { name: validated.name });
+    debugLog("addProvider:validated", { name: validated.name });
 
     const payload = {
       ...validated,
@@ -178,19 +187,19 @@ export async function addProvider(data: {
     };
 
     await createProvider(payload);
-    debugLog('addProvider:created_success', { name: validated.name });
+    debugLog("addProvider:created_success", { name: validated.name });
 
-    revalidatePath('/settings/providers');
-    debugLog('addProvider:revalidated', { path: '/settings/providers' });
+    revalidatePath("/settings/providers");
+    debugLog("addProvider:revalidated", { path: "/settings/providers" });
 
     return { ok: true };
   } catch (error) {
-    debugLog('addProvider:error', {
+    debugLog("addProvider:error", {
       message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
-    console.error('创建服务商失败:', error);
-    const message = error instanceof Error ? error.message : '创建服务商失败';
+    logger.error('创建服务商失败:', error);
+    const message = error instanceof Error ? error.message : "创建服务商失败";
     return { ok: false, error: message };
   }
 }
@@ -221,17 +230,17 @@ export async function editProvider(
 ): Promise<ActionResult> {
   try {
     const session = await getSession();
-    if (!session || session.user.role !== 'admin') {
-      return { ok: false, error: '无权限执行此操作' };
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "无权限执行此操作" };
     }
 
     const validated = UpdateProviderSchema.parse(data);
     await updateProvider(providerId, validated);
-    revalidatePath('/settings/providers');
+    revalidatePath("/settings/providers");
     return { ok: true };
   } catch (error) {
-    console.error('更新服务商失败:', error);
-    const message = error instanceof Error ? error.message : '更新服务商失败';
+    logger.error('更新服务商失败:', error);
+    const message = error instanceof Error ? error.message : "更新服务商失败";
     return { ok: false, error: message };
   }
 }
@@ -240,16 +249,16 @@ export async function editProvider(
 export async function removeProvider(providerId: number): Promise<ActionResult> {
   try {
     const session = await getSession();
-    if (!session || session.user.role !== 'admin') {
-      return { ok: false, error: '无权限执行此操作' };
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "无权限执行此操作" };
     }
 
     await deleteProvider(providerId);
-    revalidatePath('/settings/providers');
+    revalidatePath("/settings/providers");
     return { ok: true };
   } catch (error) {
-    console.error('删除服务商失败:', error);
-    const message = error instanceof Error ? error.message : '删除服务商失败';
+    logger.error('删除服务商失败:', error);
+    const message = error instanceof Error ? error.message : "删除服务商失败";
     return { ok: false, error: message };
   }
 }
@@ -261,20 +270,23 @@ export async function removeProvider(providerId: number): Promise<ActionResult> 
 export async function getProvidersHealthStatus() {
   try {
     const session = await getSession();
-    if (!session || session.user.role !== 'admin') {
+    if (!session || session.user.role !== "admin") {
       return {};
     }
 
     const healthStatus = getAllHealthStatus();
 
     // 转换为前端友好的格式
-    const enrichedStatus: Record<number, {
-      circuitState: 'closed' | 'open' | 'half-open';
-      failureCount: number;
-      lastFailureTime: number | null;
-      circuitOpenUntil: number | null;
-      recoveryMinutes: number | null;  // 距离恢复的分钟数
-    }> = {};
+    const enrichedStatus: Record<
+      number,
+      {
+        circuitState: "closed" | "open" | "half-open";
+        failureCount: number;
+        lastFailureTime: number | null;
+        circuitOpenUntil: number | null;
+        recoveryMinutes: number | null; // 距离恢复的分钟数
+      }
+    > = {};
 
     Object.entries(healthStatus).forEach(([providerId, health]) => {
       enrichedStatus[Number(providerId)] = {
@@ -290,7 +302,7 @@ export async function getProvidersHealthStatus() {
 
     return enrichedStatus;
   } catch (error) {
-    console.error('获取熔断器状态失败:', error);
+    logger.error('获取熔断器状态失败:', error);
     return {};
   }
 }
@@ -301,17 +313,17 @@ export async function getProvidersHealthStatus() {
 export async function resetProviderCircuit(providerId: number): Promise<ActionResult> {
   try {
     const session = await getSession();
-    if (!session || session.user.role !== 'admin') {
-      return { ok: false, error: '无权限执行此操作' };
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "无权限执行此操作" };
     }
 
     resetCircuit(providerId);
-    revalidatePath('/settings/providers');
+    revalidatePath("/settings/providers");
 
     return { ok: true };
   } catch (error) {
-    console.error('重置熔断器失败:', error);
-    const message = error instanceof Error ? error.message : '重置熔断器失败';
+    logger.error('重置熔断器失败:', error);
+    const message = error instanceof Error ? error.message : "重置熔断器失败";
     return { ok: false, error: message };
   }
 }

@@ -18,7 +18,7 @@ export function FormErrorBoundary({ children }: { children: ReactNode }) {
             <span className="text-sm font-medium">表单出错</span>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            {error?.message || '表单加载或提交失败，请重试'}
+            {error?.message || "表单加载或提交失败，请重试"}
           </p>
           <div className="mt-3">
             <Button variant="outline" size="sm" onClick={resetError}>

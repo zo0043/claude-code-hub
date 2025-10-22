@@ -35,13 +35,21 @@ function formatDuration(durationMs: number | undefined): string {
   }
 }
 
-function getStatusBadge(status: 'in_progress' | 'completed' | 'error', statusCode?: number) {
-  if (status === 'in_progress') {
-    return <Badge variant="default" className="bg-blue-500">进行中</Badge>;
-  } else if (status === 'error' || (statusCode && statusCode >= 400)) {
+function getStatusBadge(status: "in_progress" | "completed" | "error", statusCode?: number) {
+  if (status === "in_progress") {
+    return (
+      <Badge variant="default" className="bg-blue-500">
+        进行中
+      </Badge>
+    );
+  } else if (status === "error" || (statusCode && statusCode >= 400)) {
     return <Badge variant="destructive">错误</Badge>;
   } else {
-    return <Badge variant="outline" className="text-green-600 border-green-600">完成</Badge>;
+    return (
+      <Badge variant="outline" className="text-green-600 border-green-600">
+        完成
+      </Badge>
+    );
   }
 }
 
@@ -57,14 +65,10 @@ export function ActiveSessionsTable({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
-          共 {sessions.length} 个{inactive ? '非活跃' : '活跃'} Session
+          共 {sessions.length} 个{inactive ? "非活跃" : "活跃"} Session
           {inactive && <span className="ml-2 text-xs">(不计入并发数)</span>}
         </div>
-        {isLoading && (
-          <div className="text-sm text-muted-foreground animate-pulse">
-            刷新中...
-          </div>
-        )}
+        {isLoading && <div className="text-sm text-muted-foreground animate-pulse">刷新中...</div>}
       </div>
 
       <div
@@ -109,7 +113,7 @@ export function ActiveSessionsTable({
                   <TableCell className="font-mono text-xs">{session.model || "-"}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-xs">
-                      {session.apiType === 'codex' ? 'Codex' : 'Chat'}
+                      {session.apiType === "codex" ? "Codex" : "Chat"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs">
@@ -124,9 +128,7 @@ export function ActiveSessionsTable({
                   <TableCell className="text-right font-mono text-xs">
                     {session.costUsd ? `$${parseFloat(session.costUsd).toFixed(6)}` : "-"}
                   </TableCell>
-                  <TableCell>
-                    {getStatusBadge(session.status, session.statusCode)}
-                  </TableCell>
+                  <TableCell>{getStatusBadge(session.status, session.statusCode)}</TableCell>
                   <TableCell className="text-center">
                     <Link href={`/dashboard/sessions/${session.sessionId}/messages`}>
                       <Button variant="ghost" size="sm">

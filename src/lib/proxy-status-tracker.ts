@@ -122,14 +122,14 @@ export class ProxyStatusTracker {
         ? (() => {
             const endTime = toTimestamp(lastRow.endTime) ?? now;
             return {
-            requestId: lastRow.requestId,
-            keyName: lastRow.keyName || lastRow.keyString,
-            providerId: lastRow.providerId,
-            providerName: lastRow.providerName,
-            model: lastRow.model || "unknown",
-            endTime,
-            elapsed: now - endTime,
-          };
+              requestId: lastRow.requestId,
+              keyName: lastRow.keyName || lastRow.keyString,
+              providerId: lastRow.providerId,
+              providerName: lastRow.providerName,
+              model: lastRow.model || "unknown",
+              endTime,
+              elapsed: now - endTime,
+            };
           })()
         : null;
 
@@ -159,10 +159,7 @@ export class ProxyStatusTracker {
       })
       .from(messageRequest)
       .innerJoin(providers, eq(messageRequest.providerId, providers.id))
-      .leftJoin(
-        keys,
-        and(eq(keys.key, messageRequest.key), isNull(keys.deletedAt))
-      )
+      .leftJoin(keys, and(eq(keys.key, messageRequest.key), isNull(keys.deletedAt)))
       .where(
         and(
           isNull(messageRequest.deletedAt),

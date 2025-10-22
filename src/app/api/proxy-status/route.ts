@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from '@/lib/logger';
 import { ProxyStatusTracker } from "@/lib/proxy-status-tracker";
 import { getSession } from "@/lib/auth";
 
@@ -26,10 +27,7 @@ export async function GET() {
     // 验证用户登录
     const session = await getSession();
     if (!session) {
-      return NextResponse.json(
-        { error: "未授权，请先登录" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "未授权，请先登录" }, { status: 401 });
     }
 
     // 获取代理状态
@@ -38,10 +36,7 @@ export async function GET() {
 
     return NextResponse.json(status);
   } catch (error) {
-    console.error("Failed to get proxy status:", error);
-    return NextResponse.json(
-      { error: "获取代理状态失败" },
-      { status: 500 }
-    );
+    logger.error('Failed to get proxy status:', error);
+    return NextResponse.json({ error: "获取代理状态失败" }, { status: 500 });
   }
 }

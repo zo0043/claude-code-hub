@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { z } from 'zod';
+import { useState, useCallback } from "react";
+import { z } from "zod";
 
 interface UseZodFormOptions<T extends z.ZodSchema> {
   schema: T;
@@ -14,9 +14,11 @@ interface FormErrors {
 /**
  * 简化的 Zod 表单 hook
  */
-export function useZodForm<T extends z.ZodSchema>(
-  { schema, defaultValues, onSubmit }: UseZodFormOptions<T>
-) {
+export function useZodForm<T extends z.ZodSchema>({
+  schema,
+  defaultValues,
+  onSubmit,
+}: UseZodFormOptions<T>) {
   type Values = z.infer<T>;
   const [values, setValues] = useState<Partial<Values>>(defaultValues);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -26,7 +28,7 @@ export function useZodForm<T extends z.ZodSchema>(
     (field: keyof Values, value: unknown) => {
       setValues((prev) => ({ ...prev, [field]: value as Values[keyof Values] }));
       if (errors[field as string]) {
-        setErrors((prev) => ({ ...prev, [field as string]: '' }));
+        setErrors((prev) => ({ ...prev, [field as string]: "" }));
       }
     },
     [errors]
@@ -45,12 +47,12 @@ export function useZodForm<T extends z.ZodSchema>(
         if (error instanceof z.ZodError) {
           const formErrors: FormErrors = {};
           error.issues.forEach((issue: z.ZodIssue) => {
-            const path = issue.path.join('.');
+            const path = issue.path.join(".");
             formErrors[path] = issue.message;
           });
           setErrors(formErrors);
         } else {
-          setErrors({ _form: error instanceof Error ? error.message : '提交失败' });
+          setErrors({ _form: error instanceof Error ? error.message : "提交失败" });
         }
       } finally {
         setIsSubmitting(false);
@@ -62,7 +64,7 @@ export function useZodForm<T extends z.ZodSchema>(
   const getFieldProps = useCallback(
     (field: keyof Values) => {
       const raw = (values as Record<string, unknown>)[field as string];
-      const value = (raw as string | number) ?? '';
+      const value = (raw as string | number) ?? "";
       return {
         value,
         onChange: (val: string) => setValue(field, val),

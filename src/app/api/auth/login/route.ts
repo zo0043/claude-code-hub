@@ -1,23 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { validateKey, setAuthCookie } from '@/lib/auth';
+import { NextRequest, NextResponse } from "next/server";
+import { logger } from '@/lib/logger';
+import { validateKey, setAuthCookie } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
     const { key } = await request.json();
 
     if (!key) {
-      return NextResponse.json(
-        { error: '请输入 API Key' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "请输入 API Key" }, { status: 400 });
     }
 
     const session = await validateKey(key);
     if (!session) {
-      return NextResponse.json(
-        { error: 'API Key 无效或已过期' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "API Key 无效或已过期" }, { status: 401 });
     }
 
     // 设置认证 cookie
@@ -33,10 +28,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Login error:', error);
-    return NextResponse.json(
-      { error: '登录失败，请稍后重试' },
-      { status: 500 }
-    );
+    logger.error('Login error:', error);
+    return NextResponse.json({ error: "登录失败，请稍后重试" }, { status: 500 });
   }
 }

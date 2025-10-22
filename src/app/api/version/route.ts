@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server';
-import { APP_VERSION, GITHUB_REPO, compareVersions } from '@/lib/version';
+import { NextResponse } from "next/server";
+import { logger } from '@/lib/logger';
+import { APP_VERSION, GITHUB_REPO, compareVersions } from "@/lib/version";
 
-export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 
 interface GitHubRelease {
   tag_name: string;
@@ -22,8 +23,8 @@ export async function GET() {
       `https://api.github.com/repos/${GITHUB_REPO.owner}/${GITHUB_REPO.repo}/releases/latest`,
       {
         headers: {
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'claude-code-hub',
+          Accept: "application/vnd.github.v3+json",
+          "User-Agent": "claude-code-hub",
         },
         next: {
           revalidate: 3600, // 缓存 1 小时
@@ -37,7 +38,7 @@ export async function GET() {
           current: APP_VERSION,
           latest: null,
           hasUpdate: false,
-          message: '暂无发布版本',
+          message: "暂无发布版本",
         });
       }
       throw new Error(`GitHub API 错误: ${response.status}`);
@@ -57,13 +58,13 @@ export async function GET() {
       publishedAt: release.published_at,
     });
   } catch (error) {
-    console.error('版本检查失败:', error);
+    logger.error('版本检查失败:', error);
     return NextResponse.json(
       {
         current: APP_VERSION,
         latest: null,
         hasUpdate: false,
-        error: '无法获取最新版本信息',
+        error: "无法获取最新版本信息",
       },
       { status: 500 }
     );

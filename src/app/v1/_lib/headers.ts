@@ -20,19 +20,19 @@ export class HeaderProcessor {
   constructor(config: HeaderProcessorConfig = {}) {
     // 初始化黑名单（默认包含代理相关的 headers）
     const defaultBlacklist = [
-      'x-forwarded-for',
-      'x-forwarded-host', 
-      'x-forwarded-port',
-      'x-forwarded-proto',
+      "x-forwarded-for",
+      "x-forwarded-host",
+      "x-forwarded-port",
+      "x-forwarded-proto",
     ];
-    
+
     // 如果不保留 authorization，添加到黑名单
     if (!config.preserveAuthorization) {
-      defaultBlacklist.push('authorization');
+      defaultBlacklist.push("authorization");
     }
-    
+
     this.blacklist = new Set(
-      [...defaultBlacklist, ...(config.blacklist || [])].map(h => h.toLowerCase())
+      [...defaultBlacklist, ...(config.blacklist || [])].map((h) => h.toLowerCase())
     );
 
     // 初始化覆盖规则
@@ -50,12 +50,12 @@ export class HeaderProcessor {
     // 第一步：根据黑名单过滤，默认全部透传
     headers.forEach((value, key) => {
       const lowerKey = key.toLowerCase();
-      
+
       // 检查黑名单
       if (this.blacklist.has(lowerKey)) {
         return; // 跳过黑名单 header
       }
-      
+
       // 保留这个 header
       processed.set(key, value);
     });
@@ -76,9 +76,9 @@ export class HeaderProcessor {
       const url = new URL(baseUrl);
       return url.host;
     } catch (error) {
-      console.error("提取 host 失败:", error);
+      logger.error('提取 host 失败:', error);
       const match = baseUrl.match(/^https?:\/\/([^\/]+)/);
-      return match ? match[1] : 'localhost';
+      return match ? match[1] : "localhost";
     }
   }
 
@@ -89,8 +89,7 @@ export class HeaderProcessor {
     // 默认的代理配置：删除常见的转发相关 headers
     return new HeaderProcessor({
       preserveAuthorization: false,
-      ...config
+      ...config,
     });
   }
 }
-

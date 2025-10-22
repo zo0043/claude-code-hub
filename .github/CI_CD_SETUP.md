@@ -5,11 +5,13 @@
 本项目包含两个独立的 GitHub Actions 工作流：
 
 ### 1. PR 构建检查 (`pr-check.yml`)
+
 - **触发条件**：向 `dev` 或 `main` 分支提交 Pull Request
 - **功能**：构建 Docker 镜像但不推送，用于验证代码可构建性
 - **作用**：作为合并前的质量门控
 
 ### 2. 版本发布 (`release.yml`)
+
 - **触发条件**：在 `main` 分支上创建符合 `x.x.x` 格式的标签
 - **功能**：构建并推送 Docker 镜像到 DockerHub
 - **推送标签**：版本标签 + `latest` 标签
@@ -24,6 +26,7 @@ DOCKERHUB_TOKEN = <your-dockerhub-access-token>
 ```
 
 ### 获取 DockerHub Token
+
 1. 登录 [Docker Hub](https://hub.docker.com)
 2. Account Settings → Security
 3. New Access Token → 创建具有 `Read & Write` 权限的 Token
@@ -71,6 +74,7 @@ DOCKERHUB_TOKEN = <your-dockerhub-access-token>
 ## 🔄 工作流程示例
 
 ### 1. 功能开发流程
+
 ```bash
 # 1. 创建功能分支
 git checkout -b feature/new-feature
@@ -87,6 +91,7 @@ git push origin feature/new-feature
 ```
 
 ### 2. 发布流程
+
 ```bash
 # 1. 从 dev 合并到 main
 git checkout main
@@ -135,16 +140,19 @@ docker run -d \
 ## 🚨 故障排除
 
 ### PR 构建失败
+
 - 检查 Dockerfile 语法
 - 查看 Actions 日志中的错误信息
 - 确保所有依赖正确安装
 
 ### 无法推送到 DockerHub
+
 - 验证 Secrets 配置正确
 - 检查 DockerHub Token 权限
 - 确认 DockerHub 仓库名称正确
 
 ### 标签发布未触发
+
 - 确保标签格式正确（`x.x.x`）
 - 确认标签在 `main` 分支上创建
 - 检查 Actions 是否被禁用

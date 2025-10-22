@@ -1,6 +1,7 @@
 "use server";
 
 import { db } from "@/drizzle/db";
+import { logger } from '@/lib/logger';
 import { messageRequest, users, keys as keysTable, providers } from "@/drizzle/schema";
 import { and, eq, isNull, gte, lte, desc, sql } from "drizzle-orm";
 import type { ProviderChainItem } from "@/types/message";
@@ -20,7 +21,7 @@ export interface UsageLogFilters {
 export interface UsageLogRow {
   id: number;
   createdAt: Date | null;
-  sessionId: string | null;  // 新增：Session ID
+  sessionId: string | null; // 新增：Session ID
   userName: string;
   keyName: string;
   providerName: string;
@@ -56,9 +57,7 @@ export interface UsageLogsResult {
 /**
  * 查询使用日志（支持多种筛选条件和分页）
  */
-export async function findUsageLogsWithDetails(
-  filters: UsageLogFilters
-): Promise<UsageLogsResult> {
+export async function findUsageLogsWithDetails(filters: UsageLogFilters): Promise<UsageLogsResult> {
   const {
     userId,
     keyId,
@@ -68,7 +67,7 @@ export async function findUsageLogsWithDetails(
     statusCode,
     model,
     page = 1,
-    pageSize = 50
+    pageSize = 50,
   } = filters;
 
   // 构建查询条件
@@ -101,7 +100,7 @@ export async function findUsageLogsWithDetails(
           totalOutputTokens: 0,
           totalCacheCreationTokens: 0,
           totalCacheReadTokens: 0,
-        }
+        },
       };
     }
   }
@@ -140,8 +139,9 @@ export async function findUsageLogsWithDetails(
     .where(and(...conditions));
 
   const total = summaryResult?.totalRequests ?? 0;
-  const totalCost = parseFloat(summaryResult?.totalCost ?? '0');
-  const totalTokens = (summaryResult?.totalInputTokens ?? 0) +
+  const totalCost = parseFloat(summaryResult?.totalCost ?? "0");
+  const totalTokens =
+    (summaryResult?.totalInputTokens ?? 0) +
     (summaryResult?.totalOutputTokens ?? 0) +
     (summaryResult?.totalCacheCreationTokens ?? 0) +
     (summaryResult?.totalCacheReadTokens ?? 0);
@@ -152,7 +152,7 @@ export async function findUsageLogsWithDetails(
     .select({
       id: messageRequest.id,
       createdAt: messageRequest.createdAt,
-      sessionId: messageRequest.sessionId,  // 新增：Session ID
+      sessionId: messageRequest.sessionId, // 新增：Session ID
       userName: users.name,
       keyName: keysTable.name,
       providerName: providers.name,
@@ -176,8 +176,9 @@ export async function findUsageLogsWithDetails(
     .limit(pageSize)
     .offset(offset);
 
-  const logs: UsageLogRow[] = results.map(row => {
-    const totalRowTokens = (row.inputTokens ?? 0) +
+  const logs: UsageLogRow[] = results.map((row) => {
+    const totalRowTokens =
+      (row.inputTokens ?? 0) +
       (row.outputTokens ?? 0) +
       (row.cacheCreationInputTokens ?? 0) +
       (row.cacheReadInputTokens ?? 0);
@@ -201,7 +202,7 @@ export async function findUsageLogsWithDetails(
       totalOutputTokens: summaryResult?.totalOutputTokens ?? 0,
       totalCacheCreationTokens: summaryResult?.totalCacheCreationTokens ?? 0,
       totalCacheReadTokens: summaryResult?.totalCacheReadTokens ?? 0,
-    }
+    },
   };
 }
 
@@ -212,13 +213,10 @@ export async function getUsedModels(): Promise<string[]> {
   const results = await db
     .selectDistinct({ model: messageRequest.model })
     .from(messageRequest)
-    .where(and(
-      isNull(messageRequest.deletedAt),
-      sql`${messageRequest.model} IS NOT NULL`
-    ))
+    .where(and(isNull(messageRequest.deletedAt), sql`${messageRequest.model} IS NOT NULL`))
     .orderBy(messageRequest.model);
 
-  return results.map(r => r.model).filter((m): m is string => m !== null);
+  return results.map((r) => r.model).filter((m): m is string => m !== null);
 }
 
 /**
@@ -228,11 +226,8 @@ export async function getUsedStatusCodes(): Promise<number[]> {
   const results = await db
     .selectDistinct({ statusCode: messageRequest.statusCode })
     .from(messageRequest)
-    .where(and(
-      isNull(messageRequest.deletedAt),
-      sql`${messageRequest.statusCode} IS NOT NULL`
-    ))
+    .where(and(isNull(messageRequest.deletedAt), sql`${messageRequest.statusCode} IS NOT NULL`))
     .orderBy(messageRequest.statusCode);
 
-  return results.map(r => r.statusCode).filter((c): c is number => c !== null);
+  return results.map((r) => r.statusCode).filter((c): c is number => c !== null);
 }

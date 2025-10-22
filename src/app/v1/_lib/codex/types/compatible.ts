@@ -31,12 +31,12 @@ export interface ChatCompletionRequest {
 }
 
 export interface ReasoningConfig {
-  effort?: 'minimal' | 'low' | 'medium' | 'high';
-  summary?: 'auto' | 'concise' | 'detailed';
+  effort?: "minimal" | "low" | "medium" | "high";
+  summary?: "auto" | "concise" | "detailed";
 }
 
 export interface ChatCompletionTool {
-  type: 'function';
+  type: "function";
   function: {
     name: string;
     description?: string;
@@ -46,34 +46,34 @@ export interface ChatCompletionTool {
 }
 
 export interface ToolChoiceObject {
-  type: 'function';
+  type: "function";
   function?: {
     name: string;
   };
 }
 
 export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
+  role: "system" | "user" | "assistant";
   content: string | ContentPart[];
   name?: string;
 }
 
 export interface ContentPart {
-  type: 'text' | 'image_url';
+  type: "text" | "image_url";
   text?: string;
   image_url?: ImageURL;
 }
 
 export interface ImageURL {
   url: string;
-  detail?: 'low' | 'high' | 'auto';
+  detail?: "low" | "high" | "auto";
 }
 
 // ============ 响应类型（非流式）============
 
 export interface ChatCompletionResponse {
   id: string;
-  object: 'chat.completion';
+  object: "chat.completion";
   created: number;
   model: string;
   choices: ChatCompletionChoice[];
@@ -88,7 +88,7 @@ export interface ChatCompletionResponse {
 export interface ChatCompletionChoice {
   index: number;
   message: ChatMessage;
-  finish_reason: 'stop' | 'length' | 'content_filter' | 'tool_calls' | null;
+  finish_reason: "stop" | "length" | "content_filter" | "tool_calls" | null;
   logprobs?: null;
 }
 
@@ -96,7 +96,7 @@ export interface ChatCompletionChoice {
 
 export interface ChatCompletionChunk {
   id: string;
-  object: 'chat.completion.chunk';
+  object: "chat.completion.chunk";
   created: number;
   model: string;
   choices: ChunkChoice[];
@@ -106,9 +106,9 @@ export interface ChatCompletionChunk {
 export interface ChunkChoice {
   index: number;
   delta: {
-    role?: 'assistant';
+    role?: "assistant";
     content?: string;
   };
-  finish_reason: 'stop' | 'length' | null;
+  finish_reason: "stop" | "length" | null;
   logprobs?: null;
 }

@@ -1,9 +1,9 @@
 /**
  * Codex CLI System Instructions
- * 
+ *
  * 来源: claude-relay-service/src/routes/openaiRoutes.js
  * 用途: 为非 Codex CLI 客户端注入标准的 Codex CLI system prompt
- * 
+ *
  * ⚠️ 注意: 这是一个存疑功能,可能并非所有 Codex 请求都需要这个 prompt
  * 但根据 claude-relay-service 的实践,注入此 prompt 可以提高兼容性
  */
@@ -350,5 +350,5 @@ If all steps are complete, ensure you call \`update_plan\` to mark all steps as 
  */
 export function isCodexCLIRequest(instructions?: string): boolean {
   if (!instructions) return false;
-  return instructions.startsWith('You are a coding agent running in the Codex CLI');
+  return instructions.startsWith("You are a coding agent running in the Codex CLI");
 }

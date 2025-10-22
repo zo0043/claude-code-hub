@@ -14,7 +14,11 @@ interface AddUserDialogProps {
   className?: string;
 }
 
-export function AddUserDialog({ variant = "default", size = "default", className }: AddUserDialogProps) {
+export function AddUserDialog({
+  variant = "default",
+  size = "default",
+  className,
+}: AddUserDialogProps) {
   const [open, setOpen] = useState(false);
   return (
     <Dialog open={open} onOpenChange={setOpen}>

@@ -20,25 +20,25 @@ export interface ResponseRequest {
   tool_choice?: string | ToolChoiceObject;
   tools?: ResponseTool[];
   top_p?: number;
-  truncation?: 'auto' | 'disabled';
+  truncation?: "auto" | "disabled";
   user?: string;
   service_tier?: string;
 }
 
 export interface ReasoningConfig {
-  effort?: 'minimal' | 'low' | 'medium' | 'high';
-  summary?: 'auto' | 'concise' | 'detailed';
+  effort?: "minimal" | "low" | "medium" | "high";
+  summary?: "auto" | "concise" | "detailed";
 }
 
 export interface ToolChoiceObject {
-  type: 'function';
+  type: "function";
   function?: {
     name: string;
   };
 }
 
 export interface ResponseTool {
-  type: 'function';
+  type: "function";
   function: {
     name: string;
     description?: string;
@@ -50,12 +50,12 @@ export interface ResponseTool {
 export type InputItem = MessageInput | ToolOutputsInput;
 
 export interface MessageInput {
-  role: 'user' | 'assistant' | 'developer';
+  role: "user" | "assistant" | "developer";
   content: ContentItem[];
 }
 
 export interface ToolOutputsInput {
-  type: 'tool_outputs';
+  type: "tool_outputs";
   outputs: ToolOutput[];
 }
 
@@ -67,12 +67,12 @@ export interface ToolOutput {
 export type ContentItem = TextContent | ImageContent;
 
 export interface TextContent {
-  type: 'input_text' | 'output_text';
+  type: "input_text" | "output_text";
   text: string;
 }
 
 export interface ImageContent {
-  type: 'input_image';
+  type: "input_image";
   image_url: string;
 }
 
@@ -80,10 +80,10 @@ export interface ImageContent {
 
 export interface ResponseObject {
   id: string;
-  object: 'response';
+  object: "response";
   created: number;
   model: string;
-  status: 'completed' | 'failed' | 'incomplete';
+  status: "completed" | "failed" | "incomplete";
   output: OutputItem[];
   usage: {
     input_tokens: number;
@@ -100,27 +100,27 @@ export type OutputItem = ReasoningOutput | MessageOutput | ToolCallsOutput;
 
 export interface ReasoningOutput {
   id: string;
-  type: 'reasoning';
+  type: "reasoning";
   summary?: SummaryText[];
 }
 
 export interface MessageOutput {
   id: string;
-  type: 'message';
-  role: 'assistant';
-  status: 'completed';
+  type: "message";
+  role: "assistant";
+  status: "completed";
   content: OutputContent[];
 }
 
 export interface ToolCallsOutput {
   id: string;
-  type: 'tool_calls';
+  type: "tool_calls";
   tool_calls: ToolCall[];
 }
 
 export interface ToolCall {
   id: string;
-  type: 'function';
+  type: "function";
   function: {
     name: string;
     arguments: string;
@@ -128,28 +128,28 @@ export interface ToolCall {
 }
 
 export interface OutputContent {
-  type: 'output_text';
+  type: "output_text";
   text: string;
   annotations?: unknown[];
   logprobs?: unknown[];
 }
 
 export interface SummaryText {
-  type: 'summary_text';
+  type: "summary_text";
   text: string;
 }
 
 // ============ SSE 事件类型 ============
 
 export type SSEEventType =
-  | 'response.created'
-  | 'response.output_text.delta'
-  | 'response.reasoning_summary_text.delta'
-  | 'response.reasoning_summary_text.done'
-  | 'response.reasoning_summary_part.done'
-  | 'response.completed'
-  | 'response.failed'
-  | 'error';
+  | "response.created"
+  | "response.output_text.delta"
+  | "response.reasoning_summary_text.delta"
+  | "response.reasoning_summary_text.done"
+  | "response.reasoning_summary_part.done"
+  | "response.completed"
+  | "response.failed"
+  | "error";
 
 export interface SSEEvent {
   event: SSEEventType;
@@ -158,20 +158,20 @@ export interface SSEEvent {
 
 export interface ResponseCreatedEvent {
   id: string;
-  object: 'response';
+  object: "response";
   created: number;
   model: string;
-  status: 'generating';
+  status: "generating";
 }
 
 export interface OutputTextDeltaEvent {
-  type: 'response.output_text.delta';
+  type: "response.output_text.delta";
   item_id: string;
   delta: string;
 }
 
 export interface ReasoningSummaryTextDeltaEvent {
-  type: 'response.reasoning_summary_text.delta';
+  type: "response.reasoning_summary_text.delta";
   item_id: string;
   delta: string;
   output_index: number;
@@ -181,7 +181,7 @@ export interface ReasoningSummaryTextDeltaEvent {
 }
 
 export interface ReasoningSummaryTextDoneEvent {
-  type: 'response.reasoning_summary_text.done';
+  type: "response.reasoning_summary_text.done";
   item_id: string;
   text: string;
   output_index: number;
@@ -190,7 +190,7 @@ export interface ReasoningSummaryTextDoneEvent {
 }
 
 export interface ReasoningSummaryPartDoneEvent {
-  type: 'response.reasoning_summary_part.done';
+  type: "response.reasoning_summary_part.done";
   item_id: string;
   part: SummaryText;
   output_index: number;
@@ -200,10 +200,10 @@ export interface ReasoningSummaryPartDoneEvent {
 
 export interface ResponseCompletedEvent {
   id: string;
-  object: 'response';
+  object: "response";
   created: number;
   model: string;
-  status: 'completed';
+  status: "completed";
   output: OutputItem[];
-  usage: ResponseObject['usage'];
+  usage: ResponseObject["usage"];
 }

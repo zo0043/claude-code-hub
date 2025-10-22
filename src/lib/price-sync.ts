@@ -7,11 +7,13 @@
  * 3. 成功后更新数据库并刷新缓存
  */
 
-import fs from 'fs/promises';
-import path from 'path';
+import fs from "fs/promises";
+import { logger } from '@/lib/logger';
+import path from "path";
 
-const LITELLM_PRICE_URL = 'https://jsd-proxy.ygxz.in/gh/BerriAI/litellm/model_prices_and_context_window.json';
-const CACHE_FILE_PATH = path.join(process.cwd(), 'public', 'cache', 'litellm-prices.json');
+const LITELLM_PRICE_URL =
+  "https://jsd-proxy.ygxz.in/gh/BerriAI/litellm/model_prices_and_context_window.json";
+const CACHE_FILE_PATH = path.join(process.cwd(), "public", "cache", "litellm-prices.json");
 const FETCH_TIMEOUT_MS = 10000; // 10 秒超时
 
 /**
@@ -38,14 +40,14 @@ export async function fetchLiteLLMPrices(): Promise<string | null> {
     const response = await fetch(LITELLM_PRICE_URL, {
       signal: controller.signal,
       headers: {
-        'Accept': 'application/json',
+        Accept: "application/json",
       },
     });
 
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      console.error(`❌ Failed to fetch LiteLLM prices: HTTP ${response.status}`);
+      logger.error('❌ Failed to fetch LiteLLM prices: HTTP ${response.status}');
       return null;
     }
 
@@ -54,14 +56,14 @@ export async function fetchLiteLLMPrices(): Promise<string | null> {
     // 验证 JSON 格式
     JSON.parse(jsonText);
 
-    console.log('Successfully fetched LiteLLM prices from CDN');
+    logger.info('Successfully fetched LiteLLM prices from CDN');
     return jsonText;
   } catch (error) {
     if (error instanceof Error) {
-      if (error.name === 'AbortError') {
-        console.error('❌ Fetch LiteLLM prices timeout after 10s');
+      if (error.name === "AbortError") {
+        logger.error('❌ Fetch LiteLLM prices timeout after 10s');
       } else {
-        console.error('❌ Failed to fetch LiteLLM prices:', error.message);
+        logger.error('❌ Failed to fetch LiteLLM prices:', { context: error.message });
       }
     }
     return null;
@@ -74,18 +76,18 @@ export async function fetchLiteLLMPrices(): Promise<string | null> {
  */
 export async function readCachedPrices(): Promise<string | null> {
   try {
-    const cached = await fs.readFile(CACHE_FILE_PATH, 'utf-8');
+    const cached = await fs.readFile(CACHE_FILE_PATH, "utf-8");
 
     // 验证 JSON 格式
     JSON.parse(cached);
 
-    console.log('📦 Using cached LiteLLM prices');
+    logger.info('📦 Using cached LiteLLM prices');
     return cached;
   } catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-      console.log('ℹ️  No cached prices found');
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      logger.info('ℹ️  No cached prices found');
     } else {
-      console.error('❌ Failed to read cached prices:', error);
+      logger.error('❌ Failed to read cached prices:', error);
     }
     return null;
   }
@@ -98,10 +100,10 @@ export async function readCachedPrices(): Promise<string | null> {
 export async function saveCachedPrices(jsonText: string): Promise<void> {
   try {
     await ensureCacheDirectory();
-    await fs.writeFile(CACHE_FILE_PATH, jsonText, 'utf-8');
-    console.log('💾 Saved prices to cache');
+    await fs.writeFile(CACHE_FILE_PATH, jsonText, "utf-8");
+    logger.info('💾 Saved prices to cache');
   } catch (error) {
-    console.error('❌ Failed to save prices to cache:', error);
+    logger.error('❌ Failed to save prices to cache:', error);
   }
 }
 
@@ -120,6 +122,6 @@ export async function getPriceTableJson(): Promise<string | null> {
   }
 
   // 失败时降级使用缓存
-  console.log('⚠️  CDN fetch failed, trying cache...');
+  logger.info('⚠️  CDN fetch failed, trying cache...');
   return await readCachedPrices();
 }

@@ -1,5 +1,10 @@
-import { updateMessageRequestDuration, updateMessageRequestCost, updateMessageRequestDetails } from "@/repository/message";
+import {
+  updateMessageRequestDuration,
+  updateMessageRequestCost,
+  updateMessageRequestDetails,
+} from "@/repository/message";
 import { findLatestPriceByModel } from "@/repository/model-price";
+import { logger } from '@/lib/logger';
 import { parseSSEData } from "@/lib/utils/sse";
 import { calculateRequestCost } from "@/lib/utils/cost-calculation";
 import { RateLimitService } from "@/lib/rate-limit";
@@ -31,7 +36,10 @@ export class ProxyResponseHandler {
     return await ProxyResponseHandler.handleStream(session, response);
   }
 
-  private static async handleNonStream(session: ProxySession, response: Response): Promise<Response> {
+  private static async handleNonStream(
+    session: ProxySession,
+    response: Response
+  ): Promise<Response> {
     const provider = session.provider;
     if (!provider) {
       return response;
@@ -41,7 +49,7 @@ export class ProxyResponseHandler {
     const statusCode = response.status;
 
     // 检查是否需要格式转换（OpenAI 请求 + Codex 供应商）
-    const needsTransform = session.originalFormat === 'openai' && session.providerType === 'codex';
+    const needsTransform = session.originalFormat === "openai" && session.providerType === "codex";
     let finalResponse = response;
 
     if (needsTransform) {
@@ -54,16 +62,16 @@ export class ProxyResponseHandler {
         // 转换为 OpenAI 格式
         const openAIResponse = ResponseTransformer.transform(responseData);
 
-        console.debug('[ResponseHandler] Transformed Response API → OpenAI format (non-stream)');
+        logger.debug('[ResponseHandler] Transformed Response API → OpenAI format (non-stream)');
 
         // 构建新的响应
         finalResponse = new Response(JSON.stringify(openAIResponse), {
           status: response.status,
           statusText: response.statusText,
-          headers: new Headers(response.headers)
+          headers: new Headers(response.headers),
         });
       } catch (error) {
-        console.error('[ResponseHandler] Failed to transform response:', error);
+        logger.error('[ResponseHandler] Failed to transform response:', error);
         // 转换失败时返回原始响应
         finalResponse = response;
       }
@@ -108,7 +116,11 @@ export class ProxyResponseHandler {
           if (session.request.model) {
             const priceData = await findLatestPriceByModel(session.request.model);
             if (priceData?.priceData) {
-              const cost = calculateRequestCost(usageMetrics, priceData.priceData, provider.costMultiplier);
+              const cost = calculateRequestCost(
+                usageMetrics,
+                priceData.priceData,
+                provider.costMultiplier
+              );
               if (cost.gt(0)) {
                 costUsdStr = cost.toString();
               }
@@ -121,10 +133,10 @@ export class ProxyResponseHandler {
             cacheCreationInputTokens: usageMetrics.cache_creation_input_tokens,
             cacheReadInputTokens: usageMetrics.cache_read_input_tokens,
             costUsd: costUsdStr,
-            status: statusCode >= 200 && statusCode < 300 ? 'completed' : 'error',
+            status: statusCode >= 200 && statusCode < 300 ? "completed" : "error",
             statusCode: statusCode,
           }).catch((error: unknown) => {
-            console.error('[ResponseHandler] Failed to update session usage:', error);
+            logger.error('[ResponseHandler] Failed to update session usage:', error);
           });
         }
 
@@ -139,7 +151,7 @@ export class ProxyResponseHandler {
             outputTokens: usageMetrics?.output_tokens,
             cacheCreationInputTokens: usageMetrics?.cache_creation_input_tokens,
             cacheReadInputTokens: usageMetrics?.cache_read_input_tokens,
-            providerChain: session.getProviderChain()
+            providerChain: session.getProviderChain(),
           });
 
           // 记录请求结束
@@ -149,7 +161,7 @@ export class ProxyResponseHandler {
 
         await ProxyLogger.logNonStream(session, provider, responseLogContent);
       } catch (error) {
-        console.error("Failed to handle non-stream log:", error);
+        logger.error('Failed to handle non-stream log:', error);
       }
     })();
 
@@ -165,11 +177,11 @@ export class ProxyResponseHandler {
     }
 
     // 检查是否需要格式转换（OpenAI 请求 + Codex 供应商）
-    const needsTransform = session.originalFormat === 'openai' && session.providerType === 'codex';
+    const needsTransform = session.originalFormat === "openai" && session.providerType === "codex";
     let processedStream: ReadableStream<Uint8Array> = response.body;
 
     if (needsTransform) {
-      console.debug('[ResponseHandler] Transforming Response API → OpenAI format (stream)');
+      logger.debug('[ResponseHandler] Transforming Response API → OpenAI format (stream)');
 
       // 创建转换流
       const streamTransformer = new StreamTransformer();
@@ -180,13 +192,13 @@ export class ProxyResponseHandler {
             const text = decoder.decode(chunk, { stream: true });
 
             // 解析并转换 SSE 事件
-            const lines = text.split('\n');
+            const lines = text.split("\n");
             for (const line of lines) {
-              if (line.startsWith('data: ')) {
+              if (line.startsWith("data: ")) {
                 const dataStr = line.slice(6).trim();
-                if (dataStr === '[DONE]') {
+                if (dataStr === "[DONE]") {
                   // 结束事件
-                  controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
+                  controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
                 } else {
                   try {
                     const event = JSON.parse(dataStr);
@@ -210,17 +222,17 @@ export class ProxyResponseHandler {
                     // 忽略解析错误的行
                   }
                 }
-              } else if (line.trim() === '') {
+              } else if (line.trim() === "") {
                 // 保留空行（SSE 分隔符）
-                controller.enqueue(new TextEncoder().encode('\n'));
+                controller.enqueue(new TextEncoder().encode("\n"));
               }
             }
           } catch (error) {
-            console.error('[ResponseHandler] Stream transform error:', error);
+            logger.error('[ResponseHandler] Stream transform error:', error);
             // 出错时传递原始 chunk
             controller.enqueue(chunk);
           }
-        }
+        },
       });
 
       processedStream = response.body.pipeThrough(transformStream) as ReadableStream<Uint8Array>;
@@ -262,7 +274,11 @@ export class ProxyResponseHandler {
         tracker.endRequest(messageContext.user.id, messageContext.id);
 
         for (const event of parsedEvents) {
-          if (event.event === "message_delta" && typeof event.data === "object" && event.data !== null) {
+          if (
+            event.event === "message_delta" &&
+            typeof event.data === "object" &&
+            event.data !== null
+          ) {
             const usageMetrics = extractUsageMetrics((event.data as Record<string, unknown>).usage);
             if (usageMetrics) {
               usageForCost = usageMetrics;
@@ -287,7 +303,11 @@ export class ProxyResponseHandler {
           if (session.request.model) {
             const priceData = await findLatestPriceByModel(session.request.model);
             if (priceData?.priceData) {
-              const cost = calculateRequestCost(usageForCost, priceData.priceData, provider.costMultiplier);
+              const cost = calculateRequestCost(
+                usageForCost,
+                priceData.priceData,
+                provider.costMultiplier
+              );
               if (cost.gt(0)) {
                 costUsdStr = cost.toString();
               }
@@ -300,10 +320,10 @@ export class ProxyResponseHandler {
             cacheCreationInputTokens: usageForCost.cache_creation_input_tokens,
             cacheReadInputTokens: usageForCost.cache_read_input_tokens,
             costUsd: costUsdStr,
-            status: statusCode >= 200 && statusCode < 300 ? 'completed' : 'error',
+            status: statusCode >= 200 && statusCode < 300 ? "completed" : "error",
             statusCode: statusCode,
           }).catch((error: unknown) => {
-            console.error('[ResponseHandler] Failed to update session usage:', error);
+            logger.error('[ResponseHandler] Failed to update session usage:', error);
           });
         }
 
@@ -314,10 +334,10 @@ export class ProxyResponseHandler {
           outputTokens: usageForCost?.output_tokens,
           cacheCreationInputTokens: usageForCost?.cache_creation_input_tokens,
           cacheReadInputTokens: usageForCost?.cache_read_input_tokens,
-          providerChain: session.getProviderChain()
+          providerChain: session.getProviderChain(),
         });
       } catch (error) {
-        console.error("Failed to save SSE content:", error);
+        logger.error('Failed to save SSE content:', error);
       } finally {
         reader.releaseLock();
       }
@@ -326,7 +346,7 @@ export class ProxyResponseHandler {
     return new Response(clientStream, {
       status: response.status,
       statusText: response.statusText,
-      headers: new Headers(response.headers)
+      headers: new Headers(response.headers),
     });
   }
 }
@@ -385,10 +405,7 @@ async function updateRequestCostFromUsage(
 /**
  * 追踪消费到 Redis（用于限流）
  */
-async function trackCostToRedis(
-  session: ProxySession,
-  usage: UsageMetrics | null
-): Promise<void> {
+async function trackCostToRedis(session: ProxySession, usage: UsageMetrics | null): Promise<void> {
   if (!usage || !session.sessionId) return;
 
   const messageContext = session.messageContext;
@@ -411,12 +428,12 @@ async function trackCostToRedis(
   await RateLimitService.trackCost(
     key.id,
     provider.id,
-    session.sessionId,  // 直接使用 session.sessionId
+    session.sessionId, // 直接使用 session.sessionId
     parseFloat(cost.toString())
   );
 
   // 刷新 session 时间戳（滑动窗口）
   void SessionTracker.refreshSession(session.sessionId, key.id, provider.id).catch((error) => {
-    console.error('[ResponseHandler] Failed to refresh session tracker:', error);
+    logger.error('[ResponseHandler] Failed to refresh session tracker:', error);
   });
 }

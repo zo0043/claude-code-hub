@@ -3,15 +3,15 @@ export class ProxyResponses {
     const payload = {
       error: {
         message,
-        type: String(status)
-      }
+        type: String(status),
+      },
     };
 
     return new Response(JSON.stringify(payload), {
       status,
       headers: {
-        "content-type": "application/json; charset=utf-8"
-      }
+        "content-type": "application/json; charset=utf-8",
+      },
     });
   }
 }

@@ -8,10 +8,7 @@
     },
     "shadcn": {
       "command": "npx",
-      "args": [
-        "shadcn@latest",
-        "mcp"
-      ]
+      "args": ["shadcn@latest", "mcp"]
     },
     "chrome-devtools": {
       "command": "npx",

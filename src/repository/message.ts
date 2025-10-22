@@ -1,19 +1,19 @@
 "use server";
 
 import { db } from "@/drizzle/db";
+import { logger } from '@/lib/logger';
 import { messageRequest } from "@/drizzle/schema";
 import { eq, isNull, and, desc, sql } from "drizzle-orm";
-import type {
-  MessageRequest,
-  CreateMessageRequestData
-} from "@/types/message";
+import type { MessageRequest, CreateMessageRequestData } from "@/types/message";
 import { toMessageRequest } from "./_shared/transformers";
 import { formatCostForStorage } from "@/lib/utils/currency";
 
 /**
  * 创建消息请求记录
  */
-export async function createMessageRequest(data: CreateMessageRequestData): Promise<MessageRequest> {
+export async function createMessageRequest(
+  data: CreateMessageRequestData
+): Promise<MessageRequest> {
   const formattedCost = formatCostForStorage(data.cost_usd);
   const dbData = {
     providerId: data.provider_id,
@@ -22,7 +22,7 @@ export async function createMessageRequest(data: CreateMessageRequestData): Prom
     model: data.model,
     durationMs: data.duration_ms,
     costUsd: formattedCost ?? undefined,
-    sessionId: data.session_id,  // 新增：Session ID
+    sessionId: data.session_id, // 新增：Session ID
   };
 
   const [result] = await db.insert(messageRequest).values(dbData).returning({
@@ -33,7 +33,7 @@ export async function createMessageRequest(data: CreateMessageRequestData): Prom
     model: messageRequest.model,
     durationMs: messageRequest.durationMs,
     costUsd: messageRequest.costUsd,
-    sessionId: messageRequest.sessionId,  // 新增
+    sessionId: messageRequest.sessionId, // 新增
     createdAt: messageRequest.createdAt,
     updatedAt: messageRequest.updatedAt,
     deletedAt: messageRequest.deletedAt,
@@ -50,7 +50,7 @@ export async function updateMessageRequestDuration(id: number, durationMs: numbe
     .update(messageRequest)
     .set({
       durationMs: durationMs,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     })
     .where(eq(messageRequest.id, id));
 }
@@ -58,7 +58,10 @@ export async function updateMessageRequestDuration(id: number, durationMs: numbe
 /**
  * 更新消息请求的费用
  */
-export async function updateMessageRequestCost(id: number, costUsd: CreateMessageRequestData["cost_usd"]): Promise<void> {
+export async function updateMessageRequestCost(
+  id: number,
+  costUsd: CreateMessageRequestData["cost_usd"]
+): Promise<void> {
   const formattedCost = formatCostForStorage(costUsd);
   if (!formattedCost) {
     return;
@@ -68,7 +71,7 @@ export async function updateMessageRequestCost(id: number, costUsd: CreateMessag
     .update(messageRequest)
     .set({
       costUsd: formattedCost,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     })
     .where(eq(messageRequest.id, id));
 }
@@ -89,7 +92,7 @@ export async function updateMessageRequestDetails(
   }
 ): Promise<void> {
   const updateData: Record<string, unknown> = {
-    updatedAt: new Date()
+    updatedAt: new Date(),
   };
 
   if (details.statusCode !== undefined) {
@@ -114,10 +117,7 @@ export async function updateMessageRequestDetails(
     updateData.errorMessage = details.errorMessage;
   }
 
-  await db
-    .update(messageRequest)
-    .set(updateData)
-    .where(eq(messageRequest.id, id));
+  await db.update(messageRequest).set(updateData).where(eq(messageRequest.id, id));
 }
 
 /**
@@ -137,10 +137,7 @@ export async function findLatestMessageRequestByKey(key: string): Promise<Messag
       deletedAt: messageRequest.deletedAt,
     })
     .from(messageRequest)
-    .where(and(
-      eq(messageRequest.key, key),
-      isNull(messageRequest.deletedAt)
-    ))
+    .where(and(eq(messageRequest.key, key), isNull(messageRequest.deletedAt)))
     .orderBy(desc(messageRequest.createdAt))
     .limit(1);
 

@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { Suspense, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Key, Loader2 } from 'lucide-react';
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Key, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   return (
@@ -20,28 +20,28 @@ export default function LoginPage() {
 function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const from = searchParams.get('from') || '/dashboard';
+  const from = searchParams.get("from") || "/dashboard";
 
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key: apiKey }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || '登录失败');
+        setError(data.error || "登录失败");
         return;
       }
 
@@ -49,7 +49,7 @@ function LoginPageContent() {
       router.push(from);
       router.refresh();
     } catch {
-      setError('网络错误，请稍后重试');
+      setError("网络错误，请稍后重试");
     } finally {
       setLoading(false);
     }
@@ -110,7 +110,7 @@ function LoginPageContent() {
                       登录中...
                     </>
                   ) : (
-                    '进入控制台'
+                    "进入控制台"
                   )}
                 </Button>
                 <p className="text-center text-xs text-muted-foreground">

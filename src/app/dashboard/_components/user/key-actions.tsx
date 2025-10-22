@@ -20,9 +20,8 @@ export function KeyActions({ keyData, currentUser, keyOwnerUserId, canDelete }: 
   const [openDelete, setOpenDelete] = useState(false);
 
   // 权限检查：只有管理员或Key的拥有者才能编辑/删除
-  const canManageKey = currentUser && (
-    currentUser.role === 'admin' || currentUser.id === keyOwnerUserId
-  );
+  const canManageKey =
+    currentUser && (currentUser.role === "admin" || currentUser.id === keyOwnerUserId);
 
   // 如果没有权限，不显示任何操作按钮
   if (!canManageKey) {

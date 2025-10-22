@@ -1,4 +1,6 @@
-import { getRedisClient } from './redis';
+import { getRedisClient } from "./redis";
+import { logger } from '@/lib/logger';
+import { logger } from "./logger";
 
 /**
  * Session 追踪器 - 统一管理活跃 Session 集合
@@ -25,30 +27,30 @@ export class SessionTracker {
    */
   static async initialize(): Promise<void> {
     const redis = getRedisClient();
-    if (!redis || redis.status !== 'ready') {
-      console.warn('[SessionTracker] Redis not ready, skipping initialization');
+    if (!redis || redis.status !== "ready") {
+      logger.warn("SessionTracker: Redis not ready, skipping initialization");
       return;
     }
 
     try {
-      const key = 'global:active_sessions';
+      const key = "global:active_sessions";
       const exists = await redis.exists(key);
 
       if (exists === 1) {
         const type = await redis.type(key);
 
-        if (type !== 'zset') {
-          console.warn(`[SessionTracker] Found legacy format: ${key} (type=${type}), deleting...`);
+        if (type !== "zset") {
+          logger.warn("SessionTracker: Found legacy format, deleting", { key, type });
           await redis.del(key);
-          console.info(`[SessionTracker] ✅ Deleted legacy ${key}`);
+          logger.debug("SessionTracker: Deleted legacy key", { key });
         } else {
-          console.debug(`[SessionTracker] ${key} is already ZSET format`);
+          logger.trace("SessionTracker: Key is already ZSET format", { key });
         }
       } else {
-        console.debug(`[SessionTracker] ${key} does not exist, will be created on first use`);
+        logger.trace("SessionTracker: Key does not exist, will be created on first use", { key });
       }
     } catch (error) {
-      console.error('[SessionTracker] Initialization failed:', error);
+      logger.error("SessionTracker: Initialization failed", { error });
     }
   }
 
@@ -62,15 +64,15 @@ export class SessionTracker {
    */
   static async trackSession(sessionId: string, keyId: number): Promise<void> {
     const redis = getRedisClient();
-    if (!redis || redis.status !== 'ready') return;
+    if (!redis || redis.status !== "ready") return;
 
     try {
       const now = Date.now();
       const pipeline = redis.pipeline();
 
       // 添加到全局集合（ZSET）
-      pipeline.zadd('global:active_sessions', now, sessionId);
-      pipeline.expire('global:active_sessions', 3600); // 1 小时兜底 TTL
+      pipeline.zadd("global:active_sessions", now, sessionId);
+      pipeline.expire("global:active_sessions", 3600); // 1 小时兜底 TTL
 
       // 添加到 key 级集合（ZSET）
       pipeline.zadd(`key:${keyId}:active_sessions`, now, sessionId);
@@ -82,10 +84,10 @@ export class SessionTracker {
       if (results) {
         for (const [err] of results) {
           if (err) {
-            console.error('[SessionTracker] Pipeline command failed:', err);
+            logger.error("SessionTracker: Pipeline command failed", { error: err });
             // 如果是类型冲突（WRONGTYPE），自动修复
-            if (err.message?.includes('WRONGTYPE')) {
-              console.warn('[SessionTracker] Type conflict detected, auto-fixing...');
+            if (err.message?.includes("WRONGTYPE")) {
+              logger.warn("SessionTracker: Type conflict detected, auto-fixing");
               await this.initialize(); // 重新初始化，清理旧数据
               return; // 本次追踪失败，下次请求会成功
             }
@@ -93,9 +95,9 @@ export class SessionTracker {
         }
       }
 
-      console.debug(`[SessionTracker] Tracked session: ${sessionId} (key=${keyId})`);
+      logger.trace("SessionTracker: Tracked session", { sessionId, keyId });
     } catch (error) {
-      console.error('[SessionTracker] Failed to track session:', error);
+      logger.error("SessionTracker: Failed to track session", { error });
     }
   }
 
@@ -109,14 +111,14 @@ export class SessionTracker {
    */
   static async updateProvider(sessionId: string, providerId: number): Promise<void> {
     const redis = getRedisClient();
-    if (!redis || redis.status !== 'ready') return;
+    if (!redis || redis.status !== "ready") return;
 
     try {
       const now = Date.now();
       const pipeline = redis.pipeline();
 
       // 更新全局集合时间戳
-      pipeline.zadd('global:active_sessions', now, sessionId);
+      pipeline.zadd("global:active_sessions", now, sessionId);
 
       // 添加到 provider 级集合（ZSET）
       pipeline.zadd(`provider:${providerId}:active_sessions`, now, sessionId);
@@ -128,9 +130,9 @@ export class SessionTracker {
       if (results) {
         for (const [err] of results) {
           if (err) {
-            console.error('[SessionTracker] Pipeline command failed:', err);
-            if (err.message?.includes('WRONGTYPE')) {
-              console.warn('[SessionTracker] Type conflict detected, auto-fixing...');
+            logger.error("SessionTracker: Pipeline command failed", { error: err });
+            if (err.message?.includes("WRONGTYPE")) {
+              logger.warn("SessionTracker: Type conflict detected, auto-fixing");
               await this.initialize();
               return;
             }
@@ -138,9 +140,9 @@ export class SessionTracker {
         }
       }
 
-      console.debug(`[SessionTracker] Updated provider: ${sessionId} → ${providerId}`);
+      logger.trace("SessionTracker: Updated provider", { sessionId, providerId });
     } catch (error) {
-      console.error('[SessionTracker] Failed to update provider:', error);
+      logger.error("SessionTracker: Failed to update provider", { error });
     }
   }
 
@@ -153,20 +155,16 @@ export class SessionTracker {
    * @param keyId - API Key ID
    * @param providerId - Provider ID
    */
-  static async refreshSession(
-    sessionId: string,
-    keyId: number,
-    providerId: number
-  ): Promise<void> {
+  static async refreshSession(sessionId: string, keyId: number, providerId: number): Promise<void> {
     const redis = getRedisClient();
-    if (!redis || redis.status !== 'ready') return;
+    if (!redis || redis.status !== "ready") return;
 
     try {
       const now = Date.now();
       const pipeline = redis.pipeline();
 
       // 更新所有相关 ZSET 的时间戳（滑动窗口）
-      pipeline.zadd('global:active_sessions', now, sessionId);
+      pipeline.zadd("global:active_sessions", now, sessionId);
       pipeline.zadd(`key:${keyId}:active_sessions`, now, sessionId);
       pipeline.zadd(`provider:${providerId}:active_sessions`, now, sessionId);
 
@@ -176,9 +174,9 @@ export class SessionTracker {
       if (results) {
         for (const [err] of results) {
           if (err) {
-            console.error('[SessionTracker] Pipeline command failed:', err);
-            if (err.message?.includes('WRONGTYPE')) {
-              console.warn('[SessionTracker] Type conflict detected, auto-fixing...');
+            logger.error("SessionTracker: Pipeline command failed", { error: err });
+            if (err.message?.includes("WRONGTYPE")) {
+              logger.warn("SessionTracker: Type conflict detected, auto-fixing");
               await this.initialize();
               return;
             }
@@ -186,9 +184,9 @@ export class SessionTracker {
         }
       }
 
-      console.debug(`[SessionTracker] Refreshed session: ${sessionId}`);
+      logger.trace("SessionTracker: Refreshed session", { sessionId });
     } catch (error) {
-      console.error('[SessionTracker] Failed to refresh session:', error);
+      logger.error("SessionTracker: Failed to refresh session", { error });
     }
   }
 
@@ -199,17 +197,17 @@ export class SessionTracker {
    */
   static async getGlobalSessionCount(): Promise<number> {
     const redis = getRedisClient();
-    if (!redis || redis.status !== 'ready') return 0;
+    if (!redis || redis.status !== "ready") return 0;
 
     try {
-      const key = 'global:active_sessions';
+      const key = "global:active_sessions";
       const exists = await redis.exists(key);
 
       if (exists === 1) {
         const type = await redis.type(key);
 
-        if (type !== 'zset') {
-          console.warn(`[SessionTracker] ${key} is not ZSET (type=${type}), deleting...`);
+        if (type !== "zset") {
+          logger.warn("SessionTracker: Key is not ZSET, deleting", { key, type });
           await redis.del(key);
           return 0;
         }
@@ -219,7 +217,7 @@ export class SessionTracker {
 
       return 0;
     } catch (error) {
-      console.error('[SessionTracker] Failed to get global session count:', error);
+      logger.error("SessionTracker: Failed to get global session count", { error });
       return 0; // Fail Open
     }
   }
@@ -232,7 +230,7 @@ export class SessionTracker {
    */
   static async getKeySessionCount(keyId: number): Promise<number> {
     const redis = getRedisClient();
-    if (!redis || redis.status !== 'ready') return 0;
+    if (!redis || redis.status !== "ready") return 0;
 
     try {
       const key = `key:${keyId}:active_sessions`;
@@ -241,8 +239,8 @@ export class SessionTracker {
       if (exists === 1) {
         const type = await redis.type(key);
 
-        if (type !== 'zset') {
-          console.warn(`[SessionTracker] ${key} is not ZSET (type=${type}), deleting...`);
+        if (type !== "zset") {
+          logger.warn("SessionTracker: Key is not ZSET, deleting", { key, type });
           await redis.del(key);
           return 0;
         }
@@ -252,7 +250,7 @@ export class SessionTracker {
 
       return 0;
     } catch (error) {
-      console.error('[SessionTracker] Failed to get key session count:', error);
+      logger.error("SessionTracker: Failed to get key session count", { error, keyId });
       return 0;
     }
   }
@@ -265,7 +263,7 @@ export class SessionTracker {
    */
   static async getProviderSessionCount(providerId: number): Promise<number> {
     const redis = getRedisClient();
-    if (!redis || redis.status !== 'ready') return 0;
+    if (!redis || redis.status !== "ready") return 0;
 
     try {
       const key = `provider:${providerId}:active_sessions`;
@@ -274,8 +272,8 @@ export class SessionTracker {
       if (exists === 1) {
         const type = await redis.type(key);
 
-        if (type !== 'zset') {
-          console.warn(`[SessionTracker] ${key} is not ZSET (type=${type}), deleting...`);
+        if (type !== "zset") {
+          logger.warn("SessionTracker: Key is not ZSET, deleting", { key, type });
           await redis.del(key);
           return 0;
         }
@@ -285,7 +283,7 @@ export class SessionTracker {
 
       return 0;
     } catch (error) {
-      console.error('[SessionTracker] Failed to get provider session count:', error);
+      logger.error("SessionTracker: Failed to get provider session count", { error, providerId });
       return 0;
     }
   }
@@ -297,17 +295,17 @@ export class SessionTracker {
    */
   static async getActiveSessions(): Promise<string[]> {
     const redis = getRedisClient();
-    if (!redis || redis.status !== 'ready') return [];
+    if (!redis || redis.status !== "ready") return [];
 
     try {
-      const key = 'global:active_sessions';
+      const key = "global:active_sessions";
       const exists = await redis.exists(key);
 
       if (exists === 1) {
         const type = await redis.type(key);
 
-        if (type !== 'zset') {
-          console.warn(`[SessionTracker] ${key} is not ZSET (type=${type}), deleting...`);
+        if (type !== "zset") {
+          logger.warn("SessionTracker: Key is not ZSET, deleting", { key, type });
           await redis.del(key);
           return [];
         }
@@ -316,7 +314,7 @@ export class SessionTracker {
         const fiveMinutesAgo = now - this.SESSION_TTL;
 
         // 清理过期 session
-        await redis.zremrangebyscore(key, '-inf', fiveMinutesAgo);
+        await redis.zremrangebyscore(key, "-inf", fiveMinutesAgo);
 
         // 获取剩余的 session ID
         return await redis.zrange(key, 0, -1);
@@ -324,7 +322,7 @@ export class SessionTracker {
 
       return [];
     } catch (error) {
-      console.error('[SessionTracker] Failed to get active sessions:', error);
+      logger.error("SessionTracker: Failed to get active sessions", { error });
       return [];
     }
   }
@@ -343,14 +341,14 @@ export class SessionTracker {
    */
   private static async countFromZSet(key: string): Promise<number> {
     const redis = getRedisClient();
-    if (!redis || redis.status !== 'ready') return 0;
+    if (!redis || redis.status !== "ready") return 0;
 
     try {
       const now = Date.now();
       const fiveMinutesAgo = now - this.SESSION_TTL;
 
       // 1. 清理过期 session（5 分钟前）
-      await redis.zremrangebyscore(key, '-inf', fiveMinutesAgo);
+      await redis.zremrangebyscore(key, "-inf", fiveMinutesAgo);
 
       // 2. 获取剩余的 session ID
       const sessionIds = await redis.zrange(key, 0, -1);
@@ -372,14 +370,15 @@ export class SessionTracker {
         }
       }
 
-      console.debug(
-        `[SessionTracker] ZSET ${key}: ${count} valid sessions (from ${sessionIds.length} total)`
-      );
+      logger.trace("SessionTracker: ZSET count", {
+        key,
+        validSessions: count,
+        total: sessionIds.length,
+      });
       return count;
     } catch (error) {
-      console.error('[SessionTracker] Failed to count from ZSET:', error);
+      logger.error("SessionTracker: Failed to count from ZSET", { error, key });
       return 0;
     }
   }
-
 }

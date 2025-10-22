@@ -1,4 +1,3 @@
-
 ## 项目简介
 
 Claude Code Hub 是一个 Claude Code API 代理中转服务平台，用于统一管理多个 CC 服务提供商，提供智能负载均衡、用户权限管理和使用统计功能。
@@ -24,6 +23,7 @@ pnpm db:studio        # 启动 Drizzle Studio 可视化管理界面
 ## 核心架构
 
 ### 技术栈
+
 - **Next.js 15** (App Router) + **React 19** + **TypeScript**
 - **Hono** - 用于 API 路由处理
 - **Drizzle ORM** + **PostgreSQL** - 数据持久化
@@ -31,6 +31,7 @@ pnpm db:studio        # 启动 Drizzle Studio 可视化管理界面
 - **包管理器**: pnpm 9.15.0
 
 ### 目录结构
+
 ```
 src/
 ├── app/                          # Next.js App Router
@@ -55,8 +56,6 @@ src/
 > 每个 `page` 的目录下都可以有 `_components` 目录，用于存储当前 `page` 下封装的组件。
 > 如果有多个页面或者 layout 使用，则应该放在 `src/components/customs/` 目录下，并且根据模块划分不同文件夹。
 
-
-
 ### 代理系统架构
 
 代理请求处理流程 (`src/app/v1/_lib/proxy-handler.ts`) 采用职责链模式：
@@ -79,6 +78,7 @@ src/
 本系统支持 OpenAI Chat Completions API 格式，可直接对接 Codex 类型供应商。核心组件位于 `src/app/v1/_lib/codex/`：
 
 **请求流程**：
+
 ```
 客户端 (OpenAI 格式)
   → /v1/chat/completions 端点
@@ -139,6 +139,7 @@ src/
 ### 数据库 Schema
 
 核心表 (`src/drizzle/schema.ts`)：
+
 - **users** - 用户表 (RPM 限制、每日额度)
 - **keys** - API 密钥表
 - **providers** - 上游供应商表 (URL、权重、流量限制)
@@ -157,16 +158,19 @@ src/
 ### 环境配置
 
 必需的环境变量 (`.env.local` 或 `.env`)：
+
 - `ADMIN_TOKEN` - 管理员登录令牌
 - `DSN` - PostgreSQL 连接字符串
 - `AUTO_MIGRATE` - 是否自动执行数据库迁移 (默认 true)
 - `NODE_ENV` - 运行环境 (development/production/test)
 
 ### TypeScript 配置
+
 - 路径别名 `@/*` → `./src/*`
 - 严格模式已启用
 
 ### 样式系统
+
 - 使用 Shadcn UI orange 主题
 - 主题变量已在 `globals.css` 中配置
 - 尽量使用 CSS 变量，避免直接修改 `globals.css`
@@ -174,14 +178,16 @@ src/
 ## 开发注意事项
 
 ### MCP 集成
+
 项目配置了 MCP (Model Context Protocol) 数据库工具 (`.mcp.json`)，可通过 `@bytebase/dbhub` 进行数据库操作。
 
 ### 数据库迁移
+
 - 修改 schema 后，运行 `pnpm db:generate` 生成迁移文件
 - 生产环境通过 `AUTO_MIGRATE=true` 或手动执行 `pnpm db:migrate`
 
 ### API 认证
+
 - 管理面板使用 `ADMIN_TOKEN` 认证
 - 普通用户则使用名下的用户密钥进行登录
 - 代理 API 使用用户密钥 (`Authorization: Bearer sk-xxx`)调用本服务代理的接口。
-

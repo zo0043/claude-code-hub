@@ -1,4 +1,5 @@
 import type { Numeric } from "decimal.js-light";
+import { logger } from '@/lib/logger';
 
 /**
  * 供应商信息（用于决策链）
@@ -9,8 +10,8 @@ export interface ProviderChainItem {
   name: string;
 
   // 选择原因和方法
-  reason?: 'initial_selection' | 'retry_attempt' | 'retry_fallback' | 'reuse';
-  selectionMethod?: 'reuse' | 'random' | 'group_filter' | 'fallback';
+  reason?: "initial_selection" | "retry_attempt" | "retry_fallback" | "reuse";
+  selectionMethod?: "reuse" | "random" | "group_filter" | "fallback";
 
   // 供应商配置（决策依据）
   priority?: number;
@@ -19,11 +20,11 @@ export interface ProviderChainItem {
   groupTag?: string | null;
 
   // 健康状态快照
-  circuitState?: 'closed' | 'open' | 'half-open';
+  circuitState?: "closed" | "open" | "half-open";
 
   // 时间戳和尝试信息
   timestamp?: number;
-  attemptNumber?: number;  // 第几次尝试（用于标识重试）
+  attemptNumber?: number; // 第几次尝试（用于标识重试）
 
   // 错误信息（记录失败时的上游报错）
   errorMessage?: string;

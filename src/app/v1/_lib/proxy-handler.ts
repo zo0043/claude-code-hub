@@ -1,4 +1,5 @@
 import type { Context } from "hono";
+import { logger } from '@/lib/logger';
 import { ProxySession } from "./proxy/session";
 import { ProxyAuthenticator } from "./proxy/auth-guard";
 import { ProxySessionGuard } from "./proxy/session-guard";
@@ -54,7 +55,7 @@ export async function handleProxyRequest(c: Context): Promise<Response> {
     const response = await ProxyForwarder.send(session);
     return await ProxyResponseHandler.dispatch(session, response);
   } catch (error) {
-    console.error("Proxy handler error:", error);
+    logger.error('Proxy handler error:', error);
     return await ProxyErrorHandler.handle(session, error);
   }
 }

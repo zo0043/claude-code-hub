@@ -17,10 +17,7 @@ export default async function SettingsProvidersPage() {
 
   return (
     <>
-      <SettingsPageHeader
-        title="供应商管理"
-        description="配置 API 服务商并维护可用状态。"
-      />
+      <SettingsPageHeader title="供应商管理" description="配置 API 服务商并维护可用状态。" />
 
       <Section
         title="服务商管理"

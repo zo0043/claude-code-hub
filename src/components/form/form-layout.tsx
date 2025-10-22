@@ -1,7 +1,13 @@
-'use client';
+"use client";
 
-import { ReactNode } from 'react';
-import { DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { ReactNode } from "react";
+import {
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
@@ -39,22 +45,18 @@ export function DialogFormLayout({
   onCancel,
   isSubmitting = false,
   canSubmit = true,
-  error
+  error,
 }: FormLayoutProps) {
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
       <DialogHeader>
         <DialogTitle>{config.title}</DialogTitle>
-        {config.description && (
-          <DialogDescription>
-            {config.description}
-          </DialogDescription>
-        )}
+        {config.description && <DialogDescription>{config.description}</DialogDescription>}
       </DialogHeader>
 
       <div className="grid gap-4 py-2">
         {children}
-        
+
         {error && (
           <div className="text-xs text-destructive" role="alert">
             {error}
@@ -64,24 +66,15 @@ export function DialogFormLayout({
 
       <DialogFooter>
         <DialogClose asChild>
-          <Button 
-            type="button" 
-            variant="outline"
-            onClick={onCancel}
-            disabled={isSubmitting}
-          >
-            {config.cancelText || '取消'}
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+            {config.cancelText || "取消"}
           </Button>
         </DialogClose>
-        <Button 
-          type="submit" 
-          disabled={!canSubmit || isSubmitting}
-          className="min-w-[100px]"
-        >
+        <Button type="submit" disabled={!canSubmit || isSubmitting} className="min-w-[100px]">
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {config.loadingText || '处理中...'}
+              {config.loadingText || "处理中..."}
             </>
           ) : (
             config.submitText
@@ -102,21 +95,19 @@ export function PageFormLayout({
   onCancel,
   isSubmitting = false,
   canSubmit = true,
-  error
+  error,
 }: FormLayoutProps) {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
         <h2 className="text-2xl font-bold tracking-tight">{config.title}</h2>
-        {config.description && (
-          <p className="text-muted-foreground">{config.description}</p>
-        )}
+        {config.description && <p className="text-muted-foreground">{config.description}</p>}
       </div>
 
       <form onSubmit={onSubmit} className="space-y-6" noValidate>
         <div className="space-y-4">
           {children}
-          
+
           {error && (
             <div className="text-sm text-destructive" role="alert">
               {error}
@@ -126,24 +117,15 @@ export function PageFormLayout({
 
         <div className="flex gap-4">
           {onCancel && (
-            <Button 
-              type="button" 
-              variant="outline"
-              onClick={onCancel}
-              disabled={isSubmitting}
-            >
-              {config.cancelText || '取消'}
+            <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+              {config.cancelText || "取消"}
             </Button>
           )}
-          <Button 
-            type="submit" 
-            disabled={!canSubmit || isSubmitting}
-            className="min-w-[120px]"
-          >
+          <Button type="submit" disabled={!canSubmit || isSubmitting} className="min-w-[120px]">
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {config.loadingText || '处理中...'}
+                {config.loadingText || "处理中..."}
               </>
             ) : (
               config.submitText
@@ -170,14 +152,10 @@ export function FormGroup({ title, description, children }: FormGroupProps) {
       {(title || description) && (
         <div className="space-y-1">
           {title && <h3 className="text-lg font-medium">{title}</h3>}
-          {description && (
-            <p className="text-sm text-muted-foreground">{description}</p>
-          )}
+          {description && <p className="text-sm text-muted-foreground">{description}</p>}
         </div>
       )}
-      <div className="space-y-4">
-        {children}
-      </div>
+      <div className="space-y-4">{children}</div>
     </div>
   );
 }
@@ -193,23 +171,21 @@ export interface FormGridProps {
 
 export function FormGrid({ children, columns = 1, gap = 4 }: FormGridProps) {
   const gridClasses = {
-    1: 'grid-cols-1',
-    2: 'grid-cols-1 md:grid-cols-2',
-    3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+    1: "grid-cols-1",
+    2: "grid-cols-1 md:grid-cols-2",
+    3: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
   };
 
-  const gapClasses: Record<NonNullable<FormGridProps['gap']>, string> = {
-    2: 'gap-2',
-    3: 'gap-3',
-    4: 'gap-4',
-    5: 'gap-5',
-    6: 'gap-6',
-    8: 'gap-8',
+  const gapClasses: Record<NonNullable<FormGridProps["gap"]>, string> = {
+    2: "gap-2",
+    3: "gap-3",
+    4: "gap-4",
+    5: "gap-5",
+    6: "gap-6",
+    8: "gap-8",
   };
 
   return (
-    <div className={`grid ${gridClasses[columns]} ${gapClasses[gap] || 'gap-4'}`}>
-      {children}
-    </div>
+    <div className={`grid ${gridClasses[columns]} ${gapClasses[gap] || "gap-4"}`}>{children}</div>
   );
 }

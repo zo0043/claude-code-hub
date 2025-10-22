@@ -1,4 +1,5 @@
 import { updateMessageRequestDuration, updateMessageRequestDetails } from "@/repository/message";
+import { logger } from '@/lib/logger';
 import { ProxyLogger } from "./logger";
 import { ProxyResponses } from "./responses";
 import { ProxyError } from "./errors";
@@ -29,7 +30,7 @@ export class ProxyErrorHandler {
       await updateMessageRequestDetails(session.messageContext.id, {
         errorMessage: errorMessage,
         providerChain: session.getProviderChain(),
-        statusCode: statusCode
+        statusCode: statusCode,
       });
 
       // 记录请求结束

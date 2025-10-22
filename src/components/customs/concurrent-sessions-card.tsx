@@ -12,7 +12,7 @@ const REFRESH_INTERVAL = 5000; // 5秒刷新一次
 async function fetchConcurrentSessions(): Promise<number> {
   const result = await getConcurrentSessions();
   if (!result.ok) {
-    throw new Error(result.error || '获取并发数失败');
+    throw new Error(result.error || "获取并发数失败");
   }
   return result.data;
 }
@@ -31,25 +31,18 @@ export function ConcurrentSessionsCard() {
   });
 
   const handleClick = () => {
-    router.push('/dashboard/sessions');
+    router.push("/dashboard/sessions");
   };
 
   return (
-    <Card
-      className="cursor-pointer hover:border-primary transition-colors"
-      onClick={handleClick}
-    >
+    <Card className="cursor-pointer hover:border-primary transition-colors" onClick={handleClick}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">
-          当前并发
-        </CardTitle>
+        <CardTitle className="text-sm font-medium">当前并发</CardTitle>
         <Activity className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{data}</div>
-        <p className="text-xs text-muted-foreground">
-          最近 5 分钟活跃 Session（点击查看详情）
-        </p>
+        <p className="text-xs text-muted-foreground">最近 5 分钟活跃 Session（点击查看详情）</p>
       </CardContent>
     </Card>
   );

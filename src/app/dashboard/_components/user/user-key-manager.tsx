@@ -14,9 +14,9 @@ interface UserKeyManagerProps {
 export function UserKeyManager({ users, currentUser }: UserKeyManagerProps) {
   // 普通用户默认选择自己，管理员选择第一个用户
   const getInitialUser = () => {
-    if (currentUser?.role === 'user') {
+    if (currentUser?.role === "user") {
       // 普通用户只能看到自己
-      return users.find(u => u.id === currentUser.id) || users[0];
+      return users.find((u) => u.id === currentUser.id) || users[0];
     }
     // 管理员看到第一个用户
     return users[0];
@@ -26,7 +26,7 @@ export function UserKeyManager({ users, currentUser }: UserKeyManagerProps) {
   const activeUser = users.find((u) => u.id === activeUserId) ?? getInitialUser();
 
   // 普通用户只显示Key列表，不显示用户列表
-  if (currentUser?.role === 'user') {
+  if (currentUser?.role === "user") {
     return (
       <div className="space-y-3">
         <div className="bg-card text-card-foreground border border-border rounded-xl p-4">

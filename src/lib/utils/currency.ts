@@ -1,4 +1,5 @@
 import Decimal from "decimal.js-light";
+import { logger } from '@/lib/logger';
 import type { Numeric } from "decimal.js-light";
 
 Decimal.set({
@@ -28,7 +29,7 @@ export function toDecimal(value: DecimalInput): Decimal | null {
   try {
     return new Decimal(value);
   } catch (error) {
-    console.error("Failed to create Decimal from value", value, error);
+    logger.error('Failed to create Decimal from value', { context: value, error });
     return null;
   }
 }

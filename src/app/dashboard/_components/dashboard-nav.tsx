@@ -54,11 +54,7 @@ export function DashboardNav({ items }: DashboardNavProps) {
         }
 
         return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={className}
-          >
+          <Link key={item.href} href={item.href} className={className}>
             {item.label}
           </Link>
         );

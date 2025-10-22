@@ -1,7 +1,15 @@
 "use client";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { ListPlus, Copy, CheckCircle } from "lucide-react";
 import { AddKeyForm } from "./forms/add-key-form";
 import { UserActions } from "./user-actions";
@@ -77,7 +85,8 @@ export function KeyListHeader({ activeUser, currentUser }: KeyListHeaderProps) {
   const [keyResult, setKeyResult] = useState<{ generatedKey: string; name: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const totalTodayUsage = activeUser?.keys.reduce((sum, key) => sum + (key.todayUsage ?? 0), 0) ?? 0;
+  const totalTodayUsage =
+    activeUser?.keys.reduce((sum, key) => sum + (key.todayUsage ?? 0), 0) ?? 0;
 
   const proxyStatusEnabled = Boolean(activeUser);
   const {
@@ -113,24 +122,16 @@ export function KeyListHeader({ activeUser, currentUser }: KeyListHeaderProps) {
     }
 
     if (proxyStatusError) {
-      return (
-        <div className="text-xs text-destructive">
-          代理状态获取失败
-        </div>
-      );
+      return <div className="text-xs text-destructive">代理状态获取失败</div>;
     }
 
     if (!activeUserStatus) {
-      return (
-        <div className="text-xs text-muted-foreground">
-          暂无代理状态
-        </div>
-      );
+      return <div className="text-xs text-muted-foreground">暂无代理状态</div>;
     }
 
-    const activeProviders = Array.from(new Set(
-      activeUserStatus.activeRequests.map((request) => request.providerName)
-    ));
+    const activeProviders = Array.from(
+      new Set(activeUserStatus.activeRequests.map((request) => request.providerName))
+    );
 
     return (
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
@@ -138,9 +139,7 @@ export function KeyListHeader({ activeUser, currentUser }: KeyListHeaderProps) {
           <span>活跃请求</span>
           <span className="font-medium text-foreground">{activeUserStatus.activeCount}</span>
           {activeProviders.length > 0 && (
-            <span className="text-muted-foreground">
-              （{activeProviders.join("、")}）
-            </span>
+            <span className="text-muted-foreground">（{activeProviders.join("、")}）</span>
           )}
         </div>
         <div className="flex items-center gap-1">
@@ -158,12 +157,7 @@ export function KeyListHeader({ activeUser, currentUser }: KeyListHeaderProps) {
         </div>
       </div>
     );
-  }, [
-    proxyStatusEnabled,
-    proxyStatusLoading,
-    proxyStatusError,
-    activeUserStatus,
-  ]);
+  }, [proxyStatusEnabled, proxyStatusLoading, proxyStatusError, activeUserStatus]);
 
   const handleKeyCreated = (result: { generatedKey: string; name: string }) => {
     setOpenAdd(false); // 关闭表单dialog
@@ -177,7 +171,7 @@ export function KeyListHeader({ activeUser, currentUser }: KeyListHeaderProps) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('复制失败:', err);
+      console.error("复制失败:", err);
     }
   };
 
@@ -187,9 +181,8 @@ export function KeyListHeader({ activeUser, currentUser }: KeyListHeaderProps) {
   };
 
   // 权限检查：管理员可以给所有人添加Key，普通用户只能给自己添加Key
-  const canAddKey = currentUser && activeUser && (
-    currentUser.role === 'admin' || currentUser.id === activeUser.id
-  );
+  const canAddKey =
+    currentUser && activeUser && (currentUser.role === "admin" || currentUser.id === activeUser.id);
 
   return (
     <>
@@ -202,7 +195,7 @@ export function KeyListHeader({ activeUser, currentUser }: KeyListHeaderProps) {
           <div className="mt-1">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
               <div>
-                今日用量 {activeUser ? formatCurrency(totalTodayUsage) : "-"} / {" "}
+                今日用量 {activeUser ? formatCurrency(totalTodayUsage) : "-"} /{" "}
                 {activeUser ? formatCurrency(activeUser.dailyQuota) : "-"}
               </div>
               {proxyStatusContent}

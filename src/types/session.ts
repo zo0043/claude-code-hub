@@ -18,7 +18,7 @@ export interface ActiveSessionInfo {
 
   // 请求元数据
   model: string | null;
-  apiType: 'chat' | 'codex';
+  apiType: "chat" | "codex";
   startTime: number; // Unix timestamp (ms)
 
   // 使用量（可能为空，表示请求未完成）
@@ -30,7 +30,7 @@ export interface ActiveSessionInfo {
   costUsd?: string;
 
   // 状态
-  status: 'in_progress' | 'completed' | 'error';
+  status: "in_progress" | "completed" | "error";
   statusCode?: number;
   errorMessage?: string;
 
@@ -47,7 +47,7 @@ export interface SessionStoreInfo {
   keyId: number;
   keyName: string;
   model: string | null;
-  apiType: 'chat' | 'codex';
+  apiType: "chat" | "codex";
 }
 
 /**
@@ -59,7 +59,7 @@ export interface SessionUsageUpdate {
   cacheCreationInputTokens?: number;
   cacheReadInputTokens?: number;
   costUsd?: string;
-  status: 'completed' | 'error';
+  status: "completed" | "error";
   statusCode?: number;
   errorMessage?: string;
 }

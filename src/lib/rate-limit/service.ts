@@ -1,10 +1,11 @@
-import { getRedisClient } from '@/lib/redis';
-import { SessionTracker } from '@/lib/session-tracker';
-import { CHECK_AND_TRACK_SESSION } from '@/lib/redis/lua-scripts';
+import { getRedisClient } from "@/lib/redis";
+import { logger } from '@/lib/logger';
+import { SessionTracker } from "@/lib/session-tracker";
+import { CHECK_AND_TRACK_SESSION } from "@/lib/redis/lua-scripts";
 
 interface CostLimit {
   amount: number | null;
-  period: '5h' | 'weekly' | 'monthly';
+  period: "5h" | "weekly" | "monthly";
   name: string;
 }
 
@@ -16,7 +17,7 @@ export class RateLimitService {
    */
   static async checkCostLimits(
     id: number,
-    type: 'key' | 'provider',
+    type: "key" | "provider",
     limits: {
       limit_5h_usd: number | null;
       limit_weekly_usd: number | null;
@@ -29,9 +30,9 @@ export class RateLimitService {
     }
 
     const costLimits: CostLimit[] = [
-      { amount: limits.limit_5h_usd, period: '5h', name: '5小时' },
-      { amount: limits.limit_weekly_usd, period: 'weekly', name: '周' },
-      { amount: limits.limit_monthly_usd, period: 'monthly', name: '月' },
+      { amount: limits.limit_5h_usd, period: "5h", name: "5小时" },
+      { amount: limits.limit_weekly_usd, period: "weekly", name: "周" },
+      { amount: limits.limit_monthly_usd, period: "monthly", name: "月" },
     ];
 
     try {
@@ -51,15 +52,15 @@ export class RateLimitService {
 
         const [err, value] = results[index] || [];
         if (err) {
-          console.error(`[RateLimit] Redis error:`, err);
+          logger.error('[RateLimit] Redis error:', err);
           return { allowed: true }; // Fail Open
         }
 
-        const current = parseFloat((value as string) || '0');
+        const current = parseFloat((value as string) || "0");
         if (current >= limit.amount) {
           return {
             allowed: false,
-            reason: `${type === 'key' ? 'Key' : '供应商'} ${limit.name}消费上限已达到（${current.toFixed(4)}/${limit.amount}）`,
+            reason: `${type === "key" ? "Key" : "供应商"} ${limit.name}消费上限已达到（${current.toFixed(4)}/${limit.amount}）`,
           };
         }
 
@@ -68,7 +69,7 @@ export class RateLimitService {
 
       return { allowed: true };
     } catch (error) {
-      console.error('[RateLimit] Check failed:', error);
+      logger.error('[RateLimit] Check failed:', error);
       return { allowed: true }; // Fail Open
     }
   }
@@ -81,7 +82,7 @@ export class RateLimitService {
    */
   static async checkSessionLimit(
     id: number,
-    type: 'key' | 'provider',
+    type: "key" | "provider",
     limit: number
   ): Promise<{ allowed: boolean; reason?: string }> {
     if (limit <= 0) {
@@ -90,20 +91,21 @@ export class RateLimitService {
 
     try {
       // 使用 SessionTracker 的统一计数逻辑
-      const count = type === 'key'
-        ? await SessionTracker.getKeySessionCount(id)
-        : await SessionTracker.getProviderSessionCount(id);
+      const count =
+        type === "key"
+          ? await SessionTracker.getKeySessionCount(id)
+          : await SessionTracker.getProviderSessionCount(id);
 
       if (count >= limit) {
         return {
           allowed: false,
-          reason: `${type === 'key' ? 'Key' : '供应商'}并发 Session 上限已达到（${count}/${limit}）`,
+          reason: `${type === "key" ? "Key" : "供应商"}并发 Session 上限已达到（${count}/${limit}）`,
         };
       }
 
       return { allowed: true };
     } catch (error) {
-      console.error('[RateLimit] Session check failed:', error);
+      logger.error('[RateLimit] Session check failed:', error);
       return { allowed: true }; // Fail Open
     }
   }
@@ -127,8 +129,8 @@ export class RateLimitService {
       return { allowed: true, count: 0, tracked: false };
     }
 
-    if (!this.redis || this.redis.status !== 'ready') {
-      console.warn('[RateLimit] Redis not ready, Fail Open');
+    if (!this.redis || this.redis.status !== "ready") {
+      logger.warn('[RateLimit] Redis not ready, Fail Open');
       return { allowed: true, count: 0, tracked: false };
     }
 
@@ -137,14 +139,14 @@ export class RateLimitService {
       const now = Date.now();
 
       // 执行 Lua 脚本：原子性检查 + 追踪
-      const result = await this.redis.eval(
+      const result = (await this.redis.eval(
         CHECK_AND_TRACK_SESSION,
-        1,  // KEYS count
-        key,  // KEYS[1]
-        sessionId,  // ARGV[1]
-        limit.toString(),  // ARGV[2]
-        now.toString()  // ARGV[3]
-      ) as [number, number];
+        1, // KEYS count
+        key, // KEYS[1]
+        sessionId, // ARGV[1]
+        limit.toString(), // ARGV[2]
+        now.toString() // ARGV[3]
+      )) as [number, number];
 
       const [allowed, count] = result;
 
@@ -160,10 +162,10 @@ export class RateLimitService {
       return {
         allowed: true,
         count,
-        tracked: true,  // Lua 脚本中已追踪
+        tracked: true, // Lua 脚本中已追踪
       };
     } catch (error) {
-      console.error('[RateLimit] Atomic check-and-track failed:', error);
+      logger.error('[RateLimit] Atomic check-and-track failed:', error);
       return { allowed: true, count: 0, tracked: false }; // Fail Open
     }
   }
@@ -204,7 +206,7 @@ export class RateLimitService {
 
       await pipeline.exec();
     } catch (error) {
-      console.error('[RateLimit] Track cost failed:', error);
+      logger.error('[RateLimit] Track cost failed:', error);
       // 不抛出错误，静默失败
     }
   }
@@ -214,16 +216,16 @@ export class RateLimitService {
    */
   static async getCurrentCost(
     id: number,
-    type: 'key' | 'provider',
-    period: '5h' | 'weekly' | 'monthly'
+    type: "key" | "provider",
+    period: "5h" | "weekly" | "monthly"
   ): Promise<number> {
     if (!this.redis) return 0;
 
     try {
       const value = await this.redis.get(`${type}:${id}:cost_${period}`);
-      return parseFloat(value || '0');
+      return parseFloat(value || "0");
     } catch (error) {
-      console.error('[RateLimit] Get cost failed:', error);
+      logger.error('[RateLimit] Get cost failed:', error);
       return 0;
     }
   }

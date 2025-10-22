@@ -11,12 +11,7 @@ interface UserListProps {
   currentUser?: User;
 }
 
-export function UserList({
-  users,
-  activeUserId,
-  onUserSelect,
-  currentUser,
-}: UserListProps) {
+export function UserList({ users, activeUserId, onUserSelect, currentUser }: UserListProps) {
   // 转换数据格式
   const listItems: ListItemData[] = users.map((user) => ({
     id: user.id,
@@ -29,9 +24,7 @@ export function UserList({
     metadata: [
       {
         label: "活跃密钥",
-        value: user.keys
-          .filter((k) => k.status === "enabled")
-          .length.toString(),
+        value: user.keys.filter((k) => k.status === "enabled").length.toString(),
       },
       {
         label: "总密钥",
@@ -62,9 +55,7 @@ export function UserList({
       </ListContainer>
 
       {/* 新增用户按钮：列表下方、与列表同宽，中性配色 - 仅管理员可见 */}
-      {currentUser?.role === "admin" && (
-        <AddUserDialog variant="secondary" className="w-full" />
-      )}
+      {currentUser?.role === "admin" && <AddUserDialog variant="secondary" className="w-full" />}
     </div>
   );
 }

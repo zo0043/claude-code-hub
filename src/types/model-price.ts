@@ -26,7 +26,7 @@ export interface ModelPriceData {
   max_input_tokens?: number;
   max_output_tokens?: number;
   max_tokens?: number;
-  mode?: 'chat' | 'image_generation' | 'completion';
+  mode?: "chat" | "image_generation" | "completion";
 
   // 支持的功能
   supports_assistant_prefill?: boolean;
@@ -66,9 +66,9 @@ export interface PriceTableJson {
  * 批量更新结果
  */
 export interface PriceUpdateResult {
-  added: string[];    // 新增的模型
-  updated: string[];  // 更新的模型
+  added: string[]; // 新增的模型
+  updated: string[]; // 更新的模型
   unchanged: string[]; // 未变化的模型
-  failed: string[];   // 处理失败的模型
-  total: number;      // 总数
+  failed: string[]; // 处理失败的模型
+  total: number; // 总数
 }

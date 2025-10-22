@@ -58,12 +58,7 @@ export function SyncLiteLLMButton() {
   };
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={handleSync}
-      disabled={syncing}
-    >
+    <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing}>
       <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
       {syncing ? "同步中..." : "同步 LiteLLM 价格"}
     </Button>

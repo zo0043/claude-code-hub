@@ -30,7 +30,7 @@ interface ProviderListItemProps {
   item: ProviderDisplay;
   currentUser?: User;
   healthStatus?: {
-    circuitState: 'closed' | 'open' | 'half-open';
+    circuitState: "closed" | "open" | "half-open";
     failureCount: number;
     lastFailureTime: number | null;
     circuitOpenUntil: number | null;
@@ -41,7 +41,7 @@ interface ProviderListItemProps {
 export function ProviderListItem({ item, currentUser, healthStatus }: ProviderListItemProps) {
   const [openEdit, setOpenEdit] = useState(false);
   const [resetPending, startResetTransition] = useTransition();
-  const canEdit = currentUser?.role === 'admin';
+  const canEdit = currentUser?.role === "admin";
 
   const {
     enabled,
@@ -83,18 +83,18 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
       try {
         const res = await resetProviderCircuit(item.id);
         if (res.ok) {
-          toast.success('熔断器已重置', {
+          toast.success("熔断器已重置", {
             description: `供应商 "${item.name}" 的熔断状态已解除`,
           });
         } else {
-          toast.error('重置熔断器失败', {
-            description: res.error || '未知错误',
+          toast.error("重置熔断器失败", {
+            description: res.error || "未知错误",
           });
         }
       } catch (error) {
-        console.error('重置熔断器失败:', error);
-        toast.error('重置熔断器失败', {
-          description: '操作过程中出现异常',
+        console.error("重置熔断器失败:", error);
+        toast.error("重置熔断器失败", {
+          description: "操作过程中出现异常",
         });
       }
     });
@@ -105,13 +105,17 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-md text-[10px] font-semibold ${enabled ? "bg-green-500/15 text-green-600" : "bg-muted text-muted-foreground"}`}>
+            <span
+              className={`inline-flex h-5 w-5 items-center justify-center rounded-md text-[10px] font-semibold ${enabled ? "bg-green-500/15 text-green-600" : "bg-muted text-muted-foreground"}`}
+            >
               ●
             </span>
-            <h3 className="text-sm font-semibold text-foreground truncate tracking-tight">{item.name}</h3>
+            <h3 className="text-sm font-semibold text-foreground truncate tracking-tight">
+              {item.name}
+            </h3>
 
             {/* 熔断器状态徽章 */}
-            {healthStatus?.circuitState === 'open' && (
+            {healthStatus?.circuitState === "open" && (
               <>
                 <Badge variant="destructive" className="text-xs h-5 px-2">
                   🔴 熔断中
@@ -134,7 +138,9 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
                         disabled={resetPending}
                         title="手动解除熔断"
                       >
-                        <RotateCcw className={`h-3.5 w-3.5 ${resetPending ? 'animate-spin' : ''}`} />
+                        <RotateCcw
+                          className={`h-3.5 w-3.5 ${resetPending ? "animate-spin" : ""}`}
+                        />
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
@@ -143,22 +149,25 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
                         <AlertDialogDescription>
                           确定要手动解除供应商 &ldquo;{item.name}&rdquo; 的熔断状态吗？
                           <br />
-                          <span className="text-destructive font-medium">请确保上游服务已恢复正常，否则可能导致请求持续失败。</span>
+                          <span className="text-destructive font-medium">
+                            请确保上游服务已恢复正常，否则可能导致请求持续失败。
+                          </span>
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <div className="flex gap-2 justify-end">
                         <AlertDialogCancel>取消</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleResetCircuit}>
-                          确认解除
-                        </AlertDialogAction>
+                        <AlertDialogAction onClick={handleResetCircuit}>确认解除</AlertDialogAction>
                       </div>
                     </AlertDialogContent>
                   </AlertDialog>
                 )}
               </>
             )}
-            {healthStatus?.circuitState === 'half-open' && (
-              <Badge variant="secondary" className="text-xs h-5 px-2 border-yellow-500/50 bg-yellow-500/10 text-yellow-700">
+            {healthStatus?.circuitState === "half-open" && (
+              <Badge
+                variant="secondary"
+                className="text-xs h-5 px-2 border-yellow-500/50 bg-yellow-500/10 text-yellow-700"
+              >
                 🟡 恢复中
               </Badge>
             )}
@@ -179,7 +188,11 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
                   <FormErrorBoundary>
-                    <ProviderForm mode="edit" provider={item} onSuccess={() => setOpenEdit(false)} />
+                    <ProviderForm
+                      mode="edit"
+                      provider={item}
+                      onSuccess={() => setOpenEdit(false)}
+                    />
                   </FormErrorBoundary>
                 </DialogContent>
               </Dialog>
@@ -204,22 +217,23 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
         <div className="flex items-center gap-2">
           <span className="font-medium text-foreground/80">今日用量:</span>
           <span className="tabular-nums">
-            ${(parseFloat(item.todayTotalCostUsd || '0')).toFixed(2)} ({item.todayCallCount ?? 0} 次调用)
+            ${parseFloat(item.todayTotalCostUsd || "0").toFixed(2)} ({item.todayCallCount ?? 0}{" "}
+            次调用)
           </span>
         </div>
         <div className="flex items-center gap-2">
           <span className="font-medium text-foreground/80">最近调用:</span>
           <span className="tabular-nums">
             {item.lastCallTime
-              ? new Date(item.lastCallTime).toLocaleString('zh-CN', {
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit',
-                  hour: '2-digit',
-                  minute: '2-digit'
+              ? new Date(item.lastCallTime).toLocaleString("zh-CN", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
                 })
-              : '-'}
-            {item.lastCallModel && item.lastCallTime ? ` - ${item.lastCallModel}` : ''}
+              : "-"}
+            {item.lastCallModel && item.lastCallTime ? ` - ${item.lastCallModel}` : ""}
           </span>
         </div>
       </div>
@@ -267,7 +281,13 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
                     <span>调整权重</span>
                     <span className="font-medium text-foreground">{weight}</span>
                   </div>
-                  <Slider min={PROVIDER_LIMITS.WEIGHT.MIN} max={PROVIDER_LIMITS.WEIGHT.MAX} step={1} value={[weight]} onValueChange={(v) => setWeight(v?.[0] ?? PROVIDER_LIMITS.WEIGHT.MIN)} />
+                  <Slider
+                    min={PROVIDER_LIMITS.WEIGHT.MIN}
+                    max={PROVIDER_LIMITS.WEIGHT.MAX}
+                    step={1}
+                    value={[weight]}
+                    onValueChange={(v) => setWeight(v?.[0] ?? PROVIDER_LIMITS.WEIGHT.MIN)}
+                  />
                 </PopoverContent>
               </Popover>
             ) : (
@@ -289,7 +309,7 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
           <div className="min-w-0 text-center">
             <div className="text-muted-foreground">分组</div>
             <div className="w-full text-center font-medium truncate text-foreground">
-              <span>{item.groupTag || '-'}</span>
+              <span>{item.groupTag || "-"}</span>
             </div>
           </div>
         </div>
@@ -302,7 +322,10 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
             {canEdit ? (
               <Popover open={show5hLimit} onOpenChange={handle5hLimitPopover}>
                 <PopoverTrigger asChild>
-                  <button type="button" className="w-full text-center font-medium tabular-nums truncate text-foreground hover:text-primary/80 transition-colors cursor-pointer">
+                  <button
+                    type="button"
+                    className="w-full text-center font-medium tabular-nums truncate text-foreground hover:text-primary/80 transition-colors cursor-pointer"
+                  >
                     <span>{limit5hInfinite ? "∞" : `$${limit5hValue.toFixed(2)}`}</span>
                   </button>
                 </PopoverTrigger>
@@ -311,7 +334,11 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
                     <span className="text-muted-foreground">5小时消费上限 (USD)</span>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <span>无限</span>
-                      <Switch checked={limit5hInfinite} onCheckedChange={setLimit5hInfinite} aria-label="无限" />
+                      <Switch
+                        checked={limit5hInfinite}
+                        onCheckedChange={setLimit5hInfinite}
+                        aria-label="无限"
+                      />
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -320,10 +347,15 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
                       max={PROVIDER_LIMITS.LIMIT_5H_USD.MAX}
                       step={PROVIDER_LIMITS.LIMIT_5H_USD.STEP}
                       value={[limit5hValue]}
-                      onValueChange={(v) => !limit5hInfinite && setLimit5hValue(v?.[0] ?? PROVIDER_LIMITS.LIMIT_5H_USD.MIN)}
+                      onValueChange={(v) =>
+                        !limit5hInfinite &&
+                        setLimit5hValue(v?.[0] ?? PROVIDER_LIMITS.LIMIT_5H_USD.MIN)
+                      }
                       disabled={limit5hInfinite}
                     />
-                    <span className="w-16 text-right text-xs font-medium">{limit5hInfinite ? "∞" : `$${limit5hValue.toFixed(2)}`}</span>
+                    <span className="w-16 text-right text-xs font-medium">
+                      {limit5hInfinite ? "∞" : `$${limit5hValue.toFixed(2)}`}
+                    </span>
                   </div>
                 </PopoverContent>
               </Popover>
@@ -340,7 +372,10 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
             {canEdit ? (
               <Popover open={showWeeklyLimit} onOpenChange={handleWeeklyLimitPopover}>
                 <PopoverTrigger asChild>
-                  <button type="button" className="w-full text-center font-medium tabular-nums truncate text-foreground hover:text-primary/80 transition-colors cursor-pointer">
+                  <button
+                    type="button"
+                    className="w-full text-center font-medium tabular-nums truncate text-foreground hover:text-primary/80 transition-colors cursor-pointer"
+                  >
                     <span>{limitWeeklyInfinite ? "∞" : `$${limitWeeklyValue.toFixed(2)}`}</span>
                   </button>
                 </PopoverTrigger>
@@ -349,7 +384,11 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
                     <span className="text-muted-foreground">周消费上限 (USD)</span>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <span>无限</span>
-                      <Switch checked={limitWeeklyInfinite} onCheckedChange={setLimitWeeklyInfinite} aria-label="无限" />
+                      <Switch
+                        checked={limitWeeklyInfinite}
+                        onCheckedChange={setLimitWeeklyInfinite}
+                        aria-label="无限"
+                      />
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -358,10 +397,15 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
                       max={PROVIDER_LIMITS.LIMIT_WEEKLY_USD.MAX}
                       step={PROVIDER_LIMITS.LIMIT_WEEKLY_USD.STEP}
                       value={[limitWeeklyValue]}
-                      onValueChange={(v) => !limitWeeklyInfinite && setLimitWeeklyValue(v?.[0] ?? PROVIDER_LIMITS.LIMIT_WEEKLY_USD.MIN)}
+                      onValueChange={(v) =>
+                        !limitWeeklyInfinite &&
+                        setLimitWeeklyValue(v?.[0] ?? PROVIDER_LIMITS.LIMIT_WEEKLY_USD.MIN)
+                      }
                       disabled={limitWeeklyInfinite}
                     />
-                    <span className="w-16 text-right text-xs font-medium">{limitWeeklyInfinite ? "∞" : `$${limitWeeklyValue.toFixed(2)}`}</span>
+                    <span className="w-16 text-right text-xs font-medium">
+                      {limitWeeklyInfinite ? "∞" : `$${limitWeeklyValue.toFixed(2)}`}
+                    </span>
                   </div>
                 </PopoverContent>
               </Popover>
@@ -378,7 +422,10 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
             {canEdit ? (
               <Popover open={showMonthlyLimit} onOpenChange={handleMonthlyLimitPopover}>
                 <PopoverTrigger asChild>
-                  <button type="button" className="w-full text-center font-medium tabular-nums truncate text-foreground hover:text-primary/80 transition-colors cursor-pointer">
+                  <button
+                    type="button"
+                    className="w-full text-center font-medium tabular-nums truncate text-foreground hover:text-primary/80 transition-colors cursor-pointer"
+                  >
                     <span>{limitMonthlyInfinite ? "∞" : `$${limitMonthlyValue.toFixed(2)}`}</span>
                   </button>
                 </PopoverTrigger>
@@ -387,7 +434,11 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
                     <span className="text-muted-foreground">月消费上限 (USD)</span>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <span>无限</span>
-                      <Switch checked={limitMonthlyInfinite} onCheckedChange={setLimitMonthlyInfinite} aria-label="无限" />
+                      <Switch
+                        checked={limitMonthlyInfinite}
+                        onCheckedChange={setLimitMonthlyInfinite}
+                        aria-label="无限"
+                      />
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -396,10 +447,15 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
                       max={PROVIDER_LIMITS.LIMIT_MONTHLY_USD.MAX}
                       step={PROVIDER_LIMITS.LIMIT_MONTHLY_USD.STEP}
                       value={[limitMonthlyValue]}
-                      onValueChange={(v) => !limitMonthlyInfinite && setLimitMonthlyValue(v?.[0] ?? PROVIDER_LIMITS.LIMIT_MONTHLY_USD.MIN)}
+                      onValueChange={(v) =>
+                        !limitMonthlyInfinite &&
+                        setLimitMonthlyValue(v?.[0] ?? PROVIDER_LIMITS.LIMIT_MONTHLY_USD.MIN)
+                      }
                       disabled={limitMonthlyInfinite}
                     />
-                    <span className="w-16 text-right text-xs font-medium">{limitMonthlyInfinite ? "∞" : `$${limitMonthlyValue.toFixed(2)}`}</span>
+                    <span className="w-16 text-right text-xs font-medium">
+                      {limitMonthlyInfinite ? "∞" : `$${limitMonthlyValue.toFixed(2)}`}
+                    </span>
                   </div>
                 </PopoverContent>
               </Popover>
@@ -416,7 +472,10 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
             {canEdit ? (
               <Popover open={showConcurrent} onOpenChange={handleConcurrentPopover}>
                 <PopoverTrigger asChild>
-                  <button type="button" className="w-full text-center font-medium tabular-nums truncate text-foreground hover:text-primary/80 transition-colors cursor-pointer">
+                  <button
+                    type="button"
+                    className="w-full text-center font-medium tabular-nums truncate text-foreground hover:text-primary/80 transition-colors cursor-pointer"
+                  >
                     <span>{concurrentInfinite ? "∞" : concurrentValue.toLocaleString()}</span>
                   </button>
                 </PopoverTrigger>
@@ -425,7 +484,11 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
                     <span className="text-muted-foreground">并发Session上限</span>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <span>无限</span>
-                      <Switch checked={concurrentInfinite} onCheckedChange={setConcurrentInfinite} aria-label="无限" />
+                      <Switch
+                        checked={concurrentInfinite}
+                        onCheckedChange={setConcurrentInfinite}
+                        aria-label="无限"
+                      />
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -434,10 +497,15 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
                       max={PROVIDER_LIMITS.CONCURRENT_SESSIONS.MAX}
                       step={1}
                       value={[concurrentValue]}
-                      onValueChange={(v) => !concurrentInfinite && setConcurrentValue(v?.[0] ?? PROVIDER_LIMITS.CONCURRENT_SESSIONS.MIN)}
+                      onValueChange={(v) =>
+                        !concurrentInfinite &&
+                        setConcurrentValue(v?.[0] ?? PROVIDER_LIMITS.CONCURRENT_SESSIONS.MIN)
+                      }
                       disabled={concurrentInfinite}
                     />
-                    <span className="w-16 text-right text-xs font-medium">{concurrentInfinite ? "∞" : concurrentValue.toLocaleString()}</span>
+                    <span className="w-16 text-right text-xs font-medium">
+                      {concurrentInfinite ? "∞" : concurrentValue.toLocaleString()}
+                    </span>
                   </div>
                 </PopoverContent>
               </Popover>

@@ -15,7 +15,12 @@ interface TimeRangeSelectorProps {
  * 时间范围选择器组件
  * 提供今天、7天、30天的选择
  */
-export function TimeRangeSelector({ value, onChange, className, disabled = false }: TimeRangeSelectorProps) {
+export function TimeRangeSelector({
+  value,
+  onChange,
+  className,
+  disabled = false,
+}: TimeRangeSelectorProps) {
   return (
     <div className={cn("flex flex-wrap ", className)}>
       {TIME_RANGE_OPTIONS.map((option) => (

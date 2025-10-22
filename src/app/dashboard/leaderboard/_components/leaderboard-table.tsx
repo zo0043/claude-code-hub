@@ -62,11 +62,7 @@ export function LeaderboardTable({ data, period }: LeaderboardTableProps) {
       );
     }
 
-    return (
-      <div className="text-muted-foreground font-medium">
-        #{rank}
-      </div>
-    );
+    return <div className="text-muted-foreground font-medium">#{rank}</div>;
   };
 
   return (
@@ -89,10 +85,7 @@ export function LeaderboardTable({ data, period }: LeaderboardTableProps) {
                 const isTopThree = rank <= 3;
 
                 return (
-                  <TableRow
-                    key={entry.userId}
-                    className={isTopThree ? "bg-muted/50" : ""}
-                  >
+                  <TableRow key={entry.userId} className={isTopThree ? "bg-muted/50" : ""}>
                     <TableCell>{getRankBadge(rank)}</TableCell>
                     <TableCell className={isTopThree ? "font-semibold" : ""}>
                       {entry.userName}

@@ -3,16 +3,8 @@
  * 纯函数实现，无副作用
  */
 
-import type {
-  ChatCompletionResponse,
-  ChatCompletionChoice,
-} from '../types/compatible';
-import type {
-  ResponseObject,
-  OutputItem,
-  ReasoningOutput,
-  MessageOutput,
-} from '../types/response';
+import type { ChatCompletionResponse, ChatCompletionChoice } from "../types/compatible";
+import type { ResponseObject, OutputItem, ReasoningOutput, MessageOutput } from "../types/response";
 
 export class ResponseTransformer {
   /**
@@ -23,20 +15,18 @@ export class ResponseTransformer {
     const mainText = this.extractMainText(response.output);
 
     // 拼接思考内容: <think>...</think>\n主要内容
-    const fullContent = thinkingText
-      ? `<think>${thinkingText}</think>\n${mainText}`
-      : mainText;
+    const fullContent = thinkingText ? `<think>${thinkingText}</think>\n${mainText}` : mainText;
 
     return {
       id: this.convertId(response.id),
-      object: 'chat.completion',
+      object: "chat.completion",
       created: response.created,
       model: response.model,
       choices: [
         {
           index: 0,
           message: {
-            role: 'assistant',
+            role: "assistant",
             content: fullContent,
           },
           finish_reason: this.mapFinishReason(response.status),
@@ -55,9 +45,9 @@ export class ResponseTransformer {
    * 提取思考内容（reasoning summary）
    */
   private static extractThinking(output: OutputItem[]): string | null {
-    const reasoningItem = output.find(
-      (item) => item.type === 'reasoning'
-    ) as ReasoningOutput | undefined;
+    const reasoningItem = output.find((item) => item.type === "reasoning") as
+      | ReasoningOutput
+      | undefined;
 
     if (!reasoningItem || !reasoningItem.summary) {
       return null;
@@ -71,39 +61,37 @@ export class ResponseTransformer {
    * 提取主要文本内容（message output）
    */
   private static extractMainText(output: OutputItem[]): string {
-    const messageItem = output.find(
-      (item) => item.type === 'message'
-    ) as MessageOutput | undefined;
+    const messageItem = output.find((item) => item.type === "message") as MessageOutput | undefined;
 
     if (!messageItem) {
-      return '';
+      return "";
     }
 
     // 拼接所有 output_text
     return messageItem.content
-      .filter((c) => c.type === 'output_text')
+      .filter((c) => c.type === "output_text")
       .map((c) => c.text)
-      .join('');
+      .join("");
   }
 
   /**
    * 转换响应 ID: resp_xxx → chatcmpl-xxx
    */
   private static convertId(responseId: string): string {
-    return responseId.replace('resp_', 'chatcmpl-');
+    return responseId.replace("resp_", "chatcmpl-");
   }
 
   /**
    * 映射 finish_reason
    */
   private static mapFinishReason(
-    status: ResponseObject['status']
-  ): ChatCompletionChoice['finish_reason'] {
+    status: ResponseObject["status"]
+  ): ChatCompletionChoice["finish_reason"] {
     switch (status) {
-      case 'completed':
-        return 'stop';
-      case 'incomplete':
-        return 'length';
+      case "completed":
+        return "stop";
+      case "incomplete":
+        return "length";
       default:
         return null;
     }

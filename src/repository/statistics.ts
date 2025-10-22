@@ -2,6 +2,7 @@
 
 import { db } from "@/drizzle/db";
 import { sql } from "drizzle-orm";
+import { getEnvConfig } from "@/lib/config";
 import type {
   TimeRange,
   DatabaseStatRow,
@@ -15,16 +16,17 @@ import type {
  * 注意：这个函数使用原生SQL，因为涉及到PostgreSQL特定的generate_series函数
  */
 export async function getUserStatisticsFromDB(timeRange: TimeRange): Promise<DatabaseStatRow[]> {
+  const timezone = getEnvConfig().TZ;
   let query;
 
   switch (timeRange) {
-    case 'today':
+    case "today":
       // 今天（小时分辨率）
       query = sql`
         WITH hour_range AS (
           SELECT generate_series(
-            DATE_TRUNC('day', NOW()),
-            DATE_TRUNC('day', NOW()) + INTERVAL '23 hours',
+            DATE_TRUNC('day', TIMEZONE(${timezone}, NOW())),
+            DATE_TRUNC('day', TIMEZONE(${timezone}, NOW())) + INTERVAL '23 hours',
             '1 hour'::interval
           ) AS hour
         ),
@@ -38,7 +40,7 @@ export async function getUserStatisticsFromDB(timeRange: TimeRange): Promise<Dat
           FROM users u
           CROSS JOIN hour_range hr
           LEFT JOIN message_request mr ON u.id = mr.user_id
-            AND DATE_TRUNC('hour', mr.created_at) = hr.hour
+            AND DATE_TRUNC('hour', mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone}) = hr.hour
             AND mr.deleted_at IS NULL
           WHERE u.deleted_at IS NULL
           GROUP BY u.id, u.name, hr.hour
@@ -54,13 +56,13 @@ export async function getUserStatisticsFromDB(timeRange: TimeRange): Promise<Dat
       `;
       break;
 
-    case '7days':
+    case "7days":
       // 过去7天（天分辨率）
       query = sql`
         WITH date_range AS (
           SELECT generate_series(
-            CURRENT_DATE - INTERVAL '6 days',
-            CURRENT_DATE,
+            (CURRENT_TIMESTAMP AT TIME ZONE ${timezone})::date - INTERVAL '6 days',
+            (CURRENT_TIMESTAMP AT TIME ZONE ${timezone})::date,
             '1 day'::interval
           )::date AS date
         ),
@@ -74,7 +76,7 @@ export async function getUserStatisticsFromDB(timeRange: TimeRange): Promise<Dat
           FROM users u
           CROSS JOIN date_range dr
           LEFT JOIN message_request mr ON u.id = mr.user_id
-            AND DATE(mr.created_at) = dr.date
+            AND (mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = dr.date
             AND mr.deleted_at IS NULL
           WHERE u.deleted_at IS NULL
           GROUP BY u.id, u.name, dr.date
@@ -90,13 +92,13 @@ export async function getUserStatisticsFromDB(timeRange: TimeRange): Promise<Dat
       `;
       break;
 
-    case '30days':
+    case "30days":
       // 过去 30 天（天分辨率）
       query = sql`
         WITH date_range AS (
           SELECT generate_series(
-            CURRENT_DATE - INTERVAL '29 days',
-            CURRENT_DATE,
+            (CURRENT_TIMESTAMP AT TIME ZONE ${timezone})::date - INTERVAL '29 days',
+            (CURRENT_TIMESTAMP AT TIME ZONE ${timezone})::date,
             '1 day'::interval
           )::date AS date
         ),
@@ -110,7 +112,7 @@ export async function getUserStatisticsFromDB(timeRange: TimeRange): Promise<Dat
           FROM users u
           CROSS JOIN date_range dr
           LEFT JOIN message_request mr ON u.id = mr.user_id
-            AND DATE(mr.created_at) = dr.date
+            AND (mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = dr.date
             AND mr.deleted_at IS NULL
           WHERE u.deleted_at IS NULL
           GROUP BY u.id, u.name, dr.date
@@ -156,6 +158,7 @@ export async function getKeyStatisticsFromDB(
   userId: number,
   timeRange: TimeRange
 ): Promise<DatabaseKeyStatRow[]> {
+  const timezone = getEnvConfig().TZ;
   let query;
 
   switch (timeRange) {
@@ -163,8 +166,8 @@ export async function getKeyStatisticsFromDB(
       query = sql`
         WITH hour_range AS (
           SELECT generate_series(
-            DATE_TRUNC('day', NOW()),
-            DATE_TRUNC('day', NOW()) + INTERVAL '23 hours',
+            DATE_TRUNC('day', TIMEZONE(${timezone}, NOW())),
+            DATE_TRUNC('day', TIMEZONE(${timezone}, NOW())) + INTERVAL '23 hours',
             '1 hour'::interval
           ) AS hour
         ),
@@ -185,7 +188,7 @@ export async function getKeyStatisticsFromDB(
           CROSS JOIN hour_range hr
           LEFT JOIN message_request mr ON mr.key = k.key
             AND mr.user_id = ${userId}
-            AND DATE_TRUNC('hour', mr.created_at) = hr.hour
+            AND DATE_TRUNC('hour', mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone}) = hr.hour
             AND mr.deleted_at IS NULL
           GROUP BY k.id, k.name, hr.hour
         )
@@ -204,8 +207,8 @@ export async function getKeyStatisticsFromDB(
       query = sql`
         WITH date_range AS (
           SELECT generate_series(
-            CURRENT_DATE - INTERVAL '6 days',
-            CURRENT_DATE,
+            (CURRENT_TIMESTAMP AT TIME ZONE ${timezone})::date - INTERVAL '6 days',
+            (CURRENT_TIMESTAMP AT TIME ZONE ${timezone})::date,
             '1 day'::interval
           )::date AS date
         ),
@@ -226,7 +229,7 @@ export async function getKeyStatisticsFromDB(
           CROSS JOIN date_range dr
           LEFT JOIN message_request mr ON mr.key = k.key
             AND mr.user_id = ${userId}
-            AND DATE(mr.created_at) = dr.date
+            AND (mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = dr.date
             AND mr.deleted_at IS NULL
           GROUP BY k.id, k.name, dr.date
         )
@@ -245,8 +248,8 @@ export async function getKeyStatisticsFromDB(
       query = sql`
         WITH date_range AS (
           SELECT generate_series(
-            CURRENT_DATE - INTERVAL '29 days',
-            CURRENT_DATE,
+            (CURRENT_TIMESTAMP AT TIME ZONE ${timezone})::date - INTERVAL '29 days',
+            (CURRENT_TIMESTAMP AT TIME ZONE ${timezone})::date,
             '1 day'::interval
           )::date AS date
         ),
@@ -267,7 +270,7 @@ export async function getKeyStatisticsFromDB(
           CROSS JOIN date_range dr
           LEFT JOIN message_request mr ON mr.key = k.key
             AND mr.user_id = ${userId}
-            AND DATE(mr.created_at) = dr.date
+            AND (mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = dr.date
             AND mr.deleted_at IS NULL
           GROUP BY k.id, k.name, dr.date
         )
@@ -317,17 +320,18 @@ export async function getMixedStatisticsFromDB(
   ownKeys: DatabaseKeyStatRow[];
   othersAggregate: DatabaseStatRow[];
 }> {
+  const timezone = getEnvConfig().TZ;
   let ownKeysQuery;
   let othersQuery;
 
   switch (timeRange) {
-    case 'today':
+    case "today":
       // 自己的密钥明细（小时分辨率）
       ownKeysQuery = sql`
         WITH hour_range AS (
           SELECT generate_series(
-            DATE_TRUNC('day', NOW()),
-            DATE_TRUNC('day', NOW()) + INTERVAL '23 hours',
+            DATE_TRUNC('day', TIMEZONE(${timezone}, NOW())),
+            DATE_TRUNC('day', TIMEZONE(${timezone}, NOW())) + INTERVAL '23 hours',
             '1 hour'::interval
           ) AS hour
         ),
@@ -348,7 +352,7 @@ export async function getMixedStatisticsFromDB(
           CROSS JOIN hour_range hr
           LEFT JOIN message_request mr ON mr.key = k.key
             AND mr.user_id = ${userId}
-            AND DATE_TRUNC('hour', mr.created_at) = hr.hour
+            AND DATE_TRUNC('hour', mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone}) = hr.hour
             AND mr.deleted_at IS NULL
           GROUP BY k.id, k.name, hr.hour
         )
@@ -366,8 +370,8 @@ export async function getMixedStatisticsFromDB(
       othersQuery = sql`
         WITH hour_range AS (
           SELECT generate_series(
-            DATE_TRUNC('day', NOW()),
-            DATE_TRUNC('day', NOW()) + INTERVAL '23 hours',
+            DATE_TRUNC('day', TIMEZONE(${timezone}, NOW())),
+            DATE_TRUNC('day', TIMEZONE(${timezone}, NOW())) + INTERVAL '23 hours',
             '1 hour'::interval
           ) AS hour
         ),
@@ -377,7 +381,7 @@ export async function getMixedStatisticsFromDB(
             COUNT(mr.id) AS api_calls,
             COALESCE(SUM(mr.cost_usd), 0) AS total_cost
           FROM hour_range hr
-          LEFT JOIN message_request mr ON DATE_TRUNC('hour', mr.created_at) = hr.hour
+          LEFT JOIN message_request mr ON DATE_TRUNC('hour', mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone}) = hr.hour
             AND mr.user_id != ${userId}
             AND mr.deleted_at IS NULL
           GROUP BY hr.hour
@@ -393,13 +397,13 @@ export async function getMixedStatisticsFromDB(
       `;
       break;
 
-    case '7days':
+    case "7days":
       // 自己的密钥明细（天分辨率）
       ownKeysQuery = sql`
         WITH date_range AS (
           SELECT generate_series(
-            CURRENT_DATE - INTERVAL '6 days',
-            CURRENT_DATE,
+            (CURRENT_TIMESTAMP AT TIME ZONE ${timezone})::date - INTERVAL '6 days',
+            (CURRENT_TIMESTAMP AT TIME ZONE ${timezone})::date,
             '1 day'::interval
           )::date AS date
         ),
@@ -420,7 +424,7 @@ export async function getMixedStatisticsFromDB(
           CROSS JOIN date_range dr
           LEFT JOIN message_request mr ON mr.key = k.key
             AND mr.user_id = ${userId}
-            AND DATE(mr.created_at) = dr.date
+            AND (mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = dr.date
             AND mr.deleted_at IS NULL
           GROUP BY k.id, k.name, dr.date
         )
@@ -438,8 +442,8 @@ export async function getMixedStatisticsFromDB(
       othersQuery = sql`
         WITH date_range AS (
           SELECT generate_series(
-            CURRENT_DATE - INTERVAL '6 days',
-            CURRENT_DATE,
+            (CURRENT_TIMESTAMP AT TIME ZONE ${timezone})::date - INTERVAL '6 days',
+            (CURRENT_TIMESTAMP AT TIME ZONE ${timezone})::date,
             '1 day'::interval
           )::date AS date
         ),
@@ -449,7 +453,7 @@ export async function getMixedStatisticsFromDB(
             COUNT(mr.id) AS api_calls,
             COALESCE(SUM(mr.cost_usd), 0) AS total_cost
           FROM date_range dr
-          LEFT JOIN message_request mr ON DATE(mr.created_at) = dr.date
+          LEFT JOIN message_request mr ON (mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = dr.date
             AND mr.user_id != ${userId}
             AND mr.deleted_at IS NULL
           GROUP BY dr.date
@@ -465,13 +469,13 @@ export async function getMixedStatisticsFromDB(
       `;
       break;
 
-    case '30days':
+    case "30days":
       // 自己的密钥明细（天分辨率）
       ownKeysQuery = sql`
         WITH date_range AS (
           SELECT generate_series(
-            CURRENT_DATE - INTERVAL '29 days',
-            CURRENT_DATE,
+            (CURRENT_TIMESTAMP AT TIME ZONE ${timezone})::date - INTERVAL '29 days',
+            (CURRENT_TIMESTAMP AT TIME ZONE ${timezone})::date,
             '1 day'::interval
           )::date AS date
         ),
@@ -492,7 +496,7 @@ export async function getMixedStatisticsFromDB(
           CROSS JOIN date_range dr
           LEFT JOIN message_request mr ON mr.key = k.key
             AND mr.user_id = ${userId}
-            AND DATE(mr.created_at) = dr.date
+            AND (mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = dr.date
             AND mr.deleted_at IS NULL
           GROUP BY k.id, k.name, dr.date
         )
@@ -510,8 +514,8 @@ export async function getMixedStatisticsFromDB(
       othersQuery = sql`
         WITH date_range AS (
           SELECT generate_series(
-            CURRENT_DATE - INTERVAL '29 days',
-            CURRENT_DATE,
+            (CURRENT_TIMESTAMP AT TIME ZONE ${timezone})::date - INTERVAL '29 days',
+            (CURRENT_TIMESTAMP AT TIME ZONE ${timezone})::date,
             '1 day'::interval
           )::date AS date
         ),
@@ -521,7 +525,7 @@ export async function getMixedStatisticsFromDB(
             COUNT(mr.id) AS api_calls,
             COALESCE(SUM(mr.cost_usd), 0) AS total_cost
           FROM date_range dr
-          LEFT JOIN message_request mr ON DATE(mr.created_at) = dr.date
+          LEFT JOIN message_request mr ON (mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = dr.date
             AND mr.user_id != ${userId}
             AND mr.deleted_at IS NULL
           GROUP BY dr.date

@@ -65,7 +65,8 @@ export async function createKey(keyData: CreateKeyData): Promise<Key> {
     expiresAt: keyData.expires_at,
     limit5hUsd: keyData.limit_5h_usd != null ? keyData.limit_5h_usd.toString() : null,
     limitWeeklyUsd: keyData.limit_weekly_usd != null ? keyData.limit_weekly_usd.toString() : null,
-    limitMonthlyUsd: keyData.limit_monthly_usd != null ? keyData.limit_monthly_usd.toString() : null,
+    limitMonthlyUsd:
+      keyData.limit_monthly_usd != null ? keyData.limit_monthly_usd.toString() : null,
     limitConcurrentSessions: keyData.limit_concurrent_sessions,
   };
 
@@ -88,10 +89,7 @@ export async function createKey(keyData: CreateKeyData): Promise<Key> {
   return toKey(key);
 }
 
-export async function updateKey(
-  id: number,
-  keyData: UpdateKeyData,
-): Promise<Key | null> {
+export async function updateKey(id: number, keyData: UpdateKeyData): Promise<Key | null> {
   if (Object.keys(keyData).length === 0) {
     return findKeyById(id);
   }
@@ -103,10 +101,16 @@ export async function updateKey(
   if (keyData.name !== undefined) dbData.name = keyData.name;
   if (keyData.is_enabled !== undefined) dbData.isEnabled = keyData.is_enabled;
   if (keyData.expires_at !== undefined) dbData.expiresAt = keyData.expires_at;
-  if (keyData.limit_5h_usd !== undefined) dbData.limit5hUsd = keyData.limit_5h_usd != null ? keyData.limit_5h_usd.toString() : null;
-  if (keyData.limit_weekly_usd !== undefined) dbData.limitWeeklyUsd = keyData.limit_weekly_usd != null ? keyData.limit_weekly_usd.toString() : null;
-  if (keyData.limit_monthly_usd !== undefined) dbData.limitMonthlyUsd = keyData.limit_monthly_usd != null ? keyData.limit_monthly_usd.toString() : null;
-  if (keyData.limit_concurrent_sessions !== undefined) dbData.limitConcurrentSessions = keyData.limit_concurrent_sessions;
+  if (keyData.limit_5h_usd !== undefined)
+    dbData.limit5hUsd = keyData.limit_5h_usd != null ? keyData.limit_5h_usd.toString() : null;
+  if (keyData.limit_weekly_usd !== undefined)
+    dbData.limitWeeklyUsd =
+      keyData.limit_weekly_usd != null ? keyData.limit_weekly_usd.toString() : null;
+  if (keyData.limit_monthly_usd !== undefined)
+    dbData.limitMonthlyUsd =
+      keyData.limit_monthly_usd != null ? keyData.limit_monthly_usd.toString() : null;
+  if (keyData.limit_concurrent_sessions !== undefined)
+    dbData.limitConcurrentSessions = keyData.limit_concurrent_sessions;
 
   const [key] = await db
     .update(keys)
@@ -134,7 +138,7 @@ export async function updateKey(
 
 export async function findActiveKeyByUserIdAndName(
   userId: number,
-  name: string,
+  name: string
 ): Promise<Key | null> {
   const [key] = await db
     .select({
@@ -153,19 +157,23 @@ export async function findActiveKeyByUserIdAndName(
       deletedAt: keys.deletedAt,
     })
     .from(keys)
-    .where(and(
-      eq(keys.userId, userId),
-      eq(keys.name, name),
-      isNull(keys.deletedAt),
-      eq(keys.isEnabled, true),
-      or(isNull(keys.expiresAt), gt(keys.expiresAt, new Date()))
-    ));
+    .where(
+      and(
+        eq(keys.userId, userId),
+        eq(keys.name, name),
+        isNull(keys.deletedAt),
+        eq(keys.isEnabled, true),
+        or(isNull(keys.expiresAt), gt(keys.expiresAt, new Date()))
+      )
+    );
 
   if (!key) return null;
   return toKey(key);
 }
 
-export async function findKeyUsageToday(userId: number): Promise<Array<{ keyId: number; totalCost: number }>> {
+export async function findKeyUsageToday(
+  userId: number
+): Promise<Array<{ keyId: number; totalCost: number }>> {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
@@ -177,16 +185,16 @@ export async function findKeyUsageToday(userId: number): Promise<Array<{ keyId: 
       totalCost: sum(messageRequest.costUsd),
     })
     .from(keys)
-    .leftJoin(messageRequest, and(
-      eq(messageRequest.key, keys.key),
-      isNull(messageRequest.deletedAt),
-      gte(messageRequest.createdAt, today),
-      lt(messageRequest.createdAt, tomorrow)
-    ))
-    .where(and(
-      eq(keys.userId, userId),
-      isNull(keys.deletedAt)
-    ))
+    .leftJoin(
+      messageRequest,
+      and(
+        eq(messageRequest.key, keys.key),
+        isNull(messageRequest.deletedAt),
+        gte(messageRequest.createdAt, today),
+        lt(messageRequest.createdAt, tomorrow)
+      )
+    )
+    .where(and(eq(keys.userId, userId), isNull(keys.deletedAt)))
     .groupBy(keys.id);
 
   return rows.map((row) => ({
@@ -194,7 +202,7 @@ export async function findKeyUsageToday(userId: number): Promise<Array<{ keyId: 
     totalCost: (() => {
       const costDecimal = toCostDecimal(row.totalCost) ?? new Decimal(0);
       return costDecimal.toDecimalPlaces(6).toNumber();
-    })()
+    })(),
   }));
 }
 
@@ -202,10 +210,7 @@ export async function countActiveKeysByUser(userId: number): Promise<number> {
   const [row] = await db
     .select({ count: count() })
     .from(keys)
-    .where(and(
-      eq(keys.userId, userId),
-      isNull(keys.deletedAt)
-    ));
+    .where(and(eq(keys.userId, userId), isNull(keys.deletedAt)));
 
   return Number(row?.count || 0);
 }
@@ -220,9 +225,7 @@ export async function deleteKey(id: number): Promise<boolean> {
   return result.length > 0;
 }
 
-export async function findActiveKeyByKeyString(
-  keyString: string,
-): Promise<Key | null> {
+export async function findActiveKeyByKeyString(keyString: string): Promise<Key | null> {
   const [key] = await db
     .select({
       id: keys.id,
@@ -240,12 +243,14 @@ export async function findActiveKeyByKeyString(
       deletedAt: keys.deletedAt,
     })
     .from(keys)
-    .where(and(
-      eq(keys.key, keyString),
-      isNull(keys.deletedAt),
-      eq(keys.isEnabled, true),
-      or(isNull(keys.expiresAt), gt(keys.expiresAt, new Date()))
-    ));
+    .where(
+      and(
+        eq(keys.key, keyString),
+        isNull(keys.deletedAt),
+        eq(keys.isEnabled, true),
+        or(isNull(keys.expiresAt), gt(keys.expiresAt, new Date()))
+      )
+    );
 
   if (!key) return null;
   return toKey(key);
@@ -253,7 +258,7 @@ export async function findActiveKeyByKeyString(
 
 // 验证 API Key 并返回用户信息
 export async function validateApiKeyAndGetUser(
-  keyString: string,
+  keyString: string
 ): Promise<{ user: User; key: Key } | null> {
   const result = await db
     .select({
@@ -284,13 +289,15 @@ export async function validateApiKeyAndGetUser(
     })
     .from(keys)
     .innerJoin(users, eq(keys.userId, users.id))
-    .where(and(
-      eq(keys.key, keyString),
-      isNull(keys.deletedAt),
-      eq(keys.isEnabled, true),
-      or(isNull(keys.expiresAt), gt(keys.expiresAt, new Date())),
-      isNull(users.deletedAt)
-    ));
+    .where(
+      and(
+        eq(keys.key, keyString),
+        isNull(keys.deletedAt),
+        eq(keys.isEnabled, true),
+        or(isNull(keys.expiresAt), gt(keys.expiresAt, new Date())),
+        isNull(users.deletedAt)
+      )
+    );
 
   if (result.length === 0) {
     return null;
@@ -359,12 +366,14 @@ export async function findKeysWithStatistics(userId: number): Promise<KeyStatist
     const [todayCount] = await db
       .select({ count: count() })
       .from(messageRequest)
-      .where(and(
-        eq(messageRequest.key, key.key),
-        isNull(messageRequest.deletedAt),
-        gte(messageRequest.createdAt, today),
-        lt(messageRequest.createdAt, tomorrow)
-      ));
+      .where(
+        and(
+          eq(messageRequest.key, key.key),
+          isNull(messageRequest.deletedAt),
+          gte(messageRequest.createdAt, today),
+          lt(messageRequest.createdAt, tomorrow)
+        )
+      );
 
     // 查询最后使用时间和供应商
     const [lastUsage] = await db
@@ -374,10 +383,7 @@ export async function findKeysWithStatistics(userId: number): Promise<KeyStatist
       })
       .from(messageRequest)
       .innerJoin(providers, eq(messageRequest.providerId, providers.id))
-      .where(and(
-        eq(messageRequest.key, key.key),
-        isNull(messageRequest.deletedAt)
-      ))
+      .where(and(eq(messageRequest.key, key.key), isNull(messageRequest.deletedAt)))
       .orderBy(desc(messageRequest.createdAt))
       .limit(1);
 
@@ -392,17 +398,19 @@ export async function findKeysWithStatistics(userId: number): Promise<KeyStatist
         totalCost: sum(messageRequest.costUsd),
       })
       .from(messageRequest)
-      .where(and(
-        eq(messageRequest.key, key.key),
-        isNull(messageRequest.deletedAt),
-        gte(messageRequest.createdAt, thirtyDaysAgo),
-        sql`${messageRequest.model} IS NOT NULL`
-      ))
+      .where(
+        and(
+          eq(messageRequest.key, key.key),
+          isNull(messageRequest.deletedAt),
+          gte(messageRequest.createdAt, thirtyDaysAgo),
+          sql`${messageRequest.model} IS NOT NULL`
+        )
+      )
       .groupBy(messageRequest.model)
       .orderBy(desc(sql`count(*)`));
 
-    const modelStats = modelStatsRows.map(row => ({
-      model: row.model || 'unknown',
+    const modelStats = modelStatsRows.map((row) => ({
+      model: row.model || "unknown",
       callCount: row.callCount,
       totalCost: (() => {
         const costDecimal = toCostDecimal(row.totalCost) ?? new Decimal(0);

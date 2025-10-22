@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,7 @@ export interface FormFieldConfig {
   placeholder?: string;
   required?: boolean;
   maxLength?: number;
-  type?: 'text' | 'email' | 'password' | 'number' | 'date';
+  type?: "text" | "email" | "password" | "number" | "date";
   description?: string;
 }
 
@@ -29,7 +29,7 @@ export interface FormFieldState {
 /**
  * 通用表单字段组件
  */
-export interface FormFieldProps extends Omit<ComponentProps<typeof Input>, 'value' | 'onChange'> {
+export interface FormFieldProps extends Omit<ComponentProps<typeof Input>, "value" | "onChange"> {
   label: string;
   value: string | number;
   onChange: (value: string) => void;
@@ -56,11 +56,9 @@ export function FormField({
 
   return (
     <div className="grid gap-2">
-      <Label 
+      <Label
         htmlFor={fieldId}
-        className={cn(
-          required && "after:content-['*'] after:ml-0.5 after:text-destructive"
-        )}
+        className={cn(required && "after:content-['*'] after:ml-0.5 after:text-destructive")}
       >
         {label}
       </Label>
@@ -75,25 +73,16 @@ export function FormField({
         )}
         aria-invalid={hasError}
         aria-describedby={
-          hasError ? `${fieldId}-error` :
-          description ? `${fieldId}-description` : 
-          undefined
+          hasError ? `${fieldId}-error` : description ? `${fieldId}-description` : undefined
         }
       />
       {description && !hasError && (
-        <div 
-          id={`${fieldId}-description`}
-          className="text-xs text-muted-foreground"
-        >
+        <div id={`${fieldId}-description`} className="text-xs text-muted-foreground">
           {description}
         </div>
       )}
       {hasError && (
-        <div 
-          id={`${fieldId}-error`}
-          className="text-xs text-destructive" 
-          role="alert"
-        >
+        <div id={`${fieldId}-error`} className="text-xs text-destructive" role="alert">
           {error}
         </div>
       )}
@@ -118,18 +107,13 @@ export function EmailField(props: FormFieldProps) {
 /**
  * 数字字段组件
  */
-export function NumberField(props: Omit<FormFieldProps, 'type'> & {
-  min?: number;
-  max?: number;
-}) {
-  return (
-    <FormField
-      {...props}
-      type="number"
-      min={props.min}
-      max={props.max}
-    />
-  );
+export function NumberField(
+  props: Omit<FormFieldProps, "type"> & {
+    min?: number;
+    max?: number;
+  }
+) {
+  return <FormField {...props} type="number" min={props.min} max={props.max} />;
 }
 
 /**

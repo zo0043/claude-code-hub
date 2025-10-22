@@ -1,4 +1,4 @@
-import packageJson from '../../package.json';
+import packageJson from "../../package.json";
 
 /**
  * 应用版本配置
@@ -11,8 +11,8 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || `v${packageJso
  * 用于获取最新版本
  */
 export const GITHUB_REPO = {
-  owner: 'ding113',
-  repo: 'claude-code-hub',
+  owner: "ding113",
+  repo: "claude-code-hub",
 };
 
 /**
@@ -23,11 +23,11 @@ export const GITHUB_REPO = {
  */
 export function compareVersions(current: string, latest: string): number {
   // 移除 'v' 前缀
-  const cleanCurrent = current.replace(/^v/, '');
-  const cleanLatest = latest.replace(/^v/, '');
+  const cleanCurrent = current.replace(/^v/, "");
+  const cleanLatest = latest.replace(/^v/, "");
 
-  const currentParts = cleanCurrent.split('.').map(Number);
-  const latestParts = cleanLatest.split('.').map(Number);
+  const currentParts = cleanCurrent.split(".").map(Number);
+  const latestParts = cleanLatest.split(".").map(Number);
 
   for (let i = 0; i < Math.max(currentParts.length, latestParts.length); i++) {
     const curr = currentParts[i] || 0;

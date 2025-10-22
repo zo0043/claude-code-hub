@@ -1,4 +1,5 @@
 import type { Provider } from "@/types/provider";
+import { logger } from '@/lib/logger';
 import type { ProxySession } from "./session";
 
 /**
@@ -8,7 +9,6 @@ import type { ProxySession } from "./session";
  * 例如：将 "gpt-5" 重定向为 "gpt-5-codex"
  */
 export class ModelRedirector {
-
   /**
    * 应用模型重定向（如果配置了）
    *
@@ -25,7 +25,7 @@ export class ModelRedirector {
     // 获取原始模型名称
     const originalModel = session.request.model;
     if (!originalModel) {
-      console.debug('[ModelRedirector] No model found in request, skipping redirect');
+      logger.debug('[ModelRedirector] No model found in request, skipping redirect');
       return false;
     }
 
@@ -55,7 +55,7 @@ export class ModelRedirector {
     session.request.buffer = encoder.encode(updatedBody).buffer;
 
     // 更新日志（记录重定向）
-    session.request.note = `[Model Redirected: ${originalModel} → ${redirectedModel}] ${session.request.note || ''}`;
+    session.request.note = `[Model Redirected: ${originalModel} → ${redirectedModel}] ${session.request.note || ""}`;
 
     return true;
   }
@@ -83,10 +83,6 @@ export class ModelRedirector {
    * @returns 是否配置了重定向
    */
   static hasRedirect(model: string, provider: Provider): boolean {
-    return !!(
-      provider.modelRedirects &&
-      model &&
-      provider.modelRedirects[model]
-    );
+    return !!(provider.modelRedirects && model && provider.modelRedirects[model]);
   }
 }

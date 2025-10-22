@@ -1,4 +1,5 @@
 import type { Context } from "hono";
+import { logger } from '@/lib/logger';
 import type { Provider } from "@/types/provider";
 import type { User } from "@/types/user";
 import type { Key } from "@/types/key";
@@ -49,8 +50,8 @@ export class ProxySession {
   sessionId: string | null;
 
   // Codex 支持：记录原始请求格式和供应商类型
-  originalFormat: 'response' | 'openai' | 'claude' = 'claude';
-  providerType: 'claude' | 'codex' | null = null;
+  originalFormat: "response" | "openai" | "claude" = "claude";
+  providerType: "claude" | "codex" | null = null;
 
   // 上游决策链（记录尝试的供应商列表）
   private providerChain: ProviderChainItem[];
@@ -90,7 +91,10 @@ export class ProxySession {
       buffer: bodyResult.requestBodyBuffer,
       log: bodyResult.requestBodyLog,
       note: bodyResult.requestBodyLogNote,
-      model: typeof bodyResult.requestMessage.model === "string" ? bodyResult.requestMessage.model : null
+      model:
+        typeof bodyResult.requestMessage.model === "string"
+          ? bodyResult.requestMessage.model
+          : null,
     };
 
     return new ProxySession({ startTime, method, requestUrl, headers, headerLog, request });
@@ -106,14 +110,14 @@ export class ProxySession {
   setProvider(provider: Provider | null): void {
     this.provider = provider;
     if (provider) {
-      this.providerType = (provider.providerType as 'claude' | 'codex') || 'claude';
+      this.providerType = (provider.providerType as "claude" | "codex") || "claude";
     }
   }
 
   /**
    * 设置原始请求格式（从路由层调用）
    */
-  setOriginalFormat(format: 'response' | 'openai' | 'claude'): void {
+  setOriginalFormat(format: "response" | "openai" | "claude"): void {
     this.originalFormat = format;
   }
 
@@ -159,11 +163,11 @@ export class ProxySession {
   addProviderToChain(
     provider: Provider,
     metadata?: {
-      reason?: 'initial_selection' | 'retry_attempt' | 'retry_fallback' | 'reuse';
-      selectionMethod?: 'reuse' | 'random' | 'group_filter' | 'fallback';
-      circuitState?: 'closed' | 'open' | 'half-open';
+      reason?: "initial_selection" | "retry_attempt" | "retry_fallback" | "reuse";
+      selectionMethod?: "reuse" | "random" | "group_filter" | "fallback";
+      circuitState?: "closed" | "open" | "half-open";
       attemptNumber?: number;
-      errorMessage?: string;  // 错误信息（失败时记录）
+      errorMessage?: string; // 错误信息（失败时记录）
     }
   ): void {
     const item: ProviderChainItem = {
@@ -179,7 +183,7 @@ export class ProxySession {
       circuitState: metadata?.circuitState,
       timestamp: Date.now(),
       attemptNumber: metadata?.attemptNumber,
-      errorMessage: metadata?.errorMessage,  // 记录错误信息
+      errorMessage: metadata?.errorMessage, // 记录错误信息
     };
 
     // 避免重复添加同一个供应商（除非是重试，即有 attemptNumber）
@@ -243,8 +247,8 @@ async function parseRequestBody(c: Context): Promise<RequestBodyResult> {
 
   try {
     const parsedMessage = JSON.parse(requestBodyText) as Record<string, unknown>;
-    requestMessage = parsedMessage;  // 保留原始数据用于业务逻辑
-    requestBodyLog = JSON.stringify(optimizeRequestMessage(parsedMessage), null, 2);  // 仅在日志中优化
+    requestMessage = parsedMessage; // 保留原始数据用于业务逻辑
+    requestBodyLog = JSON.stringify(optimizeRequestMessage(parsedMessage), null, 2); // 仅在日志中优化
   } catch {
     requestMessage = { raw: requestBodyText };
     requestBodyLog = requestBodyText;
@@ -255,6 +259,6 @@ async function parseRequestBody(c: Context): Promise<RequestBodyResult> {
     requestMessage,
     requestBodyLog,
     requestBodyLogNote,
-    requestBodyBuffer
+    requestBodyBuffer,
   };
 }

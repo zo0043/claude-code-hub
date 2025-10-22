@@ -6,7 +6,14 @@ export class ProxyMessageService {
     const authState = session.authState;
     const provider = session.provider;
 
-    if (!authState || !authState.success || !authState.user || !authState.key || !authState.apiKey || !provider) {
+    if (
+      !authState ||
+      !authState.success ||
+      !authState.user ||
+      !authState.key ||
+      !authState.apiKey ||
+      !provider
+    ) {
       session.setMessageContext(null);
       return;
     }
@@ -16,14 +23,14 @@ export class ProxyMessageService {
       user_id: authState.user.id,
       key: authState.apiKey,
       model: session.request.model ?? undefined,
-      session_id: session.sessionId ?? undefined,  // 新增：传入 session_id
+      session_id: session.sessionId ?? undefined, // 新增：传入 session_id
     });
 
     session.setMessageContext({
       id: messageRequest.id,
       user: authState.user,
       key: authState.key,
-      apiKey: authState.apiKey
+      apiKey: authState.apiKey,
     });
   }
 }

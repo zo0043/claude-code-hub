@@ -9,11 +9,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Info, ChevronDown, ChevronRight, Lightbulb } from "lucide-react";
@@ -46,8 +42,8 @@ const scenarios: Array<{
         example: {
           before: "供应商 A (优先级 0), B (优先级 1), C (优先级 0), D (优先级 2)",
           after: "筛选出最高优先级（0）的供应商：A, C",
-          decision: "只从 A 和 C 中选择，B 和 D 被过滤"
-        }
+          decision: "只从 A 和 C 中选择，B 和 D 被过滤",
+        },
       },
       {
         step: "成本排序",
@@ -55,8 +51,8 @@ const scenarios: Array<{
         example: {
           before: "A (成本 1.0x), C (成本 0.8x)",
           after: "排序后：C (0.8x), A (1.0x)",
-          decision: "成本更低的 C 有更高的被选中概率"
-        }
+          decision: "成本更低的 C 有更高的被选中概率",
+        },
       },
       {
         step: "加权随机",
@@ -64,10 +60,10 @@ const scenarios: Array<{
         example: {
           before: "C (权重 3), A (权重 1)",
           after: "C 被选中概率 75%, A 被选中概率 25%",
-          decision: "最终随机选择了 C"
-        }
-      }
-    ]
+          decision: "最终随机选择了 C",
+        },
+      },
+    ],
   },
   {
     title: "用户分组过滤",
@@ -80,8 +76,8 @@ const scenarios: Array<{
         example: {
           before: "所有供应商：A (default), B (premium), C (premium), D (economy)",
           after: "过滤出 'premium' 组：B, C",
-          decision: "只从 B 和 C 中选择"
-        }
+          decision: "只从 B 和 C 中选择",
+        },
       },
       {
         step: "分组降级",
@@ -89,10 +85,10 @@ const scenarios: Array<{
         example: {
           before: "用户组 'vip' 内的供应商全部禁用或超限",
           after: "降级到所有启用的供应商：A, B, C, D",
-          decision: "记录警告并从全局供应商池中选择"
-        }
-      }
-    ]
+          decision: "记录警告并从全局供应商池中选择",
+        },
+      },
+    ],
   },
   {
     title: "健康度过滤（熔断器 + 限流）",
@@ -105,8 +101,8 @@ const scenarios: Array<{
         example: {
           before: "供应商 A 连续失败 5 次，熔断器状态：open",
           after: "A 被过滤，剩余：B, C, D",
-          decision: "A 在 60 秒后自动恢复到半开状态"
-        }
+          decision: "A 在 60 秒后自动恢复到半开状态",
+        },
       },
       {
         step: "金额限流",
@@ -114,8 +110,8 @@ const scenarios: Array<{
         example: {
           before: "供应商 B 的 5 小时限额 $10，已消耗 $9.8",
           after: "B 被过滤（接近限额），剩余：C, D",
-          decision: "5 小时窗口滑动后自动恢复"
-        }
+          decision: "5 小时窗口滑动后自动恢复",
+        },
       },
       {
         step: "并发 Session 限制",
@@ -123,10 +119,10 @@ const scenarios: Array<{
         example: {
           before: "供应商 C 并发限制 2，当前活跃 Session 数：2",
           after: "C 被过滤（已满），剩余：D",
-          decision: "Session 过期（5 分钟）后自动释放"
-        }
-      }
-    ]
+          decision: "Session 过期（5 分钟）后自动释放",
+        },
+      },
+    ],
   },
   {
     title: "会话复用机制",
@@ -139,8 +135,8 @@ const scenarios: Array<{
         example: {
           before: "最近一次请求使用了供应商 B",
           after: "检查 B 是否启用且健康",
-          decision: "B 可用，直接复用，跳过随机选择"
-        }
+          decision: "B 可用，直接复用，跳过随机选择",
+        },
       },
       {
         step: "复用失效",
@@ -148,14 +144,14 @@ const scenarios: Array<{
         example: {
           before: "上次使用的供应商 B 已被禁用或熔断",
           after: "进入正常选择流程",
-          decision: "从其他可用供应商中选择"
-        }
-      }
-    ]
-  }
+          decision: "从其他可用供应商中选择",
+        },
+      },
+    ],
+  },
 ];
 
-function ScenarioCard({ title, emoji, description, steps }: typeof scenarios[0]) {
+function ScenarioCard({ title, emoji, description, steps }: (typeof scenarios)[0]) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -234,10 +230,18 @@ export function SchedulingRulesDialog() {
             <Info className="h-4 w-4" />
             <AlertTitle>核心原则</AlertTitle>
             <AlertDescription className="space-y-1 text-sm">
-              <p>1️⃣ <strong>优先级优先</strong>：只从最高优先级（数值最小）的供应商中选择</p>
-              <p>2️⃣ <strong>成本优化</strong>：同优先级内，成本倍率低的供应商有更高概率</p>
-              <p>3️⃣ <strong>健康过滤</strong>：自动跳过熔断或超限的供应商</p>
-              <p>4️⃣ <strong>会话复用</strong>：连续对话复用同一供应商，节省上下文成本</p>
+              <p>
+                1️⃣ <strong>优先级优先</strong>：只从最高优先级（数值最小）的供应商中选择
+              </p>
+              <p>
+                2️⃣ <strong>成本优化</strong>：同优先级内，成本倍率低的供应商有更高概率
+              </p>
+              <p>
+                3️⃣ <strong>健康过滤</strong>：自动跳过熔断或超限的供应商
+              </p>
+              <p>
+                4️⃣ <strong>会话复用</strong>：连续对话复用同一供应商，节省上下文成本
+              </p>
             </AlertDescription>
           </Alert>
 
@@ -252,11 +256,21 @@ export function SchedulingRulesDialog() {
             <Lightbulb className="h-4 w-4 text-primary" />
             <AlertTitle className="text-primary">最佳实践建议</AlertTitle>
             <AlertDescription className="space-y-1 text-sm text-foreground">
-              <p>• <strong>优先级设置</strong>：核心供应商设为 0，备用供应商设为 1-3</p>
-              <p>• <strong>权重配置</strong>：根据供应商容量设置权重（容量大 = 权重高）</p>
-              <p>• <strong>成本倍率</strong>：官方倍率为 1.0，自建服务可设置为 0.8-1.2</p>
-              <p>• <strong>限额设置</strong>：根据预算设置 5 小时、7 天、30 天限额</p>
-              <p>• <strong>并发控制</strong>：根据供应商 API 限制设置 Session 并发数</p>
+              <p>
+                • <strong>优先级设置</strong>：核心供应商设为 0，备用供应商设为 1-3
+              </p>
+              <p>
+                • <strong>权重配置</strong>：根据供应商容量设置权重（容量大 = 权重高）
+              </p>
+              <p>
+                • <strong>成本倍率</strong>：官方倍率为 1.0，自建服务可设置为 0.8-1.2
+              </p>
+              <p>
+                • <strong>限额设置</strong>：根据预算设置 5 小时、7 天、30 天限额
+              </p>
+              <p>
+                • <strong>并发控制</strong>：根据供应商 API 限制设置 Session 并发数
+              </p>
             </AlertDescription>
           </Alert>
         </div>

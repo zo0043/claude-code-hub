@@ -53,7 +53,7 @@ function PageLoadingOverlay({ active }: PageLoadingOverlayProps) {
  */
 export function UploadPriceDialog({
   defaultOpen = false,
-  isRequired = false
+  isRequired = false,
 }: UploadPriceDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(defaultOpen);
@@ -133,7 +133,7 @@ export function UploadPriceDialog({
 
     // 如果是必需上传且已成功上传，跳转到dashboard
     if (isRequired && result && (result.added.length > 0 || result.updated.length > 0)) {
-      router.push('/dashboard');
+      router.push("/dashboard");
       return;
     }
 
@@ -164,126 +164,122 @@ export function UploadPriceDialog({
             }
           }}
         >
-        <DialogHeader>
-          <DialogTitle>
-            {isRequired ? "请务必先上传价格表" : "上传模型价格表"}
-          </DialogTitle>
-          <DialogDescription>
-            {isRequired
-              ? "系统检测到尚未配置模型价格，请选择包含模型价格数据的JSON文件进行上传"
-              : "选择包含模型价格数据的JSON文件进行上传"
-            }
-          </DialogDescription>
-        </DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{isRequired ? "请务必先上传价格表" : "上传模型价格表"}</DialogTitle>
+            <DialogDescription>
+              {isRequired
+                ? "系统检测到尚未配置模型价格，请选择包含模型价格数据的JSON文件进行上传"
+                : "选择包含模型价格数据的JSON文件进行上传"}
+            </DialogDescription>
+          </DialogHeader>
 
-        {!result ? (
-          <div className="space-y-4">
-            <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
-              <div className="flex flex-col items-center space-y-3">
-                <FileJson className="h-10 w-10 text-muted-foreground/50" />
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">
-                    点击选择JSON文件或拖拽到此处
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    文件大小不超过10MB
-                  </p>
-                </div>
-                <label htmlFor="price-file-input">
-                  <Button
-                    variant="secondary"
-                    size="sm"
+          {!result ? (
+            <div className="space-y-4">
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
+                <div className="flex flex-col items-center space-y-3">
+                  <FileJson className="h-10 w-10 text-muted-foreground/50" />
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground">点击选择JSON文件或拖拽到此处</p>
+                    <p className="text-xs text-muted-foreground mt-1">文件大小不超过10MB</p>
+                  </div>
+                  <label htmlFor="price-file-input">
+                    <Button variant="secondary" size="sm" disabled={uploading} asChild>
+                      <span>{uploading ? "上传中..." : "选择文件"}</span>
+                    </Button>
+                  </label>
+                  <input
+                    id="price-file-input"
+                    type="file"
+                    accept=".json"
+                    className="hidden"
+                    onChange={handleFileSelect}
                     disabled={uploading}
-                    asChild
+                  />
+                </div>
+              </div>
+
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>• 推荐使用左侧&quot;同步 LiteLLM 价格&quot;按钮自动获取最新价格</p>
+                <p>
+                  • 也可以手动下载{" "}
+                  <a
+                    className="text-blue-500 underline"
+                    href="https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
-                    <span>
-                      {uploading ? "上传中..." : "选择文件"}
-                    </span>
-                  </Button>
-                </label>
-                <input
-                  id="price-file-input"
-                  type="file"
-                  accept=".json"
-                  className="hidden"
-                  onChange={handleFileSelect}
-                  disabled={uploading}
-                />
+                    LiteLLM 价格表
+                  </a>{" "}
+                  并上传
+                </p>
+                <p>• 支持 Claude 和 OpenAI 模型（claude-, gpt-, o1-, o3- 前缀）</p>
               </div>
             </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="text-sm space-y-2">
+                <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                  <span>处理总数</span>
+                  <span className="font-mono">{result.total}</span>
+                </div>
 
-            <div className="text-xs text-muted-foreground space-y-1">
-              <p>• 推荐使用左侧&quot;同步 LiteLLM 价格&quot;按钮自动获取最新价格</p>
-              <p>• 也可以手动下载 <a className="text-blue-500 underline" href="https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json" target="_blank" rel="noopener noreferrer">LiteLLM 价格表</a> 并上传</p>
-              <p>• 支持 Claude 和 OpenAI 模型（claude-, gpt-, o1-, o3- 前缀）</p>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="text-sm space-y-2">
-              <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                <span>处理总数</span>
-                <span className="font-mono">{result.total}</span>
+                {result.added.length > 0 && (
+                  <div className="p-2 bg-green-50 dark:bg-green-950/20 rounded">
+                    <div className="flex items-center gap-2 mb-1">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <span className="font-medium">新增模型 ({result.added.length})</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground ml-6">
+                      {result.added.slice(0, 3).join(", ")}
+                      {result.added.length > 3 && ` 等${result.added.length}个`}
+                    </div>
+                  </div>
+                )}
+
+                {result.updated.length > 0 && (
+                  <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded">
+                    <div className="flex items-center gap-2 mb-1">
+                      <AlertCircle className="h-4 w-4 text-blue-600" />
+                      <span className="font-medium">更新模型 ({result.updated.length})</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground ml-6">
+                      {result.updated.slice(0, 3).join(", ")}
+                      {result.updated.length > 3 && ` 等${result.updated.length}个`}
+                    </div>
+                  </div>
+                )}
+
+                {result.unchanged.length > 0 && (
+                  <div className="p-2 bg-gray-50 dark:bg-gray-950/20 rounded">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">未变化 ({result.unchanged.length})</span>
+                    </div>
+                  </div>
+                )}
+
+                {result.failed.length > 0 && (
+                  <div className="p-2 bg-red-50 dark:bg-red-950/20 rounded">
+                    <div className="flex items-center gap-2 mb-1">
+                      <XCircle className="h-4 w-4 text-red-600" />
+                      <span className="font-medium">处理失败 ({result.failed.length})</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground ml-6">
+                      {result.failed.slice(0, 3).join(", ")}
+                      {result.failed.length > 3 && ` 等${result.failed.length}个`}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {result.added.length > 0 && (
-                <div className="p-2 bg-green-50 dark:bg-green-950/20 rounded">
-                  <div className="flex items-center gap-2 mb-1">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <span className="font-medium">新增模型 ({result.added.length})</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground ml-6">
-                    {result.added.slice(0, 3).join(", ")}
-                    {result.added.length > 3 && ` 等${result.added.length}个`}
-                  </div>
-                </div>
-              )}
-
-              {result.updated.length > 0 && (
-                <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded">
-                  <div className="flex items-center gap-2 mb-1">
-                    <AlertCircle className="h-4 w-4 text-blue-600" />
-                    <span className="font-medium">更新模型 ({result.updated.length})</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground ml-6">
-                    {result.updated.slice(0, 3).join(", ")}
-                    {result.updated.length > 3 && ` 等${result.updated.length}个`}
-                  </div>
-                </div>
-              )}
-
-              {result.unchanged.length > 0 && (
-                <div className="p-2 bg-gray-50 dark:bg-gray-950/20 rounded">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">未变化 ({result.unchanged.length})</span>
-                  </div>
-                </div>
-              )}
-
-              {result.failed.length > 0 && (
-                <div className="p-2 bg-red-50 dark:bg-red-950/20 rounded">
-                  <div className="flex items-center gap-2 mb-1">
-                    <XCircle className="h-4 w-4 text-red-600" />
-                    <span className="font-medium">处理失败 ({result.failed.length})</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground ml-6">
-                    {result.failed.slice(0, 3).join(", ")}
-                    {result.failed.length > 3 && ` 等${result.failed.length}个`}
-                  </div>
-                </div>
-              )}
+              <Button onClick={handleClose} className="w-full">
+                {isRequired && result && (result.added.length > 0 || result.updated.length > 0)
+                  ? "进入控制面板"
+                  : "完成"}
+              </Button>
             </div>
-
-            <Button onClick={handleClose} className="w-full">
-              {isRequired && result && (result.added.length > 0 || result.updated.length > 0)
-                ? "进入控制面板"
-                : "完成"
-              }
-            </Button>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

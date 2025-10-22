@@ -25,10 +25,7 @@ export function LeaderboardView() {
           throw new Error("获取排行榜数据失败");
         }
 
-        const [daily, monthly] = await Promise.all([
-          dailyRes.json(),
-          monthlyRes.json(),
-        ]);
+        const [daily, monthly] = await Promise.all([dailyRes.json(), monthlyRes.json()]);
 
         setDailyData(daily);
         setMonthlyData(monthly);

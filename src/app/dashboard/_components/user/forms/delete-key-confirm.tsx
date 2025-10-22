@@ -1,6 +1,12 @@
 "use client";
 import { useTransition } from "react";
-import { DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import {
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { removeKey } from "@/actions/keys";
@@ -14,7 +20,10 @@ interface DeleteKeyConfirmProps {
   };
 }
 
-export function DeleteKeyConfirm({ keyData, onSuccess }: DeleteKeyConfirmProps & { onSuccess?: () => void }) {
+export function DeleteKeyConfirm({
+  keyData,
+  onSuccess,
+}: DeleteKeyConfirmProps & { onSuccess?: () => void }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -24,14 +33,14 @@ export function DeleteKeyConfirm({ keyData, onSuccess }: DeleteKeyConfirmProps &
       try {
         const res = await removeKey(keyData.id);
         if (!res.ok) {
-          toast.error(res.error || '删除失败');
+          toast.error(res.error || "删除失败");
           return;
         }
         onSuccess?.();
         router.refresh();
       } catch (error) {
         console.error("删除Key失败:", error);
-        toast.error('删除失败，请稍后重试');
+        toast.error("删除失败，请稍后重试");
       }
     });
   };
@@ -48,18 +57,14 @@ export function DeleteKeyConfirm({ keyData, onSuccess }: DeleteKeyConfirmProps &
           此操作无法撤销，删除后所有使用此密钥的应用将无法访问。
         </DialogDescription>
       </DialogHeader>
-      
+
       <DialogFooter>
         <DialogClose asChild>
           <Button type="button" variant="outline" disabled={isPending}>
             取消
           </Button>
         </DialogClose>
-        <Button 
-          variant="destructive" 
-          onClick={handleConfirm}
-          disabled={isPending}
-        >
+        <Button variant="destructive" onClick={handleConfirm} disabled={isPending}>
           {isPending ? "删除中..." : "确认删除"}
         </Button>
       </DialogFooter>

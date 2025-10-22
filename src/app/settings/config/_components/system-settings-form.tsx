@@ -15,7 +15,9 @@ interface SystemSettingsFormProps {
 
 export function SystemSettingsForm({ initialSettings }: SystemSettingsFormProps) {
   const [siteTitle, setSiteTitle] = useState(initialSettings.siteTitle);
-  const [allowGlobalUsageView, setAllowGlobalUsageView] = useState(initialSettings.allowGlobalUsageView);
+  const [allowGlobalUsageView, setAllowGlobalUsageView] = useState(
+    initialSettings.allowGlobalUsageView
+  );
   const [isPending, startTransition] = useTransition();
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -59,7 +61,9 @@ export function SystemSettingsForm({ initialSettings }: SystemSettingsFormProps)
           maxLength={128}
           required
         />
-        <p className="text-xs text-muted-foreground">用于设置浏览器标签页标题以及系统默认显示名称。</p>
+        <p className="text-xs text-muted-foreground">
+          用于设置浏览器标签页标题以及系统默认显示名称。
+        </p>
       </div>
 
       <div className="flex items-start justify-between gap-4 rounded-lg border border-dashed border-border px-4 py-3">

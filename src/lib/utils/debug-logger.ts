@@ -1,4 +1,4 @@
-import { isDevelopment, getEnvConfig } from '@/lib/config/env.schema';
+import { isDevelopment, getEnvConfig } from "@/lib/config/env.schema";
 
 /**
  * Debug 日志工具
@@ -37,6 +37,6 @@ export function debugLog(context: string, data?: unknown): void {
     }
   } catch (error) {
     // Debug 日志本身不应该阻塞程序
-    console.error('[DEBUG] debugLog 自身发生错误:', error);
+    console.error("[DEBUG] debugLog 自身发生错误:", error);
   }
 }

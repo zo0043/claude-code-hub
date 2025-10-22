@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { logger } from '@/lib/logger';
 import { toast } from "sonner";
 import { editProvider } from "@/actions/providers";
 import type { ProviderDisplay } from "@/types/provider";
@@ -25,7 +26,9 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
 
   // 周消费上限
   const [showWeeklyLimit, setShowWeeklyLimit] = useState(false);
-  const [limitWeeklyInfinite, setLimitWeeklyInfinite] = useState<boolean>(item.limitWeeklyUsd === null);
+  const [limitWeeklyInfinite, setLimitWeeklyInfinite] = useState<boolean>(
+    item.limitWeeklyUsd === null
+  );
   const [limitWeeklyValue, setLimitWeeklyValue] = useState<number>(() => {
     return item.limitWeeklyUsd ?? PROVIDER_LIMITS.LIMIT_WEEKLY_USD.MIN;
   });
@@ -33,7 +36,9 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
 
   // 月消费上限
   const [showMonthlyLimit, setShowMonthlyLimit] = useState(false);
-  const [limitMonthlyInfinite, setLimitMonthlyInfinite] = useState<boolean>(item.limitMonthlyUsd === null);
+  const [limitMonthlyInfinite, setLimitMonthlyInfinite] = useState<boolean>(
+    item.limitMonthlyUsd === null
+  );
   const [limitMonthlyValue, setLimitMonthlyValue] = useState<number>(() => {
     return item.limitMonthlyUsd ?? PROVIDER_LIMITS.LIMIT_MONTHLY_USD.MIN;
   });
@@ -41,9 +46,13 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
 
   // 并发Session上限
   const [showConcurrent, setShowConcurrent] = useState(false);
-  const [concurrentInfinite, setConcurrentInfinite] = useState<boolean>(item.limitConcurrentSessions === 0);
+  const [concurrentInfinite, setConcurrentInfinite] = useState<boolean>(
+    item.limitConcurrentSessions === 0
+  );
   const [concurrentValue, setConcurrentValue] = useState<number>(() => {
-    return item.limitConcurrentSessions === 0 ? PROVIDER_LIMITS.CONCURRENT_SESSIONS.MIN : item.limitConcurrentSessions;
+    return item.limitConcurrentSessions === 0
+      ? PROVIDER_LIMITS.CONCURRENT_SESSIONS.MIN
+      : item.limitConcurrentSessions;
   });
   const initialConcurrentRef = useRef<number>(item.limitConcurrentSessions);
 
@@ -60,9 +69,9 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
         throw new Error(res.error);
       }
     } catch (e) {
-      console.error("切换服务商启用状态失败", e);
+      logger.error('切换服务商启用状态失败', { context: e });
       setEnabled(prev);
-      const msg = e instanceof Error ? e.message : '切换失败';
+      const msg = e instanceof Error ? e.message : "切换失败";
       toast.error(msg);
     } finally {
       setTogglePending(false);
@@ -80,14 +89,16 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
 
     const next = clampWeight(weight);
     if (next !== clampWeight(initialWeightRef.current)) {
-      editProvider(item.id, { weight: next }).then(res => {
-        if (!res.ok) throw new Error(res.error);
-      }).catch((e) => {
-        console.error("更新权重失败", e);
-        const msg = e instanceof Error ? e.message : '更新权重失败';
-        toast.error(msg);
-        setWeight(clampWeight(initialWeightRef.current));
-      });
+      editProvider(item.id, { weight: next })
+        .then((res) => {
+          if (!res.ok) throw new Error(res.error);
+        })
+        .catch((e) => {
+          logger.error('更新权重失败', { context: e });
+          const msg = e instanceof Error ? e.message : "更新权重失败";
+          toast.error(msg);
+          setWeight(clampWeight(initialWeightRef.current));
+        });
     }
   };
 
@@ -100,17 +111,21 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
       return;
     }
 
-    const nextValue = limit5hInfinite ? null : Math.max(PROVIDER_LIMITS.LIMIT_5H_USD.MIN, limit5hValue);
+    const nextValue = limit5hInfinite
+      ? null
+      : Math.max(PROVIDER_LIMITS.LIMIT_5H_USD.MIN, limit5hValue);
     if (nextValue !== initial5hRef.current) {
-      editProvider(item.id, { limit_5h_usd: nextValue }).then(res => {
-        if (!res.ok) throw new Error(res.error);
-      }).catch((e) => {
-        console.error("更新5小时消费上限失败", e);
-        const msg = e instanceof Error ? e.message : '更新5小时消费上限失败';
-        toast.error(msg);
-        setLimit5hInfinite(initial5hRef.current === null);
-        setLimit5hValue(initial5hRef.current ?? PROVIDER_LIMITS.LIMIT_5H_USD.MIN);
-      });
+      editProvider(item.id, { limit_5h_usd: nextValue })
+        .then((res) => {
+          if (!res.ok) throw new Error(res.error);
+        })
+        .catch((e) => {
+          logger.error('更新5小时消费上限失败', { context: e });
+          const msg = e instanceof Error ? e.message : "更新5小时消费上限失败";
+          toast.error(msg);
+          setLimit5hInfinite(initial5hRef.current === null);
+          setLimit5hValue(initial5hRef.current ?? PROVIDER_LIMITS.LIMIT_5H_USD.MIN);
+        });
     }
   };
 
@@ -123,17 +138,21 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
       return;
     }
 
-    const nextValue = limitWeeklyInfinite ? null : Math.max(PROVIDER_LIMITS.LIMIT_WEEKLY_USD.MIN, limitWeeklyValue);
+    const nextValue = limitWeeklyInfinite
+      ? null
+      : Math.max(PROVIDER_LIMITS.LIMIT_WEEKLY_USD.MIN, limitWeeklyValue);
     if (nextValue !== initialWeeklyRef.current) {
-      editProvider(item.id, { limit_weekly_usd: nextValue }).then(res => {
-        if (!res.ok) throw new Error(res.error);
-      }).catch((e) => {
-        console.error("更新周消费上限失败", e);
-        const msg = e instanceof Error ? e.message : '更新周消费上限失败';
-        toast.error(msg);
-        setLimitWeeklyInfinite(initialWeeklyRef.current === null);
-        setLimitWeeklyValue(initialWeeklyRef.current ?? PROVIDER_LIMITS.LIMIT_WEEKLY_USD.MIN);
-      });
+      editProvider(item.id, { limit_weekly_usd: nextValue })
+        .then((res) => {
+          if (!res.ok) throw new Error(res.error);
+        })
+        .catch((e) => {
+          logger.error('更新周消费上限失败', { context: e });
+          const msg = e instanceof Error ? e.message : "更新周消费上限失败";
+          toast.error(msg);
+          setLimitWeeklyInfinite(initialWeeklyRef.current === null);
+          setLimitWeeklyValue(initialWeeklyRef.current ?? PROVIDER_LIMITS.LIMIT_WEEKLY_USD.MIN);
+        });
     }
   };
 
@@ -146,17 +165,21 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
       return;
     }
 
-    const nextValue = limitMonthlyInfinite ? null : Math.max(PROVIDER_LIMITS.LIMIT_MONTHLY_USD.MIN, limitMonthlyValue);
+    const nextValue = limitMonthlyInfinite
+      ? null
+      : Math.max(PROVIDER_LIMITS.LIMIT_MONTHLY_USD.MIN, limitMonthlyValue);
     if (nextValue !== initialMonthlyRef.current) {
-      editProvider(item.id, { limit_monthly_usd: nextValue }).then(res => {
-        if (!res.ok) throw new Error(res.error);
-      }).catch((e) => {
-        console.error("更新月消费上限失败", e);
-        const msg = e instanceof Error ? e.message : '更新月消费上限失败';
-        toast.error(msg);
-        setLimitMonthlyInfinite(initialMonthlyRef.current === null);
-        setLimitMonthlyValue(initialMonthlyRef.current ?? PROVIDER_LIMITS.LIMIT_MONTHLY_USD.MIN);
-      });
+      editProvider(item.id, { limit_monthly_usd: nextValue })
+        .then((res) => {
+          if (!res.ok) throw new Error(res.error);
+        })
+        .catch((e) => {
+          logger.error('更新月消费上限失败', { context: e });
+          const msg = e instanceof Error ? e.message : "更新月消费上限失败";
+          toast.error(msg);
+          setLimitMonthlyInfinite(initialMonthlyRef.current === null);
+          setLimitMonthlyValue(initialMonthlyRef.current ?? PROVIDER_LIMITS.LIMIT_MONTHLY_USD.MIN);
+        });
     }
   };
 
@@ -169,17 +192,25 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
       return;
     }
 
-    const nextValue = concurrentInfinite ? 0 : Math.max(PROVIDER_LIMITS.CONCURRENT_SESSIONS.MIN, concurrentValue);
+    const nextValue = concurrentInfinite
+      ? 0
+      : Math.max(PROVIDER_LIMITS.CONCURRENT_SESSIONS.MIN, concurrentValue);
     if (nextValue !== initialConcurrentRef.current) {
-      editProvider(item.id, { limit_concurrent_sessions: nextValue }).then(res => {
-        if (!res.ok) throw new Error(res.error);
-      }).catch((e) => {
-        console.error("更新并发Session上限失败", e);
-        const msg = e instanceof Error ? e.message : '更新并发Session上限失败';
-        toast.error(msg);
-        setConcurrentInfinite(initialConcurrentRef.current === 0);
-        setConcurrentValue(initialConcurrentRef.current === 0 ? PROVIDER_LIMITS.CONCURRENT_SESSIONS.MIN : initialConcurrentRef.current);
-      });
+      editProvider(item.id, { limit_concurrent_sessions: nextValue })
+        .then((res) => {
+          if (!res.ok) throw new Error(res.error);
+        })
+        .catch((e) => {
+          logger.error('更新并发Session上限失败', { context: e });
+          const msg = e instanceof Error ? e.message : "更新并发Session上限失败";
+          toast.error(msg);
+          setConcurrentInfinite(initialConcurrentRef.current === 0);
+          setConcurrentValue(
+            initialConcurrentRef.current === 0
+              ? PROVIDER_LIMITS.CONCURRENT_SESSIONS.MIN
+              : initialConcurrentRef.current
+          );
+        });
     }
   };
 

@@ -1,16 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { ExternalLink, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { useEffect, useState } from "react";
+import { ExternalLink, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface VersionInfo {
   current: string;
@@ -28,16 +22,16 @@ export function VersionChecker() {
   const checkVersion = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/version');
+      const response = await fetch("/api/version");
       const data = await response.json();
       setVersionInfo(data);
     } catch (error) {
-      console.error('检查版本失败:', error);
+      console.error("检查版本失败:", error);
       setVersionInfo({
-        current: 'dev',
+        current: "dev",
         latest: null,
         hasUpdate: false,
-        error: '网络错误',
+        error: "网络错误",
       });
     } finally {
       setLoading(false);
@@ -96,7 +90,7 @@ export function VersionChecker() {
                 </p>
                 {versionInfo.publishedAt && (
                   <p className="mt-1 text-xs text-muted-foreground">
-                    发布于 {new Date(versionInfo.publishedAt).toLocaleDateString('zh-CN')}
+                    发布于 {new Date(versionInfo.publishedAt).toLocaleDateString("zh-CN")}
                   </p>
                 )}
               </div>
@@ -111,26 +105,13 @@ export function VersionChecker() {
         )}
 
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={checkVersion}
-            disabled={loading}
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          <Button variant="outline" size="sm" onClick={checkVersion} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             检查更新
           </Button>
           {versionInfo?.releaseUrl && (
-            <Button
-              variant="outline"
-              size="sm"
-              asChild
-            >
-              <a
-                href={versionInfo.releaseUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+            <Button variant="outline" size="sm" asChild>
+              <a href={versionInfo.releaseUrl} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-4 w-4" />
                 查看发布
               </a>

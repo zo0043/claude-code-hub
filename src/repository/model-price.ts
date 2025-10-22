@@ -72,10 +72,7 @@ export async function findAllLatestPrices(): Promise<ModelPrice[]> {
  * 检查是否存在任意价格记录
  */
 export async function hasAnyPriceRecords(): Promise<boolean> {
-  const [row] = await db
-    .select({ id: modelPrices.id })
-    .from(modelPrices)
-    .limit(1);
+  const [row] = await db.select({ id: modelPrices.id }).from(modelPrices).limit(1);
 
   return !!row;
 }

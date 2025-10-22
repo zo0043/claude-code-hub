@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from '@/lib/logger';
 import { findDailyLeaderboard, findMonthlyLeaderboard } from "@/repository/leaderboard";
 import { unstable_cache } from "next/cache";
 
@@ -24,9 +25,10 @@ export async function GET(request: NextRequest) {
 
     // 生成缓存 key（包含日期以确保每天/每月自动刷新）
     const now = new Date();
-    const cacheKey = period === "daily"
-      ? `leaderboard:daily:${now.toISOString().split('T')[0]}`
-      : `leaderboard:monthly:${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const cacheKey =
+      period === "daily"
+        ? `leaderboard:daily:${now.toISOString().split("T")[0]}`
+        : `leaderboard:monthly:${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
     // 使用 Next.js unstable_cache 进行缓存
     const getCachedLeaderboard = unstable_cache(
@@ -40,7 +42,7 @@ export async function GET(request: NextRequest) {
       [cacheKey],
       {
         revalidate: 300, // 5 分钟缓存
-        tags: [`leaderboard-${period}`]
+        tags: [`leaderboard-${period}`],
       }
     );
 
@@ -48,15 +50,11 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(data, {
       headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
       },
     });
-
   } catch (error) {
-    console.error("获取排行榜失败:", error);
-    return NextResponse.json(
-      { error: "获取排行榜数据失败" },
-      { status: 500 }
-    );
+    logger.error('获取排行榜失败:', error);
+    return NextResponse.json({ error: "获取排行榜数据失败" }, { status: 500 });
   }
 }

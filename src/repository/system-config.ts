@@ -1,6 +1,7 @@
 "use server";
 
 import { db } from "@/drizzle/db";
+import { logger } from '@/lib/logger';
 import { systemSettings } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import type { SystemSettings, UpdateSystemSettingsInput } from "@/types/system-config";
@@ -15,9 +16,12 @@ function isTableMissingError(error: unknown, depth = 0): boolean {
 
   if (typeof error === "string") {
     const normalized = error.toLowerCase();
-    return normalized.includes("42p01") || (
-      normalized.includes("system_settings") &&
-      (normalized.includes("does not exist") || normalized.includes("doesn't exist") || normalized.includes("找不到"))
+    return (
+      normalized.includes("42p01") ||
+      (normalized.includes("system_settings") &&
+        (normalized.includes("does not exist") ||
+          normalized.includes("doesn't exist") ||
+          normalized.includes("找不到")))
     );
   }
 
@@ -43,7 +47,7 @@ function isTableMissingError(error: unknown, depth = 0): boolean {
     }
 
     if (Array.isArray(err.errors)) {
-      return err.errors.some(item => isTableMissingError(item, depth + 1));
+      return err.errors.some((item) => isTableMissingError(item, depth + 1));
     }
 
     if (err.originalError && isTableMissingError(err.originalError, depth + 1)) {

@@ -1,6 +1,7 @@
 "use server";
 
 import { db } from "@/drizzle/db";
+import { logger } from '@/lib/logger';
 import { providers } from "@/drizzle/schema";
 import { eq, isNull, and, desc, sql } from "drizzle-orm";
 import type { Provider, CreateProviderData, UpdateProviderData } from "@/types/provider";
@@ -15,13 +16,16 @@ export async function createProvider(providerData: CreateProviderData): Promise<
     isEnabled: providerData.is_enabled,
     weight: providerData.weight,
     priority: providerData.priority,
-    costMultiplier: providerData.cost_multiplier != null ? providerData.cost_multiplier.toString() : '1.0',
+    costMultiplier:
+      providerData.cost_multiplier != null ? providerData.cost_multiplier.toString() : "1.0",
     groupTag: providerData.group_tag,
     providerType: providerData.provider_type,
     modelRedirects: providerData.model_redirects,
     limit5hUsd: providerData.limit_5h_usd != null ? providerData.limit_5h_usd.toString() : null,
-    limitWeeklyUsd: providerData.limit_weekly_usd != null ? providerData.limit_weekly_usd.toString() : null,
-    limitMonthlyUsd: providerData.limit_monthly_usd != null ? providerData.limit_monthly_usd.toString() : null,
+    limitWeeklyUsd:
+      providerData.limit_weekly_usd != null ? providerData.limit_weekly_usd.toString() : null,
+    limitMonthlyUsd:
+      providerData.limit_monthly_usd != null ? providerData.limit_monthly_usd.toString() : null,
     limitConcurrentSessions: providerData.limit_concurrent_sessions,
     tpm: providerData.tpm,
     rpm: providerData.rpm,
@@ -57,7 +61,10 @@ export async function createProvider(providerData: CreateProviderData): Promise<
   return toProvider(provider);
 }
 
-export async function findProviderList(limit: number = 50, offset: number = 0): Promise<Provider[]> {
+export async function findProviderList(
+  limit: number = 50,
+  offset: number = 0
+): Promise<Provider[]> {
   const result = await db
     .select({
       id: providers.id,
@@ -89,9 +96,9 @@ export async function findProviderList(limit: number = 50, offset: number = 0): 
     .limit(limit)
     .offset(offset);
 
-  debugLog('findProviderList:query_result', {
+  debugLog("findProviderList:query_result", {
     count: result.length,
-    ids: result.map(r => r.id)
+    ids: result.map((r) => r.id),
   });
 
   return result.map(toProvider);
@@ -130,7 +137,10 @@ export async function findProviderById(id: number): Promise<Provider | null> {
   return toProvider(provider);
 }
 
-export async function updateProvider(id: number, providerData: UpdateProviderData): Promise<Provider | null> {
+export async function updateProvider(
+  id: number,
+  providerData: UpdateProviderData
+): Promise<Provider | null> {
   if (Object.keys(providerData).length === 0) {
     return findProviderById(id);
   }
@@ -145,14 +155,24 @@ export async function updateProvider(id: number, providerData: UpdateProviderDat
   if (providerData.is_enabled !== undefined) dbData.isEnabled = providerData.is_enabled;
   if (providerData.weight !== undefined) dbData.weight = providerData.weight;
   if (providerData.priority !== undefined) dbData.priority = providerData.priority;
-  if (providerData.cost_multiplier !== undefined) dbData.costMultiplier = providerData.cost_multiplier != null ? providerData.cost_multiplier.toString() : '1.0';
+  if (providerData.cost_multiplier !== undefined)
+    dbData.costMultiplier =
+      providerData.cost_multiplier != null ? providerData.cost_multiplier.toString() : "1.0";
   if (providerData.group_tag !== undefined) dbData.groupTag = providerData.group_tag;
   if (providerData.provider_type !== undefined) dbData.providerType = providerData.provider_type;
-  if (providerData.model_redirects !== undefined) dbData.modelRedirects = providerData.model_redirects;
-  if (providerData.limit_5h_usd !== undefined) dbData.limit5hUsd = providerData.limit_5h_usd != null ? providerData.limit_5h_usd.toString() : null;
-  if (providerData.limit_weekly_usd !== undefined) dbData.limitWeeklyUsd = providerData.limit_weekly_usd != null ? providerData.limit_weekly_usd.toString() : null;
-  if (providerData.limit_monthly_usd !== undefined) dbData.limitMonthlyUsd = providerData.limit_monthly_usd != null ? providerData.limit_monthly_usd.toString() : null;
-  if (providerData.limit_concurrent_sessions !== undefined) dbData.limitConcurrentSessions = providerData.limit_concurrent_sessions;
+  if (providerData.model_redirects !== undefined)
+    dbData.modelRedirects = providerData.model_redirects;
+  if (providerData.limit_5h_usd !== undefined)
+    dbData.limit5hUsd =
+      providerData.limit_5h_usd != null ? providerData.limit_5h_usd.toString() : null;
+  if (providerData.limit_weekly_usd !== undefined)
+    dbData.limitWeeklyUsd =
+      providerData.limit_weekly_usd != null ? providerData.limit_weekly_usd.toString() : null;
+  if (providerData.limit_monthly_usd !== undefined)
+    dbData.limitMonthlyUsd =
+      providerData.limit_monthly_usd != null ? providerData.limit_monthly_usd.toString() : null;
+  if (providerData.limit_concurrent_sessions !== undefined)
+    dbData.limitConcurrentSessions = providerData.limit_concurrent_sessions;
   if (providerData.tpm !== undefined) dbData.tpm = providerData.tpm;
   if (providerData.rpm !== undefined) dbData.rpm = providerData.rpm;
   if (providerData.rpd !== undefined) dbData.rpd = providerData.rpd;
@@ -250,12 +270,12 @@ export async function getProviderStatistics(): Promise<
       ORDER BY ps.id ASC
     `;
 
-    debugLog('getProviderStatistics:executing_query');
+    debugLog("getProviderStatistics:executing_query");
 
     const result = await db.execute(query);
 
-    debugLog('getProviderStatistics:result', {
-      count: Array.isArray(result) ? result.length : 0
+    debugLog("getProviderStatistics:result", {
+      count: Array.isArray(result) ? result.length : 0,
     });
 
     // postgres-js 返回的结果需要通过 unknown 进行类型断言
@@ -267,9 +287,9 @@ export async function getProviderStatistics(): Promise<
       last_call_model: string | null;
     }>;
   } catch (error) {
-    debugLog('getProviderStatistics:error', {
+    debugLog("getProviderStatistics:error", {
       message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
     throw error;
   }

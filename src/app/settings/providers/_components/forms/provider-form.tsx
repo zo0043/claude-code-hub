@@ -3,7 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useState, useTransition } from "react";
 import { addProvider, editProvider, removeProvider } from "@/actions/providers";
@@ -34,23 +40,33 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
   const isEdit = mode === "edit";
   const [isPending, startTransition] = useTransition();
 
-  const [name, setName] = useState(isEdit ? provider?.name ?? "" : "");
-  const [url, setUrl] = useState(isEdit ? provider?.url ?? "" : "");
+  const [name, setName] = useState(isEdit ? (provider?.name ?? "") : "");
+  const [url, setUrl] = useState(isEdit ? (provider?.url ?? "") : "");
   const [key, setKey] = useState(""); // 编辑时留空代表不更新
-  const [providerType, setProviderType] = useState<string>(isEdit ? provider?.providerType ?? "claude" : "claude");
-  const [modelRedirects, setModelRedirects] = useState<string>(
-    isEdit && provider?.modelRedirects
-      ? JSON.stringify(provider.modelRedirects, null, 2)
-      : ""
+  const [providerType, setProviderType] = useState<string>(
+    isEdit ? (provider?.providerType ?? "claude") : "claude"
   );
-  const [priority, setPriority] = useState<number>(isEdit ? provider?.priority ?? 0 : 0);
-  const [weight, setWeight] = useState<number>(isEdit ? provider?.weight ?? 1 : 1);
-  const [costMultiplier, setCostMultiplier] = useState<number>(isEdit ? provider?.costMultiplier ?? 1.0 : 1.0);
-  const [groupTag, setGroupTag] = useState<string>(isEdit ? provider?.groupTag ?? "" : "");
-  const [limit5hUsd, setLimit5hUsd] = useState<number | null>(isEdit ? provider?.limit5hUsd ?? null : null);
-  const [limitWeeklyUsd, setLimitWeeklyUsd] = useState<number | null>(isEdit ? provider?.limitWeeklyUsd ?? null : null);
-  const [limitMonthlyUsd, setLimitMonthlyUsd] = useState<number | null>(isEdit ? provider?.limitMonthlyUsd ?? null : null);
-  const [limitConcurrentSessions, setLimitConcurrentSessions] = useState<number | null>(isEdit ? provider?.limitConcurrentSessions ?? null : null);
+  const [modelRedirects, setModelRedirects] = useState<string>(
+    isEdit && provider?.modelRedirects ? JSON.stringify(provider.modelRedirects, null, 2) : ""
+  );
+  const [priority, setPriority] = useState<number>(isEdit ? (provider?.priority ?? 0) : 0);
+  const [weight, setWeight] = useState<number>(isEdit ? (provider?.weight ?? 1) : 1);
+  const [costMultiplier, setCostMultiplier] = useState<number>(
+    isEdit ? (provider?.costMultiplier ?? 1.0) : 1.0
+  );
+  const [groupTag, setGroupTag] = useState<string>(isEdit ? (provider?.groupTag ?? "") : "");
+  const [limit5hUsd, setLimit5hUsd] = useState<number | null>(
+    isEdit ? (provider?.limit5hUsd ?? null) : null
+  );
+  const [limitWeeklyUsd, setLimitWeeklyUsd] = useState<number | null>(
+    isEdit ? (provider?.limitWeeklyUsd ?? null) : null
+  );
+  const [limitMonthlyUsd, setLimitMonthlyUsd] = useState<number | null>(
+    isEdit ? (provider?.limitMonthlyUsd ?? null) : null
+  );
+  const [limitConcurrentSessions, setLimitConcurrentSessions] = useState<number | null>(
+    isEdit ? (provider?.limitConcurrentSessions ?? null) : null
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +85,7 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
     if (modelRedirects.trim()) {
       try {
         parsedModelRedirects = JSON.parse(modelRedirects);
-        if (typeof parsedModelRedirects !== 'object' || parsedModelRedirects === null) {
+        if (typeof parsedModelRedirects !== "object" || parsedModelRedirects === null) {
           toast.error("模型重定向必须是一个有效的 JSON 对象");
           return;
         }
@@ -123,7 +139,7 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
           }
           const res = await editProvider(provider.id, updateData);
           if (!res.ok) {
-            toast.error(res.error || '更新服务商失败');
+            toast.error(res.error || "更新服务商失败");
             return;
           }
         } else {
@@ -149,12 +165,12 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
             cc: null,
           });
           if (!res.ok) {
-            toast.error(res.error || '添加服务商失败');
+            toast.error(res.error || "添加服务商失败");
             return;
           }
           // 添加成功提示
-          toast.success('添加服务商成功', {
-            description: `服务商 "${name.trim()}" 已添加`
+          toast.success("添加服务商成功", {
+            description: `服务商 "${name.trim()}" 已添加`,
           });
           // 重置表单（仅新增）
           setName("");
@@ -174,7 +190,7 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
         onSuccess?.();
       } catch (error) {
         console.error(isEdit ? "更新服务商失败:" : "添加服务商失败:", error);
-        toast.error(isEdit ? '更新服务商失败' : '添加服务商失败');
+        toast.error(isEdit ? "更新服务商失败" : "添加服务商失败");
       }
     });
   };
@@ -213,7 +229,9 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor={isEdit ? "edit-key" : "key"}>API 密钥{isEdit ? "（留空不更改）" : " *"}</Label>
+          <Label htmlFor={isEdit ? "edit-key" : "key"}>
+            API 密钥{isEdit ? "（留空不更改）" : " *"}
+          </Label>
           <Input
             id={isEdit ? "edit-key" : "key"}
             type="password"
@@ -237,11 +255,7 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
               供应商类型
               <span className="text-xs text-muted-foreground ml-1">(决定调度策略)</span>
             </Label>
-            <Select
-              value={providerType}
-              onValueChange={setProviderType}
-              disabled={isPending}
-            >
+            <Select value={providerType} onValueChange={setProviderType} disabled={isPending}>
               <SelectTrigger id={isEdit ? "edit-provider-type" : "provider-type"}>
                 <SelectValue placeholder="选择供应商类型" />
               </SelectTrigger>
@@ -364,7 +378,9 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor={isEdit ? "edit-limit-weekly" : "limit-weekly"}>周消费上限 (USD)</Label>
+              <Label htmlFor={isEdit ? "edit-limit-weekly" : "limit-weekly"}>
+                周消费上限 (USD)
+              </Label>
               <Input
                 id={isEdit ? "edit-limit-weekly" : "limit-weekly"}
                 type="number"
@@ -380,7 +396,9 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor={isEdit ? "edit-limit-monthly" : "limit-monthly"}>月消费上限 (USD)</Label>
+              <Label htmlFor={isEdit ? "edit-limit-monthly" : "limit-monthly"}>
+                月消费上限 (USD)
+              </Label>
               <Input
                 id={isEdit ? "edit-limit-monthly" : "limit-monthly"}
                 type="number"
@@ -393,7 +411,9 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor={isEdit ? "edit-limit-concurrent" : "limit-concurrent"}>并发 Session 上限</Label>
+              <Label htmlFor={isEdit ? "edit-limit-concurrent" : "limit-concurrent"}>
+                并发 Session 上限
+              </Label>
               <Input
                 id={isEdit ? "edit-limit-concurrent" : "limit-concurrent"}
                 type="number"
@@ -432,13 +452,13 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
                         try {
                           const res = await removeProvider(provider.id);
                           if (!res.ok) {
-                            toast.error(res.error || '删除服务商失败');
+                            toast.error(res.error || "删除服务商失败");
                             return;
                           }
                           onSuccess?.();
                         } catch (e) {
                           console.error("删除服务商失败", e);
-                          toast.error('删除服务商失败');
+                          toast.error("删除服务商失败");
                         }
                       });
                     }}
