@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { getRedisClient } from './redis';
+import { SessionTracker } from './session-tracker';
 import type {
   ActiveSessionInfo,
   SessionStoreInfo,
@@ -221,10 +222,6 @@ export class SessionManager {
       pipeline.setex(`session:${sessionId}:key`, this.SESSION_TTL, keyId.toString());
       pipeline.setex(`session:${sessionId}:last_seen`, this.SESSION_TTL, Date.now().toString());
 
-      // 添加到全局活跃 session 集合
-      pipeline.sadd('global:active_sessions', sessionId);
-      pipeline.expire('global:active_sessions', this.SESSION_TTL);
-
       await pipeline.exec();
     } catch (error) {
       console.error('[SessionManager] Failed to store session mapping:', error);
@@ -234,7 +231,7 @@ export class SessionManager {
   /**
    * 刷新 session TTL（滑动窗口）
    */
-  private static async refreshSessionTTL(sessionId: string, keyId: number): Promise<void> {
+  private static async refreshSessionTTL(sessionId: string, _keyId: number): Promise<void> {
     const redis = getRedisClient();
     if (!redis || redis.status !== 'ready') return;
 
@@ -245,13 +242,6 @@ export class SessionManager {
       pipeline.expire(`session:${sessionId}:key`, this.SESSION_TTL);
       pipeline.expire(`session:${sessionId}:provider`, this.SESSION_TTL);
       pipeline.setex(`session:${sessionId}:last_seen`, this.SESSION_TTL, Date.now().toString());
-
-      // 刷新全局活跃 session 集合
-      pipeline.sadd('global:active_sessions', sessionId);
-      pipeline.expire('global:active_sessions', this.SESSION_TTL);
-
-      // 刷新 active_sessions 集合的 TTL
-      pipeline.expire(`key:${keyId}:active_sessions`, this.SESSION_TTL);
 
       await pipeline.exec();
     } catch (error) {
@@ -439,8 +429,8 @@ export class SessionManager {
     }
 
     try {
-      // 1. 获取所有活跃 session ID
-      const sessionIds = await redis.smembers('global:active_sessions');
+      // 1. 使用 SessionTracker 获取活跃 session ID（自动兼容 ZSET/Set）
+      const sessionIds = await SessionTracker.getActiveSessions();
       if (sessionIds.length === 0) {
         return [];
       }

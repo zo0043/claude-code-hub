@@ -1,5 +1,6 @@
 import type { ProxySession } from './session';
 import { SessionManager } from '@/lib/session-manager';
+import { SessionTracker } from '@/lib/session-tracker';
 
 /**
  * Session 守卫：负责为请求分配 Session ID
@@ -34,7 +35,12 @@ export class ProxySessionGuard {
       // 4. 设置到 session 对象
       session.setSessionId(sessionId);
 
-      // 5. 存储 session 详细信息到 Redis（用于实时监控）
+      // 5. 追踪 session（添加到活跃集合）
+      void SessionTracker.trackSession(sessionId, keyId).catch((err) => {
+        console.error('[ProxySessionGuard] Failed to track session:', err);
+      });
+
+      // 6. 存储 session 详细信息到 Redis（用于实时监控）
       void (async () => {
         try {
           if (session.authState?.user && session.authState?.key) {

@@ -4,6 +4,7 @@ import { parseSSEData } from "@/lib/utils/sse";
 import { calculateRequestCost } from "@/lib/utils/cost-calculation";
 import { RateLimitService } from "@/lib/rate-limit";
 import { SessionManager } from "@/lib/session-manager";
+import { SessionTracker } from "@/lib/session-tracker";
 import type { ProxySession } from "./session";
 import { ProxyLogger } from "./logger";
 import { ProxyStatusTracker } from "@/lib/proxy-status-tracker";
@@ -413,4 +414,9 @@ async function trackCostToRedis(
     session.sessionId,  // 直接使用 session.sessionId
     parseFloat(cost.toString())
   );
+
+  // 刷新 session 时间戳（滑动窗口）
+  void SessionTracker.refreshSession(session.sessionId, key.id, provider.id).catch((error) => {
+    console.error('[ResponseHandler] Failed to refresh session tracker:', error);
+  });
 }

@@ -1,4 +1,5 @@
 import { getRedisClient } from '@/lib/redis';
+import { SessionTracker } from '@/lib/session-tracker';
 
 interface CostLimit {
   amount: number | null;
@@ -79,12 +80,16 @@ export class RateLimitService {
     type: 'key' | 'provider',
     limit: number
   ): Promise<{ allowed: boolean; reason?: string }> {
-    if (!this.redis || limit <= 0) {
+    if (limit <= 0) {
       return { allowed: true };
     }
 
     try {
-      const count = await this.redis.scard(`${type}:${id}:active_sessions`);
+      // 使用 SessionTracker 的统一计数逻辑（自动兼容 ZSET/Set）
+      const count = type === 'key'
+        ? await SessionTracker.getKeySessionCount(id)
+        : await SessionTracker.getProviderSessionCount(id);
+
       if (count >= limit) {
         return {
           allowed: false,
@@ -132,23 +137,6 @@ export class RateLimitService {
 
       pipeline.incrbyfloat(`provider:${providerId}:cost_monthly`, cost);
       pipeline.expire(`provider:${providerId}:cost_monthly`, 31 * 24 * 3600);
-
-      // 3. 追踪 Session
-      const ttl = parseInt(process.env.SESSION_TTL || '300');
-
-      // 全局活跃 session 集合（用于统计总并发数）
-      pipeline.sadd('global:active_sessions', sessionId);
-      pipeline.expire('global:active_sessions', ttl);
-
-      pipeline.sadd(`key:${keyId}:active_sessions`, sessionId);
-      pipeline.expire(`key:${keyId}:active_sessions`, ttl);
-
-      pipeline.sadd(`provider:${providerId}:active_sessions`, sessionId);
-      pipeline.expire(`provider:${providerId}:active_sessions`, ttl);
-
-      pipeline.setex(`session:${sessionId}:last_seen`, ttl, Date.now().toString());
-      pipeline.setex(`session:${sessionId}:key`, ttl, keyId.toString());
-      pipeline.setex(`session:${sessionId}:provider`, ttl, providerId.toString());
 
       await pipeline.exec();
     } catch (error) {

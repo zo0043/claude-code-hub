@@ -2,6 +2,7 @@ import type { Provider } from "@/types/provider";
 import { findProviderList, findProviderById } from "@/repository/provider";
 import { RateLimitService } from "@/lib/rate-limit";
 import { SessionManager } from "@/lib/session-manager";
+import { SessionTracker } from "@/lib/session-tracker";
 import { isCircuitOpen, getCircuitState } from "@/lib/circuit-breaker";
 import { ProxyLogger } from "./logger";
 import { ProxyResponses } from "./responses";
@@ -35,6 +36,11 @@ export class ProxyProviderResolver {
       // 绑定 session 到 provider（异步，不阻塞）
       if (session.sessionId) {
         void SessionManager.bindSessionToProvider(session.sessionId, session.provider.id);
+
+        // 更新 session tracker 的 provider 信息（同时刷新时间戳）
+        void SessionTracker.updateProvider(session.sessionId, session.provider.id).catch((error) => {
+          console.error('[ProviderSelector] Failed to update session tracker provider:', error);
+        });
 
         // 更新 session 详细信息中的 provider 信息
         void SessionManager.updateSessionProvider(session.sessionId, {
