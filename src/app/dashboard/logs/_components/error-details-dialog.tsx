@@ -18,6 +18,7 @@ interface ErrorDetailsDialogProps {
   statusCode: number | null;
   errorMessage: string | null;
   providerChain: ProviderChainItem[] | null;
+  sessionId: string | null;
 }
 
 const reasonLabels: Record<string, string> = {
@@ -37,6 +38,7 @@ export function ErrorDetailsDialog({
   statusCode,
   errorMessage,
   providerChain,
+  sessionId,
 }: ErrorDetailsDialogProps) {
   const [open, setOpen] = useState(false);
 
@@ -80,6 +82,18 @@ export function ErrorDetailsDialog({
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
+          {/* Session 信息 */}
+          {sessionId && (
+            <div className="space-y-2">
+              <h4 className="font-semibold text-sm">会话 ID</h4>
+              <div className="rounded-md border bg-muted/50 p-3">
+                <code className="text-xs font-mono break-all">
+                  {sessionId}
+                </code>
+              </div>
+            </div>
+          )}
+
           {/* 最终错误信息 */}
           {errorMessage && (
             <div className="space-y-2">

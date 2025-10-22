@@ -136,6 +136,10 @@ export class RateLimitService {
       // 3. 追踪 Session
       const ttl = parseInt(process.env.SESSION_TTL || '300');
 
+      // 全局活跃 session 集合（用于统计总并发数）
+      pipeline.sadd('global:active_sessions', sessionId);
+      pipeline.expire('global:active_sessions', ttl);
+
       pipeline.sadd(`key:${keyId}:active_sessions`, sessionId);
       pipeline.expire(`key:${keyId}:active_sessions`, ttl);
 

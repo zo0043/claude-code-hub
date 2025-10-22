@@ -43,7 +43,6 @@ export function UsageLogsTable({
               <TableHead>时间</TableHead>
               <TableHead>用户</TableHead>
               <TableHead>密钥</TableHead>
-              <TableHead>会话</TableHead>
               <TableHead>供应商</TableHead>
               <TableHead>模型</TableHead>
               <TableHead className="text-right">输入</TableHead>
@@ -58,7 +57,7 @@ export function UsageLogsTable({
           <TableBody>
             {logs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={13} className="text-center text-muted-foreground">
+                <TableCell colSpan={12} className="text-center text-muted-foreground">
                   暂无数据
                 </TableCell>
               </TableRow>
@@ -73,13 +72,6 @@ export function UsageLogsTable({
                   </TableCell>
                   <TableCell>{log.userName}</TableCell>
                   <TableCell className="font-mono text-xs">{log.keyName}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {log.sessionId ? (
-                      <span title={log.sessionId} className="cursor-help">
-                        {log.sessionId.slice(0, 8)}...
-                      </span>
-                    ) : '-'}
-                  </TableCell>
                   <TableCell>
                     {log.providerChain && log.providerChain.length > 0 ? (
                       <ProviderChainPopover
@@ -114,6 +106,7 @@ export function UsageLogsTable({
                       statusCode={log.statusCode}
                       errorMessage={log.errorMessage}
                       providerChain={log.providerChain}
+                      sessionId={log.sessionId}
                     />
                   </TableCell>
                 </TableRow>
