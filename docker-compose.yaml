@@ -13,6 +13,9 @@ services:
       POSTGRES_DB: ${DB_NAME:-claude_code_hub}
       # 使用自定义数据目录
       PGDATA: /data/pgdata
+      # 设置时区为上海
+      TZ: Asia/Shanghai
+      PGTZ: Asia/Shanghai
     volumes:
       # 持久化数据库数据到本地 ./data/postgres 目录
       # 挂载到 /data 而不是 /var/lib/postgresql/data 避免权限冲突
@@ -57,6 +60,8 @@ services:
       REDIS_URL: redis://redis:6379
       ENABLE_RATE_LIMIT: ${ENABLE_RATE_LIMIT:-true}
       SESSION_TTL: ${SESSION_TTL:-300}
+      # 设置时区为上海
+      TZ: Asia/Shanghai
     ports:
       - "${APP_PORT:-23000}:${APP_PORT:-23000}"
     restart: unless-stopped
