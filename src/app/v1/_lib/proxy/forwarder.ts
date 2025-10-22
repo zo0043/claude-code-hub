@@ -158,7 +158,7 @@ export class ProxyForwarder {
         error: fetchError,
         errorType: fetchError?.constructor?.name,
         errorMessage: (fetchError as Error)?.message,
-        errorCause: (fetchError as any)?.cause,
+        errorCause: (fetchError as Error & { cause?: unknown })?.cause,
         proxyUrl: proxyUrl,
         method: session.method,
         hasBody: !!requestBody,
