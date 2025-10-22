@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { Section } from "@/components/section";
 import { UsageLogsView } from "./_components/usage-logs-view";
+import { ConcurrentSessionsCard } from "@/components/customs/concurrent-sessions-card";
 import { getUsers } from "@/actions/users";
 import { getProviders } from "@/actions/providers";
 
@@ -27,6 +28,10 @@ export default async function UsageLogsPage({
 
   return (
     <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-4">
+        <ConcurrentSessionsCard />
+      </div>
+
       <Section
         title="使用记录"
         description="查看 API 调用日志和使用统计"

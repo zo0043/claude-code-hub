@@ -7,6 +7,7 @@ import { getUserStatistics } from "@/actions/statistics";
 import { hasPriceTable } from "@/actions/model-prices";
 import { ListErrorBoundary } from "@/components/error-boundary";
 import { StatisticsWrapper } from "./_components/statistics";
+import { ConcurrentSessionsCard } from "@/components/customs/concurrent-sessions-card";
 import { DEFAULT_TIME_RANGE } from "@/types/statistics";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +27,10 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-4">
+        <ConcurrentSessionsCard />
+      </div>
+
       <div>
         <StatisticsWrapper
           initialData={statistics.ok ? statistics.data : undefined}
