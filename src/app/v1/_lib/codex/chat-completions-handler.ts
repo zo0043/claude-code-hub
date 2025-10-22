@@ -9,6 +9,7 @@ import { ProxyResponseHandler } from "../proxy/response-handler";
 import { ProxyErrorHandler } from "../proxy/error-handler";
 import { ProxyStatusTracker } from "@/lib/proxy-status-tracker";
 import { RequestTransformer } from "./transformers/request";
+import { adaptForCodexCLI } from "./codex-cli-adapter";
 import type { ChatCompletionRequest } from "./types/compatible";
 
 /**
@@ -17,8 +18,9 @@ import type { ChatCompletionRequest } from "./types/compatible";
  * 工作流程：
  * 1. 解析 OpenAI 格式请求
  * 2. 转换为 Response API 格式
- * 3. 复用现有代理流程
- * 4. 响应自动转换回 OpenAI 格式（在 ResponseHandler 中）
+ * 3. 注入 Codex CLI instructions (如果需要)
+ * 4. 复用现有代理流程
+ * 5. 响应自动转换回 OpenAI 格式（在 ResponseHandler 中）
  */
 export async function handleChatCompletions(c: Context): Promise<Response> {
   console.info('[ChatCompletions] Received OpenAI Compatible API request');
@@ -65,17 +67,30 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
       console.debug('[ChatCompletions] OpenAI format detected, transforming...', {
         model: openAIRequest.model,
         stream: openAIRequest.stream,
-        messageCount: openAIRequest.messages.length
+        messageCount: openAIRequest.messages.length,
+        hasTools: !!openAIRequest.tools,
+        toolsCount: openAIRequest.tools?.length,
+        hasReasoning: !!openAIRequest.reasoning,
+        temperature: openAIRequest.temperature,
+        max_tokens: openAIRequest.max_tokens,
       });
 
       try {
-        const responseRequest = RequestTransformer.transform(openAIRequest);
+        let responseRequest = RequestTransformer.transform(openAIRequest);
 
         console.debug('[ChatCompletions] Transformed to Response API:', {
           model: responseRequest.model,
           inputCount: responseRequest.input?.length,
-          hasReasoning: !!responseRequest.reasoning
+          hasReasoning: !!responseRequest.reasoning,
+          hasTools: !!responseRequest.tools,
+          toolsCount: responseRequest.tools?.length,
+          temperature: responseRequest.temperature,
+          max_output_tokens: responseRequest.max_output_tokens,
+          stream: responseRequest.stream,
         });
+
+        // ✅ 适配 Codex CLI (注入 instructions)
+        responseRequest = adaptForCodexCLI(responseRequest);
 
         // ✅ 更新 session（替换为 Response API 格式）
         session.request.message = responseRequest as unknown as Record<string, unknown>;

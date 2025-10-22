@@ -7,14 +7,44 @@
 export interface ResponseRequest {
   model: string;
   input: InputItem[];
-  reasoning?: ReasoningConfig;
-  stream?: boolean;
+  // 可选参数（参考 litellm ResponsesAPIOptionalRequestParams）
+  instructions?: string;
   max_output_tokens?: number;
+  metadata?: Record<string, string>;
+  parallel_tool_calls?: boolean;
+  previous_response_id?: string;
+  reasoning?: ReasoningConfig;
+  store?: boolean;
+  stream?: boolean;
+  temperature?: number;
+  tool_choice?: string | ToolChoiceObject;
+  tools?: ResponseTool[];
+  top_p?: number;
+  truncation?: 'auto' | 'disabled';
+  user?: string;
+  service_tier?: string;
 }
 
 export interface ReasoningConfig {
-  effort: 'minimal' | 'low' | 'medium' | 'high';
+  effort?: 'minimal' | 'low' | 'medium' | 'high';
   summary?: 'auto' | 'concise' | 'detailed';
+}
+
+export interface ToolChoiceObject {
+  type: 'function';
+  function?: {
+    name: string;
+  };
+}
+
+export interface ResponseTool {
+  type: 'function';
+  function: {
+    name: string;
+    description?: string;
+    parameters?: Record<string, unknown>;
+    strict?: boolean;
+  };
 }
 
 export type InputItem = MessageInput | ToolOutputsInput;

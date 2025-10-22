@@ -9,17 +9,47 @@ export interface ChatCompletionRequest {
   messages: ChatMessage[];
   stream?: boolean;
 
-  // 以下参数将被丢弃（Codex 仅支持 reasoning）
+  // Response API 支持的参数
   temperature?: number;
   top_p?: number;
   max_tokens?: number;
+  tools?: ChatCompletionTool[];
+  tool_choice?: string | ToolChoiceObject;
+  parallel_tool_calls?: boolean;
+  reasoning?: ReasoningConfig;
+  user?: string;
+  metadata?: Record<string, string>;
+
+  // 不支持的参数（会被忽略）
   presence_penalty?: number;
   frequency_penalty?: number;
   logit_bias?: Record<string, number>;
-  user?: string;
   stop?: string | string[];
   n?: number;
+
   [key: string]: unknown;
+}
+
+export interface ReasoningConfig {
+  effort?: 'minimal' | 'low' | 'medium' | 'high';
+  summary?: 'auto' | 'concise' | 'detailed';
+}
+
+export interface ChatCompletionTool {
+  type: 'function';
+  function: {
+    name: string;
+    description?: string;
+    parameters?: Record<string, unknown>;
+    strict?: boolean;
+  };
+}
+
+export interface ToolChoiceObject {
+  type: 'function';
+  function?: {
+    name: string;
+  };
 }
 
 export interface ChatMessage {

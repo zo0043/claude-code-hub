@@ -1,31 +1,90 @@
 /**
  * 请求转换器: OpenAI Compatible API → Response API
- * 纯函数实现，无副作用
+ * 纯函数实现,无副作用
+ *
+ * 参考:
+ * - litellm: litellm/responses/litellm_completion_transformation/transformation.py
+ * - codex2api: src/transformers/request.ts
  */
 
 import type {
   ChatCompletionRequest,
   ChatMessage,
   ContentPart,
+  ChatCompletionTool,
+  ToolChoiceObject,
 } from '../types/compatible';
 import type {
   ResponseRequest,
   InputItem,
   ContentItem,
   MessageInput,
+  ResponseTool,
+  ToolChoiceObject as ResponseToolChoiceObject,
 } from '../types/response';
 
 export class RequestTransformer {
   /**
    * 转换 Compatible 请求为 Response 请求
+   *
+   * 关键:
+   * 1. 完整映射所有支持的参数
+   * 2. 字段名映射: max_tokens → max_output_tokens
+   * 3. 避免 undefined 值(使用条件属性)
+   * 4. reasoning 从请求读取,而非硬编码
    */
   static transform(request: ChatCompletionRequest): ResponseRequest {
-    return {
+    // ✅ 构建基础请求(必需字段)
+    const responseRequest: ResponseRequest = {
       model: request.model,
       input: this.transformMessages(request.messages),
-      reasoning: this.extractReasoning(),
-      stream: request.stream,
     };
+
+    // ✅ 条件添加可选参数
+    if (request.temperature !== undefined) {
+      responseRequest.temperature = request.temperature;
+    }
+
+    if (request.top_p !== undefined) {
+      responseRequest.top_p = request.top_p;
+    }
+
+    if (request.max_tokens !== undefined) {
+      // 字段名映射: max_tokens → max_output_tokens
+      responseRequest.max_output_tokens = request.max_tokens;
+    }
+
+    if (request.tools !== undefined && request.tools.length > 0) {
+      responseRequest.tools = this.transformTools(request.tools);
+    }
+
+    if (request.tool_choice !== undefined) {
+      responseRequest.tool_choice = this.transformToolChoice(request.tool_choice);
+    }
+
+    if (request.parallel_tool_calls !== undefined) {
+      responseRequest.parallel_tool_calls = request.parallel_tool_calls;
+    }
+
+    if (request.user !== undefined) {
+      responseRequest.user = request.user;
+    }
+
+    if (request.metadata !== undefined) {
+      responseRequest.metadata = request.metadata;
+    }
+
+    // ✅ reasoning: 从请求读取,如果没有则不设置(让 API 使用默认值)
+    if (request.reasoning !== undefined) {
+      responseRequest.reasoning = request.reasoning;
+    }
+
+    // ✅ stream: 只有明确为 true 时才设置
+    if (request.stream === true) {
+      responseRequest.stream = true;
+    }
+
+    return responseRequest;
   }
 
   /**
@@ -48,7 +107,7 @@ export class RequestTransformer {
   }
 
   /**
-   * 转换 content（支持字符串和多模态数组）
+   * 转换 content(支持字符串和多模态数组)
    * 根据角色选择正确的 content type:
    * - assistant → output_text
    * - user/developer → input_text
@@ -75,7 +134,7 @@ export class RequestTransformer {
    * 转换单个 content part
    * 关键:
    * - text → input_text (user/developer) 或 output_text (assistant)
-   * - image_url → input_image (总是 input，不管角色)
+   * - image_url → input_image (总是 input,不管角色)
    */
   private static transformContentPart(
     part: ContentPart,
@@ -87,7 +146,7 @@ export class RequestTransformer {
         text: part.text!,
       };
     } else {
-      // image_url → input_image（图片总是 input）
+      // image_url → input_image(图片总是 input)
       return {
         type: 'input_image',
         image_url: part.image_url!.url,
@@ -96,13 +155,34 @@ export class RequestTransformer {
   }
 
   /**
-   * 提取 reasoning 配置
-   * 默认使用 medium effort 和 auto summary
+   * 转换 tools
+   * Chat Completion Tool → Response API Tool
    */
-  private static extractReasoning() {
+  private static transformTools(tools: ChatCompletionTool[]): ResponseTool[] {
+    return tools.map((tool) => ({
+      type: 'function',
+      function: {
+        name: tool.function.name,
+        description: tool.function.description,
+        parameters: tool.function.parameters,
+        strict: tool.function.strict,
+      },
+    }));
+  }
+
+  /**
+   * 转换 tool_choice
+   * 支持字符串("auto", "none", "required")和对象
+   */
+  private static transformToolChoice(
+    toolChoice: string | ToolChoiceObject
+  ): string | ResponseToolChoiceObject {
+    if (typeof toolChoice === 'string') {
+      return toolChoice;
+    }
     return {
-      effort: 'medium' as const,
-      summary: 'auto' as const,
+      type: 'function',
+      function: toolChoice.function,
     };
   }
 }
