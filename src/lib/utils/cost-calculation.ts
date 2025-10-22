@@ -33,10 +33,21 @@ export function calculateRequestCost(
 ): Decimal {
   const segments: Decimal[] = [];
 
-  segments.push(multiplyCost(usage.input_tokens, priceData.input_cost_per_token));
-  segments.push(multiplyCost(usage.output_tokens, priceData.output_cost_per_token));
-  segments.push(multiplyCost(usage.cache_creation_input_tokens, priceData.cache_creation_input_token_cost));
-  segments.push(multiplyCost(usage.cache_read_input_tokens, priceData.cache_read_input_token_cost));
+  const inputCostPerToken = priceData.input_cost_per_token;
+  const outputCostPerToken = priceData.output_cost_per_token;
+
+  const cacheCreationCost =
+    priceData.cache_creation_input_token_cost ??
+    (inputCostPerToken != null ? inputCostPerToken * 0.1 : undefined);
+
+  const cacheReadCost =
+    priceData.cache_read_input_token_cost ??
+    (outputCostPerToken != null ? outputCostPerToken * 0.1 : undefined);
+
+  segments.push(multiplyCost(usage.input_tokens, inputCostPerToken));
+  segments.push(multiplyCost(usage.output_tokens, outputCostPerToken));
+  segments.push(multiplyCost(usage.cache_creation_input_tokens, cacheCreationCost));
+  segments.push(multiplyCost(usage.cache_read_input_tokens, cacheReadCost));
 
   const total = segments.reduce((acc, segment) => acc.plus(segment), new Decimal(0));
 
