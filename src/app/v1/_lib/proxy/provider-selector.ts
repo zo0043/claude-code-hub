@@ -35,6 +35,14 @@ export class ProxyProviderResolver {
       // 绑定 session 到 provider（异步，不阻塞）
       if (session.sessionId) {
         void SessionManager.bindSessionToProvider(session.sessionId, session.provider.id);
+
+        // 更新 session 详细信息中的 provider 信息
+        void SessionManager.updateSessionProvider(session.sessionId, {
+          providerId: session.provider.id,
+          providerName: session.provider.name,
+        }).catch((error) => {
+          console.error('[ProviderSelector] Failed to update session provider info:', error);
+        });
       }
 
       return null;

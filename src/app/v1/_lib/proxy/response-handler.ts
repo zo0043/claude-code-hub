@@ -3,6 +3,7 @@ import { findLatestPriceByModel } from "@/repository/model-price";
 import { parseSSEData } from "@/lib/utils/sse";
 import { calculateRequestCost } from "@/lib/utils/cost-calculation";
 import { RateLimitService } from "@/lib/rate-limit";
+import { SessionManager } from "@/lib/session-manager";
 import type { ProxySession } from "./session";
 import { ProxyLogger } from "./logger";
 import { ProxyStatusTracker } from "@/lib/proxy-status-tracker";
@@ -97,6 +98,33 @@ export class ProxyResponseHandler {
 
           // 追踪消费到 Redis（用于限流）
           await trackCostToRedis(session, usageMetrics);
+        }
+
+        // 更新 session 使用量到 Redis（用于实时监控）
+        if (session.sessionId && usageMetrics) {
+          // 计算成本（复用相同逻辑）
+          let costUsdStr: string | undefined;
+          if (session.request.model) {
+            const priceData = await findLatestPriceByModel(session.request.model);
+            if (priceData?.priceData) {
+              const cost = calculateRequestCost(usageMetrics, priceData.priceData, provider.costMultiplier);
+              if (cost.gt(0)) {
+                costUsdStr = cost.toString();
+              }
+            }
+          }
+
+          void SessionManager.updateSessionUsage(session.sessionId, {
+            inputTokens: usageMetrics.input_tokens,
+            outputTokens: usageMetrics.output_tokens,
+            cacheCreationInputTokens: usageMetrics.cache_creation_input_tokens,
+            cacheReadInputTokens: usageMetrics.cache_read_input_tokens,
+            costUsd: costUsdStr,
+            status: statusCode >= 200 && statusCode < 300 ? 'completed' : 'error',
+            statusCode: statusCode,
+          }).catch((error: unknown) => {
+            console.error('[ResponseHandler] Failed to update session usage:', error);
+          });
         }
 
         if (messageContext) {
@@ -250,6 +278,33 @@ export class ProxyResponseHandler {
 
         // 追踪消费到 Redis（用于限流）
         await trackCostToRedis(session, usageForCost);
+
+        // 更新 session 使用量到 Redis（用于实时监控）
+        if (session.sessionId && usageForCost) {
+          // 计算成本（复用相同逻辑）
+          let costUsdStr: string | undefined;
+          if (session.request.model) {
+            const priceData = await findLatestPriceByModel(session.request.model);
+            if (priceData?.priceData) {
+              const cost = calculateRequestCost(usageForCost, priceData.priceData, provider.costMultiplier);
+              if (cost.gt(0)) {
+                costUsdStr = cost.toString();
+              }
+            }
+          }
+
+          void SessionManager.updateSessionUsage(session.sessionId, {
+            inputTokens: usageForCost.input_tokens,
+            outputTokens: usageForCost.output_tokens,
+            cacheCreationInputTokens: usageForCost.cache_creation_input_tokens,
+            cacheReadInputTokens: usageForCost.cache_read_input_tokens,
+            costUsd: costUsdStr,
+            status: statusCode >= 200 && statusCode < 300 ? 'completed' : 'error',
+            statusCode: statusCode,
+          }).catch((error: unknown) => {
+            console.error('[ResponseHandler] Failed to update session usage:', error);
+          });
+        }
 
         // 保存扩展信息（status code, tokens, provider chain）
         await updateMessageRequestDetails(messageContext.id, {

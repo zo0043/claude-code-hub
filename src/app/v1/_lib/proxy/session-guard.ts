@@ -34,6 +34,30 @@ export class ProxySessionGuard {
       // 4. 设置到 session 对象
       session.setSessionId(sessionId);
 
+      // 5. 存储 session 详细信息到 Redis（用于实时监控）
+      void (async () => {
+        try {
+          if (session.authState?.user && session.authState?.key) {
+            await SessionManager.storeSessionInfo(sessionId, {
+              userName: session.authState.user.name,
+              userId: session.authState.user.id,
+              keyId: session.authState.key.id,
+              keyName: session.authState.key.name,
+              model: session.request.model,
+              apiType: session.originalFormat === 'openai' ? 'codex' : 'chat',
+            });
+
+            // 可选：存储 messages（受环境变量控制）
+            const messages = session.getMessages();
+            if (messages) {
+              await SessionManager.storeSessionMessages(sessionId, messages);
+            }
+          }
+        } catch (error) {
+          console.error('[ProxySessionGuard] Failed to store session info:', error);
+        }
+      })();
+
       console.debug(
         `[ProxySessionGuard] Session assigned: ${sessionId} (key=${keyId}, messagesLength=${session.getMessagesLength()}, clientProvided=${!!clientSessionId})`
       );

@@ -1,5 +1,11 @@
 import crypto from 'crypto';
 import { getRedisClient } from './redis';
+import type {
+  ActiveSessionInfo,
+  SessionStoreInfo,
+  SessionUsageUpdate,
+  SessionProviderInfo
+} from '@/types/session';
 
 /**
  * Session 管理器
@@ -8,9 +14,11 @@ import { getRedisClient } from './redis';
  * 1. 基于 messages 内容哈希识别 session
  * 2. 管理 session 与 provider 的绑定关系
  * 3. 支持客户端主动传递 session_id
+ * 4. 存储和查询活跃 session 详细信息（用于实时监控）
  */
 export class SessionManager {
   private static readonly SESSION_TTL = parseInt(process.env.SESSION_TTL || '300'); // 5 分钟
+  private static readonly STORE_MESSAGES = process.env.STORE_SESSION_MESSAGES === 'true';
 
   /**
    * 从客户端请求中提取 session_id（支持 metadata 或 header）
@@ -286,5 +294,260 @@ export class SessionManager {
     }
 
     return null;
+  }
+
+  /**
+   * 存储 session 基础信息（请求开始时调用）
+   */
+  static async storeSessionInfo(sessionId: string, info: SessionStoreInfo): Promise<void> {
+    const redis = getRedisClient();
+    if (!redis || redis.status !== 'ready') return;
+
+    try {
+      const pipeline = redis.pipeline();
+
+      // 存储详细信息到 Hash
+      pipeline.hset(`session:${sessionId}:info`, {
+        userName: info.userName,
+        userId: info.userId.toString(),
+        keyId: info.keyId.toString(),
+        keyName: info.keyName,
+        model: info.model || '',
+        apiType: info.apiType,
+        startTime: Date.now().toString(),
+        status: 'in_progress', // 初始状态
+      });
+
+      // 设置 TTL
+      pipeline.expire(`session:${sessionId}:info`, this.SESSION_TTL);
+
+      await pipeline.exec();
+      console.debug(`[SessionManager] Stored session info: ${sessionId}`);
+    } catch (error) {
+      console.error('[SessionManager] Failed to store session info:', error);
+    }
+  }
+
+  /**
+   * 更新 session 供应商信息（选择供应商后调用）
+   */
+  static async updateSessionProvider(sessionId: string, providerInfo: SessionProviderInfo): Promise<void> {
+    const redis = getRedisClient();
+    if (!redis || redis.status !== 'ready') return;
+
+    try {
+      const pipeline = redis.pipeline();
+
+      // 更新 info Hash 中的 provider 字段
+      pipeline.hset(`session:${sessionId}:info`, {
+        providerId: providerInfo.providerId.toString(),
+        providerName: providerInfo.providerName,
+      });
+
+      // 刷新 TTL
+      pipeline.expire(`session:${sessionId}:info`, this.SESSION_TTL);
+
+      await pipeline.exec();
+      console.debug(`[SessionManager] Updated session provider: ${sessionId} → ${providerInfo.providerName}`);
+    } catch (error) {
+      console.error('[SessionManager] Failed to update session provider:', error);
+    }
+  }
+
+  /**
+   * 更新 session 使用量和状态（响应完成时调用）
+   */
+  static async updateSessionUsage(sessionId: string, usage: SessionUsageUpdate): Promise<void> {
+    const redis = getRedisClient();
+    if (!redis || redis.status !== 'ready') return;
+
+    try {
+      const pipeline = redis.pipeline();
+
+      // 存储使用量到单独的 Hash
+      const usageData: Record<string, string> = {
+        status: usage.status,
+      };
+
+      if (usage.inputTokens !== undefined) {
+        usageData.inputTokens = usage.inputTokens.toString();
+      }
+      if (usage.outputTokens !== undefined) {
+        usageData.outputTokens = usage.outputTokens.toString();
+      }
+      if (usage.cacheCreationInputTokens !== undefined) {
+        usageData.cacheCreationInputTokens = usage.cacheCreationInputTokens.toString();
+      }
+      if (usage.cacheReadInputTokens !== undefined) {
+        usageData.cacheReadInputTokens = usage.cacheReadInputTokens.toString();
+      }
+      if (usage.costUsd !== undefined) {
+        usageData.costUsd = usage.costUsd;
+      }
+      if (usage.statusCode !== undefined) {
+        usageData.statusCode = usage.statusCode.toString();
+      }
+      if (usage.errorMessage !== undefined) {
+        usageData.errorMessage = usage.errorMessage;
+      }
+
+      pipeline.hset(`session:${sessionId}:usage`, usageData);
+
+      // 同时更新 info Hash 中的 status
+      pipeline.hset(`session:${sessionId}:info`, 'status', usage.status);
+
+      // 刷新 TTL
+      pipeline.expire(`session:${sessionId}:usage`, this.SESSION_TTL);
+      pipeline.expire(`session:${sessionId}:info`, this.SESSION_TTL);
+
+      await pipeline.exec();
+      console.debug(`[SessionManager] Updated session usage: ${sessionId} (${usage.status})`);
+    } catch (error) {
+      console.error('[SessionManager] Failed to update session usage:', error);
+    }
+  }
+
+  /**
+   * 存储 session 请求 messages（可选，受环境变量控制）
+   */
+  static async storeSessionMessages(sessionId: string, messages: unknown): Promise<void> {
+    if (!this.STORE_MESSAGES) {
+      console.debug('[SessionManager] STORE_SESSION_MESSAGES is disabled, skipping');
+      return;
+    }
+
+    const redis = getRedisClient();
+    if (!redis || redis.status !== 'ready') return;
+
+    try {
+      const messagesJson = JSON.stringify(messages);
+      await redis.setex(`session:${sessionId}:messages`, this.SESSION_TTL, messagesJson);
+      console.debug(`[SessionManager] Stored session messages: ${sessionId}`);
+    } catch (error) {
+      console.error('[SessionManager] Failed to store session messages:', error);
+    }
+  }
+
+  /**
+   * 获取活跃 session 列表（用于实时监控页面）
+   */
+  static async getActiveSessions(): Promise<ActiveSessionInfo[]> {
+    const redis = getRedisClient();
+    if (!redis || redis.status !== 'ready') {
+      console.warn('[SessionManager] Redis not ready, returning empty list');
+      return [];
+    }
+
+    try {
+      // 1. 获取所有活跃 session ID
+      const sessionIds = await redis.smembers('global:active_sessions');
+      if (sessionIds.length === 0) {
+        return [];
+      }
+
+      console.debug(`[SessionManager] Found ${sessionIds.length} active sessions`);
+
+      // 2. 批量获取 session 详细信息
+      const sessions: ActiveSessionInfo[] = [];
+      const pipeline = redis.pipeline();
+
+      for (const sessionId of sessionIds) {
+        pipeline.hgetall(`session:${sessionId}:info`);
+        pipeline.hgetall(`session:${sessionId}:usage`);
+      }
+
+      const results = await pipeline.exec();
+      if (!results) {
+        return [];
+      }
+
+      // 3. 解析结果
+      for (let i = 0; i < sessionIds.length; i++) {
+        const infoIndex = i * 2;
+        const usageIndex = i * 2 + 1;
+
+        const infoResult = results[infoIndex];
+        const usageResult = results[usageIndex];
+
+        // 检查结果有效性
+        if (!infoResult || infoResult[0] !== null) continue;
+        if (!usageResult || usageResult[0] !== null) continue;
+
+        const info = infoResult[1] as Record<string, string>;
+        const usage = usageResult[1] as Record<string, string>;
+
+        // 跳过空的 info（session 可能已过期）
+        if (!info || Object.keys(info).length === 0) continue;
+
+        // 解析并构建 ActiveSessionInfo
+        const startTime = parseInt(info.startTime || '0', 10);
+        const now = Date.now();
+
+        const session: ActiveSessionInfo = {
+          sessionId: sessionIds[i],
+          userName: info.userName || 'unknown',
+          userId: parseInt(info.userId || '0', 10),
+          keyId: parseInt(info.keyId || '0', 10),
+          keyName: info.keyName || 'unknown',
+          providerId: info.providerId ? parseInt(info.providerId, 10) : null,
+          providerName: info.providerName || null,
+          model: info.model || null,
+          apiType: (info.apiType as 'chat' | 'codex') || 'chat',
+          startTime,
+          status: (usage.status || info.status || 'in_progress') as 'in_progress' | 'completed' | 'error',
+          durationMs: startTime > 0 ? now - startTime : undefined,
+        };
+
+        // 添加 usage 数据（如果存在）
+        if (usage && Object.keys(usage).length > 0) {
+          if (usage.inputTokens) session.inputTokens = parseInt(usage.inputTokens, 10);
+          if (usage.outputTokens) session.outputTokens = parseInt(usage.outputTokens, 10);
+          if (usage.cacheCreationInputTokens) session.cacheCreationInputTokens = parseInt(usage.cacheCreationInputTokens, 10);
+          if (usage.cacheReadInputTokens) session.cacheReadInputTokens = parseInt(usage.cacheReadInputTokens, 10);
+          if (usage.costUsd) session.costUsd = usage.costUsd;
+          if (usage.statusCode) session.statusCode = parseInt(usage.statusCode, 10);
+          if (usage.errorMessage) session.errorMessage = usage.errorMessage;
+
+          // 计算总 token
+          const input = session.inputTokens || 0;
+          const output = session.outputTokens || 0;
+          const cacheCreate = session.cacheCreationInputTokens || 0;
+          const cacheRead = session.cacheReadInputTokens || 0;
+          session.totalTokens = input + output + cacheCreate + cacheRead;
+        }
+
+        sessions.push(session);
+      }
+
+      console.debug(`[SessionManager] Retrieved ${sessions.length} active sessions with details`);
+      return sessions;
+    } catch (error) {
+      console.error('[SessionManager] Failed to get active sessions:', error);
+      return [];
+    }
+  }
+
+  /**
+   * 获取 session 的 messages 内容
+   */
+  static async getSessionMessages(sessionId: string): Promise<unknown | null> {
+    if (!this.STORE_MESSAGES) {
+      console.warn('[SessionManager] STORE_SESSION_MESSAGES is disabled');
+      return null;
+    }
+
+    const redis = getRedisClient();
+    if (!redis || redis.status !== 'ready') return null;
+
+    try {
+      const messagesJson = await redis.get(`session:${sessionId}:messages`);
+      if (!messagesJson) {
+        return null;
+      }
+      return JSON.parse(messagesJson);
+    } catch (error) {
+      console.error('[SessionManager] Failed to get session messages:', error);
+      return null;
+    }
   }
 }
