@@ -2,7 +2,6 @@ import type { Provider } from "@/types/provider";
 import { findProviderList, findProviderById } from "@/repository/provider";
 import { RateLimitService } from "@/lib/rate-limit";
 import { SessionManager } from "@/lib/session-manager";
-import { SessionTracker } from "@/lib/session-tracker";
 import { isCircuitOpen, getCircuitState } from "@/lib/circuit-breaker";
 import { ProxyLogger } from "./logger";
 import { ProxyResponses } from "./responses";
@@ -25,8 +24,33 @@ export class ProxyProviderResolver {
       session.setProvider(await ProxyProviderResolver.pickRandomProvider(session, [], targetProviderType));
     }
 
-    // 关键修复：选定供应商后立即记录到决策链并绑定到 session
-    if (session.provider) {
+    // 选定供应商后，进行原子性并发检查并追踪
+    if (session.provider && session.sessionId) {
+      const limit = session.provider.limitConcurrentSessions || 0;
+
+      // 使用原子性检查并追踪（解决竞态条件）
+      const checkResult = await RateLimitService.checkAndTrackProviderSession(
+        session.provider.id,
+        session.sessionId,
+        limit
+      );
+
+      if (!checkResult.allowed) {
+        // 并发限制失败
+        console.warn(
+          `[ProviderSelector] Provider ${session.provider.name} concurrent session limit exceeded (${checkResult.count}/${limit})`
+        );
+
+        // 记录失败
+        await ProxyLogger.logFailure(session, new Error(checkResult.reason || 'Session limit exceeded'));
+        return ProxyResponses.buildError(503, checkResult.reason || '供应商并发限制已达到');
+      }
+
+      console.debug(
+        `[ProviderSelector] ✅ Session tracked atomically: ${session.sessionId} → ${session.provider.name} (count=${checkResult.count})`
+      );
+
+      // 记录到决策链
       session.addProviderToChain(session.provider, {
         reason: 'initial_selection',
         selectionMethod,
@@ -34,22 +58,15 @@ export class ProxyProviderResolver {
       });
 
       // 绑定 session 到 provider（异步，不阻塞）
-      if (session.sessionId) {
-        void SessionManager.bindSessionToProvider(session.sessionId, session.provider.id);
+      void SessionManager.bindSessionToProvider(session.sessionId, session.provider.id);
 
-        // 更新 session tracker 的 provider 信息（同时刷新时间戳）
-        void SessionTracker.updateProvider(session.sessionId, session.provider.id).catch((error) => {
-          console.error('[ProviderSelector] Failed to update session tracker provider:', error);
-        });
-
-        // 更新 session 详细信息中的 provider 信息
-        void SessionManager.updateSessionProvider(session.sessionId, {
-          providerId: session.provider.id,
-          providerName: session.provider.name,
-        }).catch((error) => {
-          console.error('[ProviderSelector] Failed to update session provider info:', error);
-        });
-      }
+      // 更新 session 详细信息中的 provider 信息
+      void SessionManager.updateSessionProvider(session.sessionId, {
+        providerId: session.provider.id,
+        providerName: session.provider.name,
+      }).catch((error) => {
+        console.error('[ProviderSelector] Failed to update session provider info:', error);
+      });
 
       return null;
     }
@@ -200,6 +217,9 @@ export class ProxyProviderResolver {
 
   /**
    * 过滤超限供应商
+   *
+   * 注意：并发 Session 限制检查已移至原子性检查（ensure 方法中），
+   * 此处仅检查金额限制和熔断器状态
    */
   private static async filterByLimits(providers: Provider[]): Promise<Provider[]> {
     const results = await Promise.all(
@@ -222,17 +242,7 @@ export class ProxyProviderResolver {
           return null;
         }
 
-        // 2. 检查并发 Session 限制
-        const sessionCheck = await RateLimitService.checkSessionLimit(
-          p.id,
-          'provider',
-          p.limitConcurrentSessions || 0
-        );
-
-        if (!sessionCheck.allowed) {
-          console.debug(`[ProviderSelector] Provider ${p.id} session limit exceeded`);
-          return null;
-        }
+        // 并发 Session 限制已移至原子性检查（avoid race condition）
 
         return p;
       })

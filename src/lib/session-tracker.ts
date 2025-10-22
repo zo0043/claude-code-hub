@@ -20,8 +20,8 @@ export class SessionTracker {
   /**
    * 初始化 SessionTracker，自动清理旧格式数据
    *
-   * 应在应用启动时调用一次，清理重构前的 Set 类型数据，
-   * 确保所有集合都是 ZSET 格式。
+   * 应在应用启动时调用一次，清理 global:active_sessions 的旧 Set 数据。
+   * 其他 key（provider:*、key:*）在运行时自动清理。
    */
   static async initialize(): Promise<void> {
     const redis = getRedisClient();
@@ -37,15 +37,12 @@ export class SessionTracker {
       if (exists === 1) {
         const type = await redis.type(key);
 
-        if (type === 'set') {
-          console.warn(`[SessionTracker] Found legacy Set: ${key}, migrating to ZSET...`);
+        if (type !== 'zset') {
+          console.warn(`[SessionTracker] Found legacy format: ${key} (type=${type}), deleting...`);
           await redis.del(key);
-          console.info(`[SessionTracker] ✅ Successfully migrated ${key} to ZSET format`);
-        } else if (type === 'zset') {
-          console.debug(`[SessionTracker] ${key} is already ZSET format, no migration needed`);
+          console.info(`[SessionTracker] ✅ Deleted legacy ${key}`);
         } else {
-          console.warn(`[SessionTracker] Unexpected type for ${key}: ${type}, deleting...`);
-          await redis.del(key);
+          console.debug(`[SessionTracker] ${key} is already ZSET format`);
         }
       } else {
         console.debug(`[SessionTracker] ${key} does not exist, will be created on first use`);
@@ -198,8 +195,6 @@ export class SessionTracker {
   /**
    * 获取全局活跃 session 计数
    *
-   * 自动兼容新旧格式（ZSET/Set）
-   *
    * @returns 活跃 session 数量
    */
   static async getGlobalSessionCount(): Promise<number> {
@@ -213,14 +208,13 @@ export class SessionTracker {
       if (exists === 1) {
         const type = await redis.type(key);
 
-        if (type === 'zset') {
-          // 新格式：从 ZSET 读取
-          return await this.countFromZSet(key);
-        } else {
-          // 旧格式：从 Set 读取（兼容模式）
-          console.debug('[SessionTracker] Using legacy Set format (will expire in 5 min)');
-          return await this.countFromSet(key);
+        if (type !== 'zset') {
+          console.warn(`[SessionTracker] ${key} is not ZSET (type=${type}), deleting...`);
+          await redis.del(key);
+          return 0;
         }
+
+        return await this.countFromZSet(key);
       }
 
       return 0;
@@ -247,12 +241,13 @@ export class SessionTracker {
       if (exists === 1) {
         const type = await redis.type(key);
 
-        if (type === 'zset') {
-          return await this.countFromZSet(key);
-        } else {
-          console.debug(`[SessionTracker] Key ${keyId}: Using legacy Set format`);
-          return await this.countFromSet(key);
+        if (type !== 'zset') {
+          console.warn(`[SessionTracker] ${key} is not ZSET (type=${type}), deleting...`);
+          await redis.del(key);
+          return 0;
         }
+
+        return await this.countFromZSet(key);
       }
 
       return 0;
@@ -279,12 +274,13 @@ export class SessionTracker {
       if (exists === 1) {
         const type = await redis.type(key);
 
-        if (type === 'zset') {
-          return await this.countFromZSet(key);
-        } else {
-          console.debug(`[SessionTracker] Provider ${providerId}: Using legacy Set format`);
-          return await this.countFromSet(key);
+        if (type !== 'zset') {
+          console.warn(`[SessionTracker] ${key} is not ZSET (type=${type}), deleting...`);
+          await redis.del(key);
+          return 0;
         }
+
+        return await this.countFromZSet(key);
       }
 
       return 0;
@@ -310,20 +306,20 @@ export class SessionTracker {
       if (exists === 1) {
         const type = await redis.type(key);
 
-        if (type === 'zset') {
-          // 新格式：从 ZSET 读取
-          const now = Date.now();
-          const fiveMinutesAgo = now - this.SESSION_TTL;
-
-          // 清理过期 session
-          await redis.zremrangebyscore(key, '-inf', fiveMinutesAgo);
-
-          // 获取剩余的 session ID
-          return await redis.zrange(key, 0, -1);
-        } else {
-          // 旧格式：从 Set 读取
-          return await redis.smembers(key);
+        if (type !== 'zset') {
+          console.warn(`[SessionTracker] ${key} is not ZSET (type=${type}), deleting...`);
+          await redis.del(key);
+          return [];
         }
+
+        const now = Date.now();
+        const fiveMinutesAgo = now - this.SESSION_TTL;
+
+        // 清理过期 session
+        await redis.zremrangebyscore(key, '-inf', fiveMinutesAgo);
+
+        // 获取剩余的 session ID
+        return await redis.zrange(key, 0, -1);
       }
 
       return [];
@@ -386,51 +382,4 @@ export class SessionTracker {
     }
   }
 
-  /**
-   * 从 Set 计数（旧格式 - 兼容模式）
-   *
-   * 实现步骤：
-   * 1. SMEMBERS 获取所有 session ID
-   * 2. 批量 EXISTS 验证 session:${sessionId}:info 是否存在
-   * 3. 统计真实存在的 session
-   *
-   * 注意：这是兼容旧数据的方法，5 分钟后旧数据自动过期，将全部切换到 ZSET
-   *
-   * @param key - Redis key
-   * @returns 有效 session 数量
-   */
-  private static async countFromSet(key: string): Promise<number> {
-    const redis = getRedisClient();
-    if (!redis || redis.status !== 'ready') return 0;
-
-    try {
-      // 1. 获取所有 session ID
-      const sessionIds = await redis.smembers(key);
-      if (sessionIds.length === 0) return 0;
-
-      // 2. 批量验证 info 是否存在
-      const pipeline = redis.pipeline();
-      for (const sessionId of sessionIds) {
-        pipeline.exists(`session:${sessionId}:info`);
-      }
-      const results = await pipeline.exec();
-      if (!results) return 0;
-
-      // 3. 统计有效 session
-      let count = 0;
-      for (const result of results) {
-        if (result && result[0] === null && result[1] === 1) {
-          count++;
-        }
-      }
-
-      console.debug(
-        `[SessionTracker] Set ${key} (legacy): ${count} valid sessions (from ${sessionIds.length} total)`
-      );
-      return count;
-    } catch (error) {
-      console.error('[SessionTracker] Failed to count from Set:', error);
-      return 0;
-    }
-  }
 }

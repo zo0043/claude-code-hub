@@ -1,5 +1,6 @@
 import { getRedisClient } from '@/lib/redis';
 import { SessionTracker } from '@/lib/session-tracker';
+import { CHECK_AND_TRACK_SESSION } from '@/lib/redis/lua-scripts';
 
 interface CostLimit {
   amount: number | null;
@@ -73,7 +74,10 @@ export class RateLimitService {
   }
 
   /**
-   * 检查并发 Session 限制
+   * 检查并发 Session 限制（仅检查，不追踪）
+   *
+   * 注意：此方法仅用于非供应商级别的限流检查（如 key 级）
+   * 供应商级别请使用 checkAndTrackProviderSession 保证原子性
    */
   static async checkSessionLimit(
     id: number,
@@ -85,7 +89,7 @@ export class RateLimitService {
     }
 
     try {
-      // 使用 SessionTracker 的统一计数逻辑（自动兼容 ZSET/Set）
+      // 使用 SessionTracker 的统一计数逻辑
       const count = type === 'key'
         ? await SessionTracker.getKeySessionCount(id)
         : await SessionTracker.getProviderSessionCount(id);
@@ -101,6 +105,66 @@ export class RateLimitService {
     } catch (error) {
       console.error('[RateLimit] Session check failed:', error);
       return { allowed: true }; // Fail Open
+    }
+  }
+
+  /**
+   * 原子性检查并追踪供应商 Session（解决竞态条件）
+   *
+   * 使用 Lua 脚本保证"检查 + 追踪"的原子性，防止并发请求同时通过限制检查
+   *
+   * @param providerId - Provider ID
+   * @param sessionId - Session ID
+   * @param limit - 并发限制
+   * @returns { allowed, count, tracked } - 是否允许、当前并发数、是否已追踪
+   */
+  static async checkAndTrackProviderSession(
+    providerId: number,
+    sessionId: string,
+    limit: number
+  ): Promise<{ allowed: boolean; count: number; tracked: boolean; reason?: string }> {
+    if (limit <= 0) {
+      return { allowed: true, count: 0, tracked: false };
+    }
+
+    if (!this.redis || this.redis.status !== 'ready') {
+      console.warn('[RateLimit] Redis not ready, Fail Open');
+      return { allowed: true, count: 0, tracked: false };
+    }
+
+    try {
+      const key = `provider:${providerId}:active_sessions`;
+      const now = Date.now();
+
+      // 执行 Lua 脚本：原子性检查 + 追踪
+      const result = await this.redis.eval(
+        CHECK_AND_TRACK_SESSION,
+        1,  // KEYS count
+        key,  // KEYS[1]
+        sessionId,  // ARGV[1]
+        limit.toString(),  // ARGV[2]
+        now.toString()  // ARGV[3]
+      ) as [number, number];
+
+      const [allowed, count] = result;
+
+      if (allowed === 0) {
+        return {
+          allowed: false,
+          count,
+          tracked: false,
+          reason: `供应商并发 Session 上限已达到（${count}/${limit}）`,
+        };
+      }
+
+      return {
+        allowed: true,
+        count,
+        tracked: true,  // Lua 脚本中已追踪
+      };
+    } catch (error) {
+      console.error('[RateLimit] Atomic check-and-track failed:', error);
+      return { allowed: true, count: 0, tracked: false }; // Fail Open
     }
   }
 
