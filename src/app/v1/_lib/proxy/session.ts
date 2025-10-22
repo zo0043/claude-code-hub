@@ -45,6 +45,9 @@ export class ProxySession {
   provider: Provider | null;
   messageContext: MessageContext | null;
 
+  // Session ID（用于会话粘性和并发限流）
+  sessionId: string | null;
+
   // Codex 支持：记录原始请求格式和供应商类型
   originalFormat: 'response' | 'openai' | 'claude' = 'claude';
   providerType: 'claude' | 'codex' | null = null;
@@ -70,6 +73,7 @@ export class ProxySession {
     this.authState = null;
     this.provider = null;
     this.messageContext = null;
+    this.sessionId = null;
     this.providerChain = [];
   }
 
@@ -121,6 +125,35 @@ export class ProxySession {
   }
 
   /**
+   * 设置 session ID
+   */
+  setSessionId(sessionId: string): void {
+    this.sessionId = sessionId;
+  }
+
+  /**
+   * 获取 messages 数组长度
+   */
+  getMessagesLength(): number {
+    const messages = (this.request.message as Record<string, unknown>).messages;
+    return Array.isArray(messages) ? messages.length : 0;
+  }
+
+  /**
+   * 获取 messages 数组
+   */
+  getMessages(): unknown {
+    return (this.request.message as Record<string, unknown>).messages;
+  }
+
+  /**
+   * 是否应该复用 provider（基于 messages 长度）
+   */
+  shouldReuseProvider(): boolean {
+    return this.getMessagesLength() > 1;
+  }
+
+  /**
    * 添加供应商到决策链（带详细元数据）
    */
   addProviderToChain(
@@ -165,11 +198,6 @@ export class ProxySession {
    */
   getProviderChain(): ProviderChainItem[] {
     return this.providerChain;
-  }
-
-  shouldReuseProvider(): boolean {
-    const messages = (this.request.message as Record<string, unknown>).messages;
-    return Array.isArray(messages) && messages.length > 1;
   }
 }
 

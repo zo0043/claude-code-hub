@@ -22,6 +22,7 @@ export async function createMessageRequest(data: CreateMessageRequestData): Prom
     model: data.model,
     durationMs: data.duration_ms,
     costUsd: formattedCost ?? undefined,
+    sessionId: data.session_id,  // 新增：Session ID
   };
 
   const [result] = await db.insert(messageRequest).values(dbData).returning({
@@ -32,6 +33,7 @@ export async function createMessageRequest(data: CreateMessageRequestData): Prom
     model: messageRequest.model,
     durationMs: messageRequest.durationMs,
     costUsd: messageRequest.costUsd,
+    sessionId: messageRequest.sessionId,  // 新增
     createdAt: messageRequest.createdAt,
     updatedAt: messageRequest.updatedAt,
     deletedAt: messageRequest.deletedAt,

@@ -333,7 +333,7 @@ async function trackCostToRedis(
   session: ProxySession,
   usage: UsageMetrics | null
 ): Promise<void> {
-  if (!usage) return;
+  if (!usage || !session.sessionId) return;
 
   const messageContext = session.messageContext;
   const provider = session.provider;
@@ -351,17 +351,11 @@ async function trackCostToRedis(
   const cost = calculateRequestCost(usage, priceData.priceData, provider.costMultiplier);
   if (cost.lte(0)) return;
 
-  // 获取 sessionId（优先使用 conversation_id）
-  const conversationId = typeof session.request.message === 'object' && session.request.message !== null
-    ? (session.request.message as Record<string, unknown>).conversation_id
-    : null;
-  const sessionId = typeof conversationId === 'string' ? conversationId : `msg_${messageContext.id}`;
-
-  // 追踪到 Redis
+  // 追踪到 Redis（使用 session.sessionId）
   await RateLimitService.trackCost(
     key.id,
     provider.id,
-    sessionId,
+    session.sessionId,  // 直接使用 session.sessionId
     parseFloat(cost.toString())
   );
 }

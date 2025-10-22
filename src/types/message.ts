@@ -41,6 +41,9 @@ export interface MessageRequest {
   durationMs?: number;
   costUsd?: string; // 单次请求费用（美元），保持高精度字符串表示
 
+  // Session ID（用于会话粘性和日志追踪）
+  sessionId?: string;
+
   // 上游决策链（记录尝试的供应商列表）
   providerChain?: ProviderChainItem[];
 
@@ -71,6 +74,9 @@ export interface CreateMessageRequestData {
   model?: string;
   duration_ms?: number;
   cost_usd?: Numeric; // 单次请求费用（美元），支持高精度
+
+  // Session ID（用于会话粘性和日志追踪）
+  session_id?: string;
 
   // 上游决策链
   provider_chain?: ProviderChainItem[];

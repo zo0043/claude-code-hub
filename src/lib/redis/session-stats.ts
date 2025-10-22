@@ -17,6 +17,12 @@ export async function getActiveConcurrentSessions(): Promise<number> {
   }
 
   try {
+    // 检查 Redis 连接状态
+    if (redis.status !== 'ready') {
+      console.warn('[SessionStats] Redis not ready, status:', redis.status);
+      return 0; // Fail Open
+    }
+
     let cursor = '0';
     let count = 0;
     const pattern = 'session:*:last_seen';

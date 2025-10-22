@@ -1,7 +1,7 @@
 import type { Provider } from "@/types/provider";
 import { findProviderList, findProviderById } from "@/repository/provider";
-import { findLatestMessageRequestByKey } from "@/repository/message";
 import { RateLimitService } from "@/lib/rate-limit";
+import { SessionManager } from "@/lib/session-manager";
 import { isCircuitOpen, getCircuitState } from "@/lib/circuit-breaker";
 import { ProxyLogger } from "./logger";
 import { ProxyResponses } from "./responses";
@@ -12,7 +12,7 @@ export class ProxyProviderResolver {
     // 标记选择方法
     let selectionMethod: 'reuse' | 'random' | 'group_filter' | 'fallback' = 'random';
 
-    // 尝试复用之前的供应商
+    // 尝试复用之前的供应商（基于 session）
     const reusedProvider = await ProxyProviderResolver.findReusable(session, targetProviderType);
     if (reusedProvider) {
       session.setProvider(reusedProvider);
@@ -24,13 +24,19 @@ export class ProxyProviderResolver {
       session.setProvider(await ProxyProviderResolver.pickRandomProvider(session, [], targetProviderType));
     }
 
-    // 关键修复：选定供应商后立即记录到决策链
+    // 关键修复：选定供应商后立即记录到决策链并绑定到 session
     if (session.provider) {
       session.addProviderToChain(session.provider, {
         reason: 'initial_selection',
         selectionMethod,
         circuitState: getCircuitState(session.provider.id),
       });
+
+      // 绑定 session 到 provider（异步，不阻塞）
+      if (session.sessionId) {
+        void SessionManager.bindSessionToProvider(session.sessionId, session.provider.id);
+      }
+
       return null;
     }
 
@@ -55,23 +61,25 @@ export class ProxyProviderResolver {
     return this.pickRandomProvider(session, excludeIds, targetProviderType);
   }
 
+  /**
+   * 查找可复用的供应商（基于 session）
+   */
   private static async findReusable(session: ProxySession, targetProviderType: 'claude' | 'codex'): Promise<Provider | null> {
-    if (!session.shouldReuseProvider()) {
+    if (!session.shouldReuseProvider() || !session.sessionId) {
       return null;
     }
 
-    const apiKey = session.authState?.apiKey;
-    if (!apiKey) {
+    // 从 Redis 读取该 session 绑定的 provider
+    const providerId = await SessionManager.getSessionProvider(session.sessionId);
+    if (!providerId) {
+      console.debug(`[ProviderSelector] Session ${session.sessionId} has no bound provider`);
       return null;
     }
 
-    const latestRequest = await findLatestMessageRequestByKey(apiKey);
-    if (!latestRequest?.providerId) {
-      return null;
-    }
-
-    const provider = await findProviderById(latestRequest.providerId);
+    // 验证 provider 可用性
+    const provider = await findProviderById(providerId);
     if (!provider || !provider.isEnabled) {
+      console.debug(`[ProviderSelector] Session ${session.sessionId} provider ${providerId} unavailable`);
       return null;
     }
 
@@ -81,6 +89,7 @@ export class ProxyProviderResolver {
       return null;
     }
 
+    console.info(`[ProviderSelector] Reusing provider ${provider.name} (id=${provider.id}) for session ${session.sessionId}`);
     return provider;
   }
 
@@ -280,3 +289,4 @@ export class ProxyProviderResolver {
     return providers[providers.length - 1];
   }
 }
+

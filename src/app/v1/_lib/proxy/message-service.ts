@@ -15,7 +15,8 @@ export class ProxyMessageService {
       provider_id: provider.id,
       user_id: authState.user.id,
       key: authState.apiKey,
-      model: session.request.model ?? undefined
+      model: session.request.model ?? undefined,
+      session_id: session.sessionId ?? undefined,  // 新增：传入 session_id
     });
 
     session.setMessageContext({

@@ -111,6 +111,9 @@ export const messageRequest = pgTable('message_request', {
   durationMs: integer('duration_ms'),
   costUsd: numeric('cost_usd', { precision: 21, scale: 15 }).default('0'),
 
+  // Session ID（用于会话粘性和日志追踪）
+  sessionId: varchar('session_id', { length: 64 }),
+
   // 上游决策链（记录尝试的供应商列表）
   providerChain: jsonb('provider_chain').$type<Array<{ id: number; name: string }>>(),
 
@@ -137,6 +140,8 @@ export const messageRequest = pgTable('message_request', {
   messageRequestUserDateCostIdx: index('idx_message_request_user_date_cost').on(table.userId, table.createdAt, table.costUsd).where(sql`${table.deletedAt} IS NULL`),
   // 优化用户查询的复合索引（按创建时间倒序）
   messageRequestUserQueryIdx: index('idx_message_request_user_query').on(table.userId, table.createdAt).where(sql`${table.deletedAt} IS NULL`),
+  // Session 查询索引（按 session 聚合查看对话）
+  messageRequestSessionIdIdx: index('idx_message_request_session_id').on(table.sessionId).where(sql`${table.deletedAt} IS NULL`),
   // 基础索引
   messageRequestProviderIdIdx: index('idx_message_request_provider_id').on(table.providerId),
   messageRequestUserIdIdx: index('idx_message_request_user_id').on(table.userId),

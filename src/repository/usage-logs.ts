@@ -20,6 +20,7 @@ export interface UsageLogFilters {
 export interface UsageLogRow {
   id: number;
   createdAt: Date | null;
+  sessionId: string | null;  // 新增：Session ID
   userName: string;
   keyName: string;
   providerName: string;
@@ -151,6 +152,7 @@ export async function findUsageLogsWithDetails(
     .select({
       id: messageRequest.id,
       createdAt: messageRequest.createdAt,
+      sessionId: messageRequest.sessionId,  // 新增：Session ID
       userName: users.name,
       keyName: keysTable.name,
       providerName: providers.name,
