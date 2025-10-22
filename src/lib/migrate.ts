@@ -62,6 +62,6 @@ export async function checkDatabaseConnection(retries = 30, delay = 2000): Promi
     }
   }
 
-  logger.error('❌ Failed to connect to database after', { context: retries, "attempts" });
+  logger.error('Failed to connect to database after retries', { attempts: retries });
   return false;
 }

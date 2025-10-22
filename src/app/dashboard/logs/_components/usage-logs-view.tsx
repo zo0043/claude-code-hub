@@ -87,7 +87,7 @@ export function UsageLogsView({
   // 初始加载
   useEffect(() => {
     loadData();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);  
 
   // 自动轮询
   useEffect(() => {
@@ -100,7 +100,7 @@ export function UsageLogsView({
     }, 10000); // 10 秒间隔
 
     return () => clearInterval(intervalId);
-  }, [isAutoRefresh]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isAutoRefresh]);  
 
   // 处理筛选条件变更
   const handleFilterChange = (newFilters: Omit<typeof filters, 'page'>) => {

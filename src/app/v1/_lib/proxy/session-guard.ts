@@ -61,7 +61,7 @@ export class ProxySessionGuard {
         }
       })();
 
-      console.debug(
+      logger.debug(
         `[ProxySessionGuard] Session assigned: ${sessionId} (key=${keyId}, messagesLength=${session.getMessagesLength()}, clientProvided=${!!clientSessionId})`
       );
     } catch (error) {

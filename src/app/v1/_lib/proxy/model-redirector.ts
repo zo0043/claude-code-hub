@@ -32,14 +32,14 @@ export class ModelRedirector {
     // 检查是否有该模型的重定向配置
     const redirectedModel = provider.modelRedirects[originalModel];
     if (!redirectedModel) {
-      console.debug(
+      logger.debug(
         `[ModelRedirector] No redirect configured for model "${originalModel}" in provider ${provider.id}`
       );
       return false;
     }
 
     // 执行重定向
-    console.info(
+    logger.info(
       `[ModelRedirector] Redirecting model: "${originalModel}" → "${redirectedModel}" (provider ${provider.id})`
     );
 

@@ -11,7 +11,6 @@ import { RateLimitService } from "@/lib/rate-limit";
 import { SessionManager } from "@/lib/session-manager";
 import { SessionTracker } from "@/lib/session-tracker";
 import type { ProxySession } from "./session";
-import { ProxyLogger } from "./logger";
 import { ProxyStatusTracker } from "@/lib/proxy-status-tracker";
 import { ResponseTransformer } from "../codex/transformers/response";
 import { StreamTransformer } from "../codex/transformers/stream";
@@ -159,7 +158,11 @@ export class ProxyResponseHandler {
           tracker.endRequest(messageContext.user.id, messageContext.id);
         }
 
-        await ProxyLogger.logNonStream(session, provider, responseLogContent);
+        logger.debug("ResponseHandler: Non-stream response processed", {
+          providerId: provider.id,
+          providerName: provider.name,
+          statusCode,
+        });
       } catch (error) {
         logger.error('Failed to handle non-stream log:', error);
       }

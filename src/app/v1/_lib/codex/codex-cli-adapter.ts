@@ -79,7 +79,7 @@ export function adaptForCodexCLI(request: ResponseRequest): ResponseRequest {
   }
 
   if (removedFields.length > 0) {
-    console.debug(`[CodexCLI] Removed incompatible fields: ${removedFields.join(", ")}`);
+    logger.debug(`[CodexCLI] Removed incompatible fields: ${removedFields.join(", ")}`);
   }
 
   logger.debug('[CodexCLI] Adapted request:', {

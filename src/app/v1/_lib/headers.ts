@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 /**
  * Header 处理器配置
  */

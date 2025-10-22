@@ -79,9 +79,9 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
 
       // 开发模式：输出完整原始请求
       if (process.env.NODE_ENV === "development") {
-        console.debug(
+        logger.debug(
           "[ChatCompletions] Full OpenAI request:",
-          JSON.stringify(openAIRequest, null, 2)
+          { request: JSON.stringify(openAIRequest, null, 2) }
         );
       }
 
@@ -101,24 +101,24 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
 
         // 开发模式：输出完整转换后请求
         if (process.env.NODE_ENV === "development") {
-          console.debug(
+          logger.debug(
             "[ChatCompletions] Full Response API request:",
-            JSON.stringify(responseRequest, null, 2)
+            { request: JSON.stringify(responseRequest, null, 2) }
           );
         }
 
         // 适配 Codex CLI (注入 instructions)
         if (process.env.NODE_ENV === "development") {
-          console.debug(
+          logger.debug(
             "[ChatCompletions] Before adaptForCodexCLI:",
-            JSON.stringify(responseRequest, null, 2)
+            { request: JSON.stringify(responseRequest, null, 2) }
           );
         }
         responseRequest = adaptForCodexCLI(responseRequest);
         if (process.env.NODE_ENV === "development") {
-          console.debug(
+          logger.debug(
             "[ChatCompletions] After adaptForCodexCLI:",
-            JSON.stringify(responseRequest, null, 2)
+            { request: JSON.stringify(responseRequest, null, 2) }
           );
         }
 
@@ -129,7 +129,7 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
         // 验证转换结果（仅在开发环境）
         if (process.env.NODE_ENV === "development") {
           const msgObj = session.request.message as Record<string, unknown>;
-          console.debug(
+          logger.debug(
             "[ChatCompletions] Verification - session.request.message contains input:",
             {
               hasInput: "input" in msgObj,

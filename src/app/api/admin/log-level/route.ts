@@ -1,5 +1,4 @@
 import { getSession } from "@/lib/auth";
-import { logger } from '@/lib/logger';
 import { logger, setLogLevel, getLogLevel, type LogLevel } from "@/lib/logger";
 
 /**

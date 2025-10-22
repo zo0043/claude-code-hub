@@ -60,10 +60,12 @@ const pinoInstance = pino({
 function createLoggerWrapper(pinoLogger: pino.Logger) {
   const wrap = (level: pino.Level) => {
     return (arg1: unknown, arg2?: unknown, ...args: unknown[]) => {
-      // 如果第一个参数是字符串，第二个参数是对象，自动交换
+      // 如果第一个参数是字符串,第二个参数是对象,自动交换
       if (typeof arg1 === "string" && arg2 && typeof arg2 === "object" && !Array.isArray(arg2)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         pinoLogger[level](arg2 as any, arg1 as any, ...args);
       } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         pinoLogger[level](arg1 as any, arg2 as any, ...args);
       }
     };

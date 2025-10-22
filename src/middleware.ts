@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { isDevelopment } from "@/lib/config/env.schema";
 
 const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/auth/logout", "/_next", "/favicon.ico"];
@@ -10,7 +11,7 @@ export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   if (isDevelopment()) {
-    console.log(`[${method.toUpperCase()}] - ${pathname}`);
+    logger.info('Request received', { method: method.toUpperCase(), pathname });
   }
 
   // API 代理路由不需要 Web 鉴权（使用自己的 Bearer token）

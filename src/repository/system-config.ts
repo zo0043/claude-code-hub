@@ -140,7 +140,7 @@ export async function getSystemSettings(): Promise<SystemSettings> {
     return toSystemSettings(fallback);
   } catch (error) {
     if (isTableMissingError(error)) {
-      console.warn("system_settings 表不存在，返回默认配置。请运行数据库迁移。", error);
+      logger.warn("system_settings 表不存在，返回默认配置。请运行数据库迁移。", { error });
       return createFallbackSettings();
     }
     throw error;

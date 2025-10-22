@@ -183,7 +183,7 @@ export async function syncLiteLLMPrices(): Promise<ActionResult<PriceUpdateResul
     const result = await uploadPriceTable(jsonContent);
 
     if (result.ok) {
-      console.log("LiteLLM price sync completed:", result.data);
+      logger.info('✅ LiteLLM price sync completed', { result: result.data });
     } else {
       logger.error('❌ LiteLLM price sync failed:', { context: result.error });
     }

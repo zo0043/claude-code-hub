@@ -7,6 +7,8 @@
  * - Half-Open（半开）：等待一段时间后，允许少量请求尝试
  */
 
+import { logger } from "@/lib/logger";
+
 interface ProviderHealth {
   failureCount: number;
   lastFailureTime: number | null;
@@ -55,7 +57,7 @@ export function isCircuitOpen(providerId: number): boolean {
     if (health.circuitOpenUntil && Date.now() > health.circuitOpenUntil) {
       health.circuitState = "half-open";
       health.halfOpenSuccessCount = 0;
-      logger.info('[CircuitBreaker] Provider ${providerId} transitioned to half-open');
+      logger.info(`[CircuitBreaker] Provider ${providerId} transitioned to half-open`);
       return false; // 允许尝试
     }
     return true; // 仍在打开状态
@@ -74,8 +76,14 @@ export function recordFailure(providerId: number, error: Error): void {
   health.failureCount++;
   health.lastFailureTime = Date.now();
 
-  console.warn(
-    `[CircuitBreaker] Provider ${providerId} failure recorded (${health.failureCount}/${CIRCUIT_BREAKER_CONFIG.failureThreshold}): ${error.message}`
+  logger.warn(
+    `[CircuitBreaker] Provider ${providerId} failure recorded (${health.failureCount}/${CIRCUIT_BREAKER_CONFIG.failureThreshold}): ${error.message}`,
+    {
+      providerId,
+      failureCount: health.failureCount,
+      threshold: CIRCUIT_BREAKER_CONFIG.failureThreshold,
+      errorMessage: error.message,
+    }
   );
 
   // 检查是否需要打开熔断器
@@ -84,8 +92,13 @@ export function recordFailure(providerId: number, error: Error): void {
     health.circuitOpenUntil = Date.now() + CIRCUIT_BREAKER_CONFIG.openDuration;
     health.halfOpenSuccessCount = 0;
 
-    console.error(
-      `[CircuitBreaker] Provider ${providerId} circuit opened after ${health.failureCount} failures, will retry at ${new Date(health.circuitOpenUntil).toISOString()}`
+    logger.error(
+      `[CircuitBreaker] Provider ${providerId} circuit opened after ${health.failureCount} failures, will retry at ${new Date(health.circuitOpenUntil).toISOString()}`,
+      {
+        providerId,
+        failureCount: health.failureCount,
+        retryAt: new Date(health.circuitOpenUntil).toISOString(),
+      }
     );
   }
 }
@@ -108,19 +121,32 @@ export function recordSuccess(providerId: number): void {
       health.circuitOpenUntil = null;
       health.halfOpenSuccessCount = 0;
 
-      console.info(
-        `[CircuitBreaker] Provider ${providerId} circuit closed after ${CIRCUIT_BREAKER_CONFIG.halfOpenSuccessThreshold} successes`
+      logger.info(
+        `[CircuitBreaker] Provider ${providerId} circuit closed after ${CIRCUIT_BREAKER_CONFIG.halfOpenSuccessThreshold} successes`,
+        {
+          providerId,
+          successThreshold: CIRCUIT_BREAKER_CONFIG.halfOpenSuccessThreshold,
+        }
       );
     } else {
-      console.debug(
-        `[CircuitBreaker] Provider ${providerId} half-open success (${health.halfOpenSuccessCount}/${CIRCUIT_BREAKER_CONFIG.halfOpenSuccessThreshold})`
+      logger.debug(
+        `[CircuitBreaker] Provider ${providerId} half-open success (${health.halfOpenSuccessCount}/${CIRCUIT_BREAKER_CONFIG.halfOpenSuccessThreshold})`,
+        {
+          providerId,
+          successCount: health.halfOpenSuccessCount,
+          threshold: CIRCUIT_BREAKER_CONFIG.halfOpenSuccessThreshold,
+        }
       );
     }
   } else if (health.circuitState === "closed") {
     // 正常状态下成功，重置失败计数
     if (health.failureCount > 0) {
-      console.debug(
-        `[CircuitBreaker] Provider ${providerId} success, resetting failure count from ${health.failureCount} to 0`
+      logger.debug(
+        `[CircuitBreaker] Provider ${providerId} success, resetting failure count from ${health.failureCount} to 0`,
+        {
+          providerId,
+          previousFailureCount: health.failureCount,
+        }
       );
       health.failureCount = 0;
       health.lastFailureTime = null;
@@ -162,7 +188,12 @@ export function resetCircuit(providerId: number): void {
   health.circuitOpenUntil = null;
   health.halfOpenSuccessCount = 0;
 
-  console.info(
-    `[CircuitBreaker] Provider ${providerId} circuit manually reset from ${oldState} to closed`
+  logger.info(
+    `[CircuitBreaker] Provider ${providerId} circuit manually reset from ${oldState} to closed`,
+    {
+      providerId,
+      previousState: oldState,
+      newState: "closed",
+    }
   );
 }

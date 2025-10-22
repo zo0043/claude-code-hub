@@ -3,7 +3,6 @@ import { findProviderList, findProviderById } from "@/repository/provider";
 import { RateLimitService } from "@/lib/rate-limit";
 import { SessionManager } from "@/lib/session-manager";
 import { isCircuitOpen, getCircuitState } from "@/lib/circuit-breaker";
-import { ProxyLogger } from "./logger";
 import { ProxyResponses } from "./responses";
 import { logger } from "@/lib/logger";
 import type { ProxySession } from "./session";
@@ -50,11 +49,7 @@ export class ProxyProviderResolver {
           limit,
         });
 
-        // 记录失败
-        await ProxyLogger.logFailure(
-          session,
-          new Error(checkResult.reason || "Session limit exceeded")
-        );
+        // 返回错误
         return ProxyResponses.buildError(503, checkResult.reason || "供应商并发限制已达到");
       }
 
@@ -89,7 +84,6 @@ export class ProxyProviderResolver {
     const status = 503;
     const message = "暂无可用的上游服务";
     logger.error("ProviderSelector: No available providers");
-    await ProxyLogger.logFailure(session, new Error(message));
     return ProxyResponses.buildError(status, message);
   }
 

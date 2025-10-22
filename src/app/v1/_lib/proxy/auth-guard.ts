@@ -1,5 +1,4 @@
 import { validateApiKeyAndGetUser } from "@/repository/key";
-import { ProxyLogger } from "./logger";
 import { ProxyResponses } from "./responses";
 import type { ProxySession, AuthState } from "./session";
 
@@ -14,7 +13,6 @@ export class ProxyAuthenticator {
       return null;
     }
 
-    await ProxyLogger.logFailure(session, new Error("Authorization failed"));
     return ProxyResponses.buildError(401, "令牌已过期或验证不正确");
   }
 

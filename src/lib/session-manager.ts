@@ -2,7 +2,6 @@ import crypto from "crypto";
 import { logger } from '@/lib/logger';
 import { getRedisClient } from "./redis";
 import { SessionTracker } from "./session-tracker";
-import { logger } from "./logger";
 import type {
   ActiveSessionInfo,
   SessionStoreInfo,

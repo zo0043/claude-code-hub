@@ -15,16 +15,15 @@ import { getSession } from "@/lib/auth";
 import { CreateProviderSchema, UpdateProviderSchema } from "@/lib/validation/schemas";
 import type { ActionResult } from "./types";
 import { getAllHealthStatus, resetCircuit } from "@/lib/circuit-breaker";
-import { debugLog } from "@/lib/utils/debug-logger";
 
 // 获取服务商数据
 export async function getProviders(): Promise<ProviderDisplay[]> {
   try {
     const session = await getSession();
-    debugLog("getProviders:session", { hasSession: !!session, role: session?.user.role });
+    logger.trace("getProviders:session", { hasSession: !!session, role: session?.user.role });
 
     if (!session || session.user.role !== "admin") {
-      debugLog("getProviders:unauthorized", { hasSession: !!session, role: session?.user.role });
+      logger.trace("getProviders:unauthorized", { hasSession: !!session, role: session?.user.role });
       return [];
     }
 
@@ -32,7 +31,7 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
     const [providers, statistics] = await Promise.all([
       findProviderList(),
       getProviderStatistics().catch((error) => {
-        debugLog("getProviders:statistics_error", {
+        logger.trace("getProviders:statistics_error", {
           message: error.message,
           stack: error.stack,
           name: error.name,
@@ -42,7 +41,7 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
       }),
     ]);
 
-    debugLog("getProviders:raw_data", {
+    logger.trace("getProviders:raw_data", {
       providerCount: providers.length,
       statisticsCount: statistics.length,
       providerIds: providers.map((p) => p.id),
@@ -72,7 +71,7 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
           }
         }
       } catch (error) {
-        debugLog("getProviders:last_call_time_conversion_error", {
+        logger.trace("getProviders:last_call_time_conversion_error", {
           providerId: provider.id,
           rawValue: stats?.last_call_time,
           error: error instanceof Error ? error.message : String(error),
@@ -88,7 +87,7 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
         createdAtStr = provider.createdAt.toISOString().split("T")[0];
         updatedAtStr = provider.updatedAt.toISOString().split("T")[0];
       } catch (error) {
-        debugLog("getProviders:date_conversion_error", {
+        logger.trace("getProviders:date_conversion_error", {
           providerId: provider.id,
           error: error instanceof Error ? error.message : String(error),
         });
@@ -126,10 +125,10 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
       };
     });
 
-    debugLog("getProviders:final_result", { count: result.length });
+    logger.trace("getProviders:final_result", { count: result.length });
     return result;
   } catch (error) {
-    debugLog("getProviders:catch_error", {
+    logger.trace("getProviders:catch_error", {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
@@ -165,14 +164,14 @@ export async function addProvider(data: {
       return { ok: false, error: "无权限执行此操作" };
     }
 
-    debugLog("addProvider:input", {
+    logger.trace("addProvider:input", {
       name: data.name,
       url: data.url,
       provider_type: data.provider_type,
     });
 
     const validated = CreateProviderSchema.parse(data);
-    debugLog("addProvider:validated", { name: validated.name });
+    logger.trace("addProvider:validated", { name: validated.name });
 
     const payload = {
       ...validated,
@@ -187,14 +186,14 @@ export async function addProvider(data: {
     };
 
     await createProvider(payload);
-    debugLog("addProvider:created_success", { name: validated.name });
+    logger.trace("addProvider:created_success", { name: validated.name });
 
     revalidatePath("/settings/providers");
-    debugLog("addProvider:revalidated", { path: "/settings/providers" });
+    logger.trace("addProvider:revalidated", { path: "/settings/providers" });
 
     return { ok: true };
   } catch (error) {
-    debugLog("addProvider:error", {
+    logger.trace("addProvider:error", {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });

@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 /**
  * 构建代理目标URL
  * @param baseUrl - 基础URL（如 https://open.bigmodel.cn/api/anthropic）

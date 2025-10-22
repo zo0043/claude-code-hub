@@ -6,7 +6,6 @@ import { providers } from "@/drizzle/schema";
 import { eq, isNull, and, desc, sql } from "drizzle-orm";
 import type { Provider, CreateProviderData, UpdateProviderData } from "@/types/provider";
 import { toProvider } from "./_shared/transformers";
-import { debugLog } from "@/lib/utils/debug-logger";
 
 export async function createProvider(providerData: CreateProviderData): Promise<Provider> {
   const dbData = {
@@ -96,7 +95,7 @@ export async function findProviderList(
     .limit(limit)
     .offset(offset);
 
-  debugLog("findProviderList:query_result", {
+  logger.trace("findProviderList:query_result", {
     count: result.length,
     ids: result.map((r) => r.id),
   });
@@ -270,11 +269,11 @@ export async function getProviderStatistics(): Promise<
       ORDER BY ps.id ASC
     `;
 
-    debugLog("getProviderStatistics:executing_query");
+    logger.trace("getProviderStatistics:executing_query");
 
     const result = await db.execute(query);
 
-    debugLog("getProviderStatistics:result", {
+    logger.trace("getProviderStatistics:result", {
       count: Array.isArray(result) ? result.length : 0,
     });
 
@@ -287,7 +286,7 @@ export async function getProviderStatistics(): Promise<
       last_call_model: string | null;
     }>;
   } catch (error) {
-    debugLog("getProviderStatistics:error", {
+    logger.trace("getProviderStatistics:error", {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });

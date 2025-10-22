@@ -1,6 +1,5 @@
 import { updateMessageRequestDuration, updateMessageRequestDetails } from "@/repository/message";
 import { logger } from '@/lib/logger';
-import { ProxyLogger } from "./logger";
 import { ProxyResponses } from "./responses";
 import { ProxyError } from "./errors";
 import type { ProxySession } from "./session";
@@ -38,7 +37,10 @@ export class ProxyErrorHandler {
       tracker.endRequest(session.messageContext.user.id, session.messageContext.id);
     }
 
-    await ProxyLogger.logFailure(session, error);
+    logger.error("ProxyErrorHandler: Request failed", {
+      error: errorMessage,
+      statusCode,
+    });
 
     return ProxyResponses.buildError(statusCode, errorMessage);
   }
