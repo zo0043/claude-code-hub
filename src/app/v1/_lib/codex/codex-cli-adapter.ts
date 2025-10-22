@@ -23,7 +23,7 @@ import { CODEX_CLI_INSTRUCTIONS, isCodexCLIRequest } from './constants/codex-cli
  * - 如果 Codex 供应商要求必须有此 prompt,保持 true
  * - 如果发现问题,可改为 false 或通过环境变量控制
  */
-export const ENABLE_CODEX_CLI_INJECTION = true;
+export const ENABLE_CODEX_CLI_INJECTION = false;
 
 /**
  * 不兼容字段列表
@@ -46,46 +46,45 @@ const INCOMPATIBLE_FIELDS: Array<keyof ResponseRequest> = [
  * 适配 Response API 请求,为 Codex 供应商注入必要的 instructions
  *
  * 工作流程:
- * 1. 检测请求是否已包含 Codex CLI instructions
- * 2. 如果已有,直接返回(避免覆盖用户自定义 instructions)
- * 3. 如果没有,注入标准 Codex CLI instructions
- * 4. 删除 Codex CLI 不支持的字段
+ * 1. [可选] 如果开关启用且请求未包含 Codex CLI instructions,则注入
+ * 2. [总是] 删除 Codex CLI 不支持的字段
  *
  * @param request - Response API 请求对象
  * @returns 适配后的请求对象
  */
 export function adaptForCodexCLI(request: ResponseRequest): ResponseRequest {
-  // 检查功能开关
-  if (!ENABLE_CODEX_CLI_INJECTION) {
-    return request;
-  }
-
-  // 检测是否已有 Codex CLI instructions
-  if (isCodexCLIRequest(request.instructions)) {
-    console.info('[CodexCLI] Codex CLI request detected, skipping injection');
-    return request;
-  }
-
-  console.info('[CodexCLI] Non-Codex CLI request detected, injecting instructions');
-
   // 创建适配后的请求
   const adaptedRequest: ResponseRequest = {
     ...request,
-    instructions: CODEX_CLI_INSTRUCTIONS,
   };
 
-  // 删除不兼容字段
+  // 步骤 1: 注入 instructions (如果开关启用)
+  if (ENABLE_CODEX_CLI_INJECTION && !isCodexCLIRequest(request.instructions)) {
+    console.info('[CodexCLI] Non-Codex CLI request detected, injecting instructions');
+    adaptedRequest.instructions = CODEX_CLI_INSTRUCTIONS;
+  } else if (ENABLE_CODEX_CLI_INJECTION) {
+    console.info('[CodexCLI] Codex CLI request detected, skipping injection');
+  } else {
+    console.info('[CodexCLI] Injection disabled, skipping instructions');
+  }
+
+  // 步骤 2: 删除不兼容字段 (总是执行)
+  const removedFields: string[] = [];
   for (const field of INCOMPATIBLE_FIELDS) {
     if (field in adaptedRequest) {
       delete adaptedRequest[field];
-      console.debug(`[CodexCLI] Removed incompatible field: ${field}`);
+      removedFields.push(field);
     }
+  }
+
+  if (removedFields.length > 0) {
+    console.debug(`[CodexCLI] Removed incompatible fields: ${removedFields.join(', ')}`);
   }
 
   console.debug('[CodexCLI] Adapted request:', {
     hasInstructions: !!adaptedRequest.instructions,
     instructionsLength: adaptedRequest.instructions?.length,
-    removedFields: INCOMPATIBLE_FIELDS.filter(f => f in request && !(f in adaptedRequest)),
+    removedFields,
   });
 
   return adaptedRequest;
