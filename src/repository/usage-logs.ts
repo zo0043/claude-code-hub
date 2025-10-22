@@ -40,6 +40,10 @@ export interface UsageLogSummary {
   totalRequests: number;
   totalCost: number;
   totalTokens: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCacheCreationTokens: number;
+  totalCacheReadTokens: number;
 }
 
 export interface UsageLogsResult {
@@ -88,7 +92,15 @@ export async function findUsageLogsWithDetails(
       return {
         logs: [],
         total: 0,
-        summary: { totalRequests: 0, totalCost: 0, totalTokens: 0 }
+        summary: {
+          totalRequests: 0,
+          totalCost: 0,
+          totalTokens: 0,
+          totalInputTokens: 0,
+          totalOutputTokens: 0,
+          totalCacheCreationTokens: 0,
+          totalCacheReadTokens: 0,
+        }
       };
     }
   }
@@ -183,6 +195,10 @@ export async function findUsageLogsWithDetails(
       totalRequests: total,
       totalCost,
       totalTokens,
+      totalInputTokens: summaryResult?.totalInputTokens ?? 0,
+      totalOutputTokens: summaryResult?.totalOutputTokens ?? 0,
+      totalCacheCreationTokens: summaryResult?.totalCacheCreationTokens ?? 0,
+      totalCacheReadTokens: summaryResult?.totalCacheReadTokens ?? 0,
     }
   };
 }

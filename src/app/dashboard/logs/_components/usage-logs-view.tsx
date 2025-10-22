@@ -128,7 +128,7 @@ export function UsageLogsView({
     <div className="space-y-6">
       {/* 统计卡片 */}
       {data && (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="pb-3">
               <CardDescription>总请求数</CardDescription>
@@ -154,6 +154,35 @@ export function UsageLogsView({
                 {data.summary.totalTokens.toLocaleString()}
               </CardTitle>
             </CardHeader>
+            <CardContent className="text-xs text-muted-foreground space-y-1">
+              <div className="flex justify-between">
+                <span>输入:</span>
+                <span className="font-mono">{data.summary.totalInputTokens.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>输出:</span>
+                <span className="font-mono">{data.summary.totalOutputTokens.toLocaleString()}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription>缓存 Token</CardDescription>
+              <CardTitle className="text-3xl font-mono">
+                {(data.summary.totalCacheCreationTokens + data.summary.totalCacheReadTokens).toLocaleString()}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs text-muted-foreground space-y-1">
+              <div className="flex justify-between">
+                <span>写入:</span>
+                <span className="font-mono">{data.summary.totalCacheCreationTokens.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>读取:</span>
+                <span className="font-mono">{data.summary.totalCacheReadTokens.toLocaleString()}</span>
+              </div>
+            </CardContent>
           </Card>
         </div>
       )}

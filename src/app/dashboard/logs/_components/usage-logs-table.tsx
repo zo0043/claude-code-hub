@@ -59,7 +59,10 @@ export function UsageLogsTable({
               <TableHead>密钥</TableHead>
               <TableHead>供应商</TableHead>
               <TableHead>模型</TableHead>
-              <TableHead className="text-right">Token</TableHead>
+              <TableHead className="text-right">输入</TableHead>
+              <TableHead className="text-right">输出</TableHead>
+              <TableHead className="text-right">缓存写入</TableHead>
+              <TableHead className="text-right">缓存读取</TableHead>
               <TableHead className="text-right">成本</TableHead>
               <TableHead className="text-right">耗时</TableHead>
               <TableHead>状态</TableHead>
@@ -68,7 +71,7 @@ export function UsageLogsTable({
           <TableBody>
             {logs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground">
+                <TableCell colSpan={12} className="text-center text-muted-foreground">
                   暂无数据
                 </TableCell>
               </TableRow>
@@ -95,7 +98,16 @@ export function UsageLogsTable({
                   </TableCell>
                   <TableCell className="font-mono text-xs">{log.model || "-"}</TableCell>
                   <TableCell className="text-right font-mono text-xs">
-                    {log.totalTokens.toLocaleString()}
+                    {log.inputTokens?.toLocaleString() || "-"}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-xs">
+                    {log.outputTokens?.toLocaleString() || "-"}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-xs">
+                    {log.cacheCreationInputTokens?.toLocaleString() || "-"}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-xs">
+                    {log.cacheReadInputTokens?.toLocaleString() || "-"}
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs">
                     {log.costUsd ? `$${parseFloat(log.costUsd).toFixed(6)}` : "-"}
