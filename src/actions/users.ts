@@ -67,12 +67,14 @@ export async function getUsers(): Promise<UserDisplay[]> {
             providerGroup: user.providerGroup || undefined,
             keys: keys.map((key) => {
               const stats = statisticsMap.get(key.id);
+              // 用户可以查看和复制自己的密钥，管理员可以查看和复制所有密钥
+              const canUserManageKey = isAdmin || session.user.id === user.id;
               return {
                 id: key.id,
                 name: key.name,
                 maskedKey: maskKey(key.key),
-                fullKey: isAdmin ? key.key : undefined, // 仅管理员可见
-                canCopy: isAdmin, // 仅管理员可复制
+                fullKey: canUserManageKey ? key.key : undefined,
+                canCopy: canUserManageKey,
                 expiresAt: key.expiresAt
                   ? key.expiresAt.toISOString().split("T")[0]
                   : "永不过期",
