@@ -9,11 +9,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import type { UsageLogRow } from "@/repository/usage-logs";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { ProviderChainPopover } from "./provider-chain-popover";
+import { ErrorDetailsDialog } from "./error-details-dialog";
 
 interface UsageLogsTableProps {
   logs: UsageLogRow[];
@@ -33,20 +33,6 @@ export function UsageLogsTable({
   isPending,
 }: UsageLogsTableProps) {
   const totalPages = Math.ceil(total / pageSize);
-
-  const getStatusBadge = (statusCode: number | null) => {
-    if (!statusCode) return <Badge variant="secondary">-</Badge>;
-
-    if (statusCode >= 200 && statusCode < 300) {
-      return <Badge variant="default">{statusCode}</Badge>;
-    } else if (statusCode >= 400 && statusCode < 500) {
-      return <Badge variant="destructive">{statusCode}</Badge>;
-    } else if (statusCode >= 500) {
-      return <Badge variant="destructive">{statusCode}</Badge>;
-    }
-
-    return <Badge variant="secondary">{statusCode}</Badge>;
-  };
 
   return (
     <div className="space-y-4">
@@ -115,7 +101,13 @@ export function UsageLogsTable({
                   <TableCell className="text-right font-mono text-xs">
                     {log.durationMs ? `${log.durationMs}ms` : "-"}
                   </TableCell>
-                  <TableCell>{getStatusBadge(log.statusCode)}</TableCell>
+                  <TableCell>
+                    <ErrorDetailsDialog
+                      statusCode={log.statusCode}
+                      errorMessage={log.errorMessage}
+                      providerChain={log.providerChain}
+                    />
+                  </TableCell>
                 </TableRow>
               ))
             )}

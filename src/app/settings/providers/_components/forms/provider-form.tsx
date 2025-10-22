@@ -64,7 +64,7 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
       return;
     }
 
-    // ✅ 验证模型重定向 JSON 格式（如果填写了）
+    // 验证模型重定向 JSON 格式（如果填写了）
     let parsedModelRedirects: Record<string, string> | null = null;
     if (modelRedirects.trim()) {
       try {
@@ -152,7 +152,7 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
             toast.error(res.error || '添加服务商失败');
             return;
           }
-          // ✅ 添加成功提示
+          // 添加成功提示
           toast.success('添加服务商成功', {
             description: `服务商 "${name.trim()}" 已添加`
           });

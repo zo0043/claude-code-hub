@@ -54,7 +54,7 @@ export async function fetchLiteLLMPrices(): Promise<string | null> {
     // 验证 JSON 格式
     JSON.parse(jsonText);
 
-    console.log('✅ Successfully fetched LiteLLM prices from CDN');
+    console.log('Successfully fetched LiteLLM prices from CDN');
     return jsonText;
   } catch (error) {
     if (error instanceof Error) {

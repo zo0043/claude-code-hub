@@ -55,12 +55,12 @@ const INCOMPATIBLE_FIELDS: Array<keyof ResponseRequest> = [
  * @returns 适配后的请求对象
  */
 export function adaptForCodexCLI(request: ResponseRequest): ResponseRequest {
-  // ✅ 检查功能开关
+  // 检查功能开关
   if (!ENABLE_CODEX_CLI_INJECTION) {
     return request;
   }
 
-  // ✅ 检测是否已有 Codex CLI instructions
+  // 检测是否已有 Codex CLI instructions
   if (isCodexCLIRequest(request.instructions)) {
     console.info('[CodexCLI] Codex CLI request detected, skipping injection');
     return request;
@@ -68,13 +68,13 @@ export function adaptForCodexCLI(request: ResponseRequest): ResponseRequest {
 
   console.info('[CodexCLI] Non-Codex CLI request detected, injecting instructions');
 
-  // ✅ 创建适配后的请求
+  // 创建适配后的请求
   const adaptedRequest: ResponseRequest = {
     ...request,
     instructions: CODEX_CLI_INSTRUCTIONS,
   };
 
-  // ✅ 删除不兼容字段
+  // 删除不兼容字段
   for (const field of INCOMPATIBLE_FIELDS) {
     if (field in adaptedRequest) {
       delete adaptedRequest[field];

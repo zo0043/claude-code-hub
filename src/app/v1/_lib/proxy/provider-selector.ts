@@ -24,7 +24,7 @@ export class ProxyProviderResolver {
       session.setProvider(await ProxyProviderResolver.pickRandomProvider(session, [], targetProviderType));
     }
 
-    // ✅ 关键修复：选定供应商后立即记录到决策链
+    // 关键修复：选定供应商后立即记录到决策链
     if (session.provider) {
       session.addProviderToChain(session.provider, {
         reason: 'initial_selection',
@@ -43,14 +43,14 @@ export class ProxyProviderResolver {
   }
 
   /**
-   * ✅ 公开方法：选择供应商（支持排除列表，用于重试场景）
+   * 公开方法：选择供应商（支持排除列表，用于重试场景）
    * 供应商类型从 session.providerType 自动读取，确保重试时类型一致
    */
   static async pickRandomProviderWithExclusion(
     session: ProxySession,
     excludeIds: number[]
   ): Promise<Provider | null> {
-    // ✅ 从 session 读取供应商类型，避免参数传递和类型不一致
+    // 从 session 读取供应商类型，避免参数传递和类型不一致
     const targetProviderType = session.providerType || 'claude';
     return this.pickRandomProvider(session, excludeIds, targetProviderType);
   }
@@ -75,7 +75,7 @@ export class ProxyProviderResolver {
       return null;
     }
 
-    // ✅ 检查供应商类型是否匹配
+    // 检查供应商类型是否匹配
     if (provider.providerType !== targetProviderType) {
       console.debug(`[ProviderSelector] Provider ${provider.id} type mismatch: ${provider.providerType} !== ${targetProviderType}`);
       return null;
@@ -86,8 +86,8 @@ export class ProxyProviderResolver {
 
   private static async pickRandomProvider(
     session?: ProxySession,
-    excludeIds: number[] = [],  // ✅ 排除已失败的供应商
-    targetProviderType: 'claude' | 'codex' = 'claude'  // ✅ 目标供应商类型
+    excludeIds: number[] = [],  // 排除已失败的供应商
+    targetProviderType: 'claude' | 'codex' = 'claude'  // 目标供应商类型
   ): Promise<Provider | null> {
     const allProviders = await findProviderList();
 
@@ -127,7 +127,7 @@ export class ProxyProviderResolver {
     // Step 2: 过滤超限供应商（健康度过滤）
     const healthyProviders = await this.filterByLimits(candidateProviders);
 
-    // ✅ 记录过滤掉的供应商（熔断或限流）
+    // 记录过滤掉的供应商（熔断或限流）
     const filteredOut = candidateProviders.filter(
       p => !healthyProviders.find(hp => hp.id === p.id)
     );
@@ -156,7 +156,7 @@ export class ProxyProviderResolver {
     // Step 4: 成本排序 + 加权选择
     const selected = this.selectOptimal(topPriorityProviders);
 
-    // ✅ 详细的选择日志
+    // 详细的选择日志
     const minPriority = Math.min(...healthyProviders.map(p => p.priority || 0));
     console.info(`[ProviderSelector] Selection Decision:
   ├─ Target provider type: ${targetProviderType}

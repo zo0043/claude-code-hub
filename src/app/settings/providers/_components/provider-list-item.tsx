@@ -110,7 +110,7 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
             </span>
             <h3 className="text-sm font-semibold text-foreground truncate tracking-tight">{item.name}</h3>
 
-            {/* ✅ 熔断器状态徽章 */}
+            {/* 熔断器状态徽章 */}
             {healthStatus?.circuitState === 'open' && (
               <>
                 <Badge variant="destructive" className="text-xs h-5 px-2">

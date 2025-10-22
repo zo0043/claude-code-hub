@@ -38,7 +38,7 @@ export class ProxyResponseHandler {
     const responseForLog = response.clone();
     const statusCode = response.status;
 
-    // ✅ 检查是否需要格式转换（OpenAI 请求 + Codex 供应商）
+    // 检查是否需要格式转换（OpenAI 请求 + Codex 供应商）
     const needsTransform = session.originalFormat === 'openai' && session.providerType === 'codex';
     let finalResponse = response;
 
@@ -135,7 +135,7 @@ export class ProxyResponseHandler {
       return response;
     }
 
-    // ✅ 检查是否需要格式转换（OpenAI 请求 + Codex 供应商）
+    // 检查是否需要格式转换（OpenAI 请求 + Codex 供应商）
     const needsTransform = session.originalFormat === 'openai' && session.providerType === 'codex';
     let processedStream: ReadableStream<Uint8Array> = response.body;
 

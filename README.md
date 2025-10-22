@@ -292,7 +292,7 @@ Redis 不可用时，限流功能会自动降级，所有请求仍然正常通�
 **本服务仅支持 Claude Code 格式的 API 接口。**
 
 **直接支持**：
-- ✅ 原生提供 Claude Code 格式接口的服务商
+- 原生提供 Claude Code 格式接口的服务商
 
 **间接支持**（需要先部署 [claude-code-router](https://github.com/zsio/claude-code-router) 进行协议转换）：
 - 🔄 智谱 AI (GLM)、Moonshot AI (Kimi)、Packy 等

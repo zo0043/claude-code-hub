@@ -130,6 +130,7 @@ export class ProxySession {
       selectionMethod?: 'reuse' | 'random' | 'group_filter' | 'fallback';
       circuitState?: 'closed' | 'open' | 'half-open';
       attemptNumber?: number;
+      errorMessage?: string;  // 错误信息（失败时记录）
     }
   ): void {
     const item: ProviderChainItem = {
@@ -145,6 +146,7 @@ export class ProxySession {
       circuitState: metadata?.circuitState,
       timestamp: Date.now(),
       attemptNumber: metadata?.attemptNumber,
+      errorMessage: metadata?.errorMessage,  // 记录错误信息
     };
 
     // 避免重复添加同一个供应商（除非是重试，即有 attemptNumber）

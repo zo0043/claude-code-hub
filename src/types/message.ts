@@ -24,6 +24,9 @@ export interface ProviderChainItem {
   // 时间戳和尝试信息
   timestamp?: number;
   attemptNumber?: number;  // 第几次尝试（用于标识重试）
+
+  // 错误信息（记录失败时的上游报错）
+  errorMessage?: string;
 }
 
 /**

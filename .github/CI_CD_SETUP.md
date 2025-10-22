@@ -36,7 +36,7 @@ DOCKERHUB_TOKEN = <your-dockerhub-access-token>
 2. Add rule → Branch name pattern: `dev`
 3. 配置以下选项：
 
-   **✅ 必选项：**
+   **必选项：**
    - [x] Require a pull request before merging
    - [x] Require status checks to pass before merging
      - 搜索并选择：`Docker Build Test`
@@ -54,7 +54,7 @@ DOCKERHUB_TOKEN = <your-dockerhub-access-token>
 1. Add rule → Branch name pattern: `main`
 2. 配置以下选项：
 
-   **✅ 必选项：**
+   **必选项：**
    - [x] Require a pull request before merging
    - [x] Require status checks to pass before merging
      - 搜索并选择：`Docker Build Test`

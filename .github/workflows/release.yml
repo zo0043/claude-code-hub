@@ -253,7 +253,7 @@ jobs:
             if gh release view "$tag" >/dev/null 2>&1; then
               # Release存在,删除release会同时删除tag
               if gh release delete "$tag" --yes --cleanup-tag 2>/dev/null; then
-                echo "✅ (release+tag)"
+                echo "(release+tag)"
                 SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
               else
                 echo "❌ (release删除失败)"
@@ -262,7 +262,7 @@ jobs:
             else
               # Release不存在,只删除tag
               if git push origin --delete "$tag" 2>/dev/null; then
-                echo "✅ (仅tag)"
+                echo "(仅tag)"
                 SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
               else
                 echo "⏭️ (已不存在)"
@@ -284,7 +284,7 @@ jobs:
           OLDEST=$(echo "$REMAINING_TAGS" | head -1)
           NEWEST=$(echo "$REMAINING_TAGS" | tail -1)
 
-          echo "✅ 清理完成!"
+          echo "清理完成!"
           echo ""
           echo "📌 当前保留的版本:"
           echo "- 最旧版本: $OLDEST"
@@ -293,12 +293,12 @@ jobs:
 
           # 验证是否达到预期
           if [ "$REMAINING_COUNT" -le "$TAGS_TO_KEEP" ]; then
-            echo "- 状态: ✅ 符合预期(≤$TAGS_TO_KEEP)"
+            echo "- 状态: 符合预期(≤$TAGS_TO_KEEP)"
           else
             echo "- 状态: ⚠️ 超出预期(某些tag可能删除失败)"
           fi
         else
-          echo "✅ 当前tag数量($TOTAL_COUNT)未超过限制($TAGS_TO_KEEP),无需清理"
+          echo "当前tag数量($TOTAL_COUNT)未超过限制($TAGS_TO_KEEP),无需清理"
         fi
 
     # Docker构建步骤

@@ -27,7 +27,7 @@ export async function runMigrations() {
     // 执行迁移
     await migrate(db, { migrationsFolder });
 
-    console.log('✅ Database migrations completed successfully!');
+    console.log('Database migrations completed successfully!');
   } catch (error) {
     console.error('❌ Migration failed:', error);
     process.exit(1);
@@ -51,7 +51,7 @@ export async function checkDatabaseConnection(retries = 30, delay = 2000): Promi
       const client = postgres(process.env.DSN, { max: 1 });
       await client`SELECT 1`;
       await client.end();
-      console.log('✅ Database connection established');
+      console.log('Database connection established');
       return true;
     } catch (error) {
       console.error(`⏳ Waiting for database... (${i + 1}/${retries})`, error);

@@ -17,20 +17,11 @@ export class ProxyForwarder {
     let lastError: Error | null = null;
     let attemptCount = 0;
     let currentProvider = session.provider;
-    const failedProviderIds: number[] = [];  // ✅ 记录已失败的供应商ID
+    const failedProviderIds: number[] = [];  // 记录已失败的供应商ID
 
     // 智能重试循环
     while (attemptCount <= MAX_RETRY_ATTEMPTS) {
       try {
-        // ✅ 重试时记录决策链（初始选择在 ProxyProviderResolver.ensure 中已记录）
-        if (attemptCount > 0) {
-          session.addProviderToChain(currentProvider, {
-            reason: 'retry_attempt',
-            circuitState: getCircuitState(currentProvider.id),
-            attemptNumber: attemptCount + 1,
-          });
-        }
-
         const response = await ProxyForwarder.doForward(session, currentProvider);
 
         // 成功：记录健康状态
@@ -43,7 +34,20 @@ export class ProxyForwarder {
       } catch (error) {
         attemptCount++;
         lastError = error as Error;
-        failedProviderIds.push(currentProvider.id);  // ✅ 记录失败的供应商
+        failedProviderIds.push(currentProvider.id);  // 记录失败的供应商
+
+        // 提取错误信息（支持 ProxyError 和普通 Error）
+        const errorMessage = error instanceof ProxyError
+          ? error.getDetailedErrorMessage()
+          : (error as Error).message;
+
+        // 记录失败的供应商和错误信息到决策链
+        session.addProviderToChain(currentProvider, {
+          reason: 'retry_attempt',
+          circuitState: getCircuitState(currentProvider.id),
+          attemptNumber: attemptCount,
+          errorMessage: errorMessage,  // 记录完整上游错误
+        });
 
         // 记录失败
         recordFailure(currentProvider.id, lastError);
@@ -56,7 +60,7 @@ export class ProxyForwarder {
         if (attemptCount <= MAX_RETRY_ATTEMPTS) {
           const alternativeProvider = await ProxyForwarder.selectAlternative(
             session,
-            failedProviderIds  // ✅ 传入所有已失败的供应商ID列表
+            failedProviderIds  // 传入所有已失败的供应商ID列表
           );
 
           if (!alternativeProvider) {
@@ -91,7 +95,7 @@ export class ProxyForwarder {
       throw new Error("Provider is required");
     }
 
-    // ✅ 应用模型重定向（如果配置了）
+    // 应用模型重定向（如果配置了）
     const wasRedirected = ModelRedirector.apply(session, provider);
     if (wasRedirected) {
       console.debug(`[ProxyForwarder] Model redirected for provider ${provider.id}`);
@@ -99,7 +103,7 @@ export class ProxyForwarder {
 
     const processedHeaders = ProxyForwarder.buildHeaders(session, provider);
 
-    // ✅ 根据请求格式动态选择转发路径
+    // 根据请求格式动态选择转发路径
     let forwardUrl = session.requestUrl;
 
     // OpenAI Compatible 请求：自动替换为 Response API 端点
@@ -113,7 +117,7 @@ export class ProxyForwarder {
 
     const hasBody = session.method !== "GET" && session.method !== "HEAD";
 
-    // ✅ 关键修复：使用转换后的 message 而非原始 buffer
+    // 关键修复：使用转换后的 message 而非原始 buffer
     // 确保 OpenAI 格式转换为 Response API 后，发送的是包含 input 字段的请求体
     let requestBody: BodyInit | undefined;
     if (hasBody) {
@@ -157,9 +161,9 @@ export class ProxyForwarder {
    */
   private static async selectAlternative(
     session: ProxySession,
-    excludeProviderIds: number[]  // ✅ 改为数组，排除所有失败的供应商
+    excludeProviderIds: number[]  // 改为数组，排除所有失败的供应商
   ): Promise<typeof session.provider | null> {
-    // ✅ 使用公开的选择方法，传入排除列表
+    // 使用公开的选择方法，传入排除列表
     const alternativeProvider = await ProxyProviderResolver.pickRandomProviderWithExclusion(
       session,
       excludeProviderIds
@@ -172,7 +176,7 @@ export class ProxyForwarder {
       return null;
     }
 
-    // ✅ 确保不是已失败的供应商之一
+    // 确保不是已失败的供应商之一
     if (excludeProviderIds.includes(alternativeProvider.id)) {
       console.error(
         `[ProxyForwarder] Selector returned excluded provider ${alternativeProvider.id}, this should not happen`

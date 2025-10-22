@@ -30,7 +30,7 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
   try {
     const request = session.request.message;
 
-    // ✅ 格式检测
+    // 格式检测
     const isOpenAIFormat = 'messages' in request && Array.isArray(request.messages);
     const isResponseAPIFormat = 'input' in request && Array.isArray(request.input);
 
@@ -48,7 +48,7 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
     }
 
     if (isOpenAIFormat) {
-      // ✅ OpenAI 格式 → 转换为 Response API
+      // OpenAI 格式 → 转换为 Response API
       const openAIRequest = request as ChatCompletionRequest;
 
       if (!openAIRequest.model) {
@@ -89,14 +89,14 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
           stream: responseRequest.stream,
         });
 
-        // ✅ 适配 Codex CLI (注入 instructions)
+        // 适配 Codex CLI (注入 instructions)
         responseRequest = adaptForCodexCLI(responseRequest);
 
-        // ✅ 更新 session（替换为 Response API 格式）
+        // 更新 session（替换为 Response API 格式）
         session.request.message = responseRequest as unknown as Record<string, unknown>;
         session.request.model = responseRequest.model;
 
-        // ✅ 验证转换结果（仅在开发环境）
+        // 验证转换结果（仅在开发环境）
         if (process.env.NODE_ENV === 'development') {
           const msgObj = session.request.message as Record<string, unknown>;
           console.debug('[ChatCompletions] Verification - session.request.message contains input:', {
@@ -106,7 +106,7 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
           });
         }
 
-        // ✅ 标记为 OpenAI 格式（用于响应转换）
+        // 标记为 OpenAI 格式（用于响应转换）
         session.setOriginalFormat('openai');
 
       } catch (transformError) {
@@ -124,10 +124,10 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
       }
 
     } else if (isResponseAPIFormat) {
-      // ✅ Response API 格式 → 直接透传
+      // Response API 格式 → 直接透传
       console.info('[ChatCompletions] Response API format detected, passing through');
 
-      // ✅ 标记为 Response API 格式（响应也用 Response API 格式）
+      // 标记为 Response API 格式（响应也用 Response API 格式）
       session.setOriginalFormat('response');
 
       // 验证必需字段
@@ -145,7 +145,7 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
       }
     }
 
-    // ✅ 复用现有代理流程
+    // 复用现有代理流程
     // 1. 认证检查
     const unauthorized = await ProxyAuthenticator.ensure(session);
     if (unauthorized) {

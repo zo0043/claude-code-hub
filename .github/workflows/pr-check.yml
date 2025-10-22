@@ -45,9 +45,9 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-    - name: ✅ Build check passed
+    - name: Build check passed
       run: |
-        echo "✅ Docker image build successful!"
+        echo "Docker image build successful!"
         echo "📦 Image tags that would be used: ${{ steps.meta.outputs.tags }}"
         echo "🔍 All checks passed - PR is ready for review"
 

@@ -54,7 +54,7 @@ export async function uploadPriceTable(
       return { ok: false, error: "价格表必须是一个JSON对象" };
     }
 
-    // ✅ 扩展支持：Claude + OpenAI 模型
+    // 扩展支持：Claude + OpenAI 模型
     const entries = Object.entries(priceTable).filter(([modelName]) => {
       if (typeof modelName !== "string") return false;
       const lowerName = modelName.toLowerCase();
@@ -186,7 +186,7 @@ export async function syncLiteLLMPrices(): Promise<ActionResult<PriceUpdateResul
     const result = await uploadPriceTable(jsonContent);
 
     if (result.ok) {
-      console.log('✅ LiteLLM price sync completed:', result.data);
+      console.log('LiteLLM price sync completed:', result.data);
     } else {
       console.error('❌ LiteLLM price sync failed:', result.error);
     }

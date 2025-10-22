@@ -34,13 +34,13 @@ export class RequestTransformer {
    * 4. reasoning 从请求读取,而非硬编码
    */
   static transform(request: ChatCompletionRequest): ResponseRequest {
-    // ✅ 构建基础请求(必需字段)
+    // 构建基础请求(必需字段)
     const responseRequest: ResponseRequest = {
       model: request.model,
       input: this.transformMessages(request.messages),
     };
 
-    // ✅ 条件添加可选参数
+    // 条件添加可选参数
     if (request.temperature !== undefined) {
       responseRequest.temperature = request.temperature;
     }
@@ -74,12 +74,12 @@ export class RequestTransformer {
       responseRequest.metadata = request.metadata;
     }
 
-    // ✅ reasoning: 从请求读取,如果没有则不设置(让 API 使用默认值)
+    // reasoning: 从请求读取,如果没有则不设置(让 API 使用默认值)
     if (request.reasoning !== undefined) {
       responseRequest.reasoning = request.reasoning;
     }
 
-    // ✅ stream: 只有明确为 true 时才设置
+    // stream: 只有明确为 true 时才设置
     if (request.stream === true) {
       responseRequest.stream = true;
     }
