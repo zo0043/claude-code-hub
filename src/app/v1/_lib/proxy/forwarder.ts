@@ -103,6 +103,15 @@ export class ProxyForwarder {
 
     const processedHeaders = ProxyForwarder.buildHeaders(session, provider);
 
+    // 开发模式：输出最终请求头
+    if (process.env.NODE_ENV === 'development') {
+      console.debug(`[ProxyForwarder] Final request headers:`, {
+        provider: provider.name,
+        providerType: provider.providerType,
+        headers: Object.fromEntries(processedHeaders.entries())
+      });
+    }
+
     // 根据请求格式动态选择转发路径
     let forwardUrl = session.requestUrl;
 
@@ -213,13 +222,24 @@ export class ProxyForwarder {
   private static buildHeaders(session: ProxySession, provider: NonNullable<typeof session.provider>): Headers {
     const outboundKey = provider.key;
 
+    // 构建请求头覆盖规则
+    const overrides: Record<string, string> = {
+      "host": HeaderProcessor.extractHost(provider.url),
+      "authorization": `Bearer ${outboundKey}`,
+      "x-api-key": outboundKey,
+      "content-type": "application/json"  // 确保 Content-Type
+    };
+
+    // Codex 特殊处理：强制设置 User-Agent
+    // Codex 供应商检测 User-Agent，只接受 codex_cli_rs 客户端
+    if (provider.providerType === 'codex') {
+      overrides["user-agent"] = "codex_cli_rs/1.0.0 (Mac OS 14.0.0; arm64)";
+      console.debug(`[ProxyForwarder] Codex provider detected, forcing User-Agent: codex_cli_rs/1.0.0`);
+    }
+
     const headerProcessor = HeaderProcessor.createForProxy({
       blacklist: [],
-      overrides: {
-        "host": HeaderProcessor.extractHost(provider.url),
-        "authorization": `Bearer ${outboundKey}`,
-        "x-api-key": outboundKey
-      }
+      overrides
     });
 
     return headerProcessor.process(session.headers);
