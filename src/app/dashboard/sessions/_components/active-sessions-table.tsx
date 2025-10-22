@@ -9,8 +9,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Eye } from "lucide-react";
+import Link from "next/link";
 import type { ActiveSessionInfo } from "@/types/session";
-import { SessionMessagesDialog } from "./session-messages-dialog";
 
 interface ActiveSessionsTableProps {
   sessions: ActiveSessionInfo[];
@@ -117,7 +119,12 @@ export function ActiveSessionsTable({
                     {getStatusBadge(session.status, session.statusCode)}
                   </TableCell>
                   <TableCell className="text-center">
-                    <SessionMessagesDialog sessionId={session.sessionId} />
+                    <Link href={`/dashboard/sessions/${session.sessionId}/messages`}>
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4 mr-1" />
+                        查看
+                      </Button>
+                    </Link>
                   </TableCell>
                 </TableRow>
               ))
