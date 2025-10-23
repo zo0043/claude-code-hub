@@ -21,6 +21,8 @@ interface ErrorDetailsDialogProps {
   errorMessage: string | null;
   providerChain: ProviderChainItem[] | null;
   sessionId: string | null;
+  blockedBy?: string | null; // 新增：拦截类型
+  blockedReason?: string | null; // 新增：拦截原因（JSON 字符串）
 }
 
 const reasonLabels: Record<string, string> = {
@@ -28,6 +30,10 @@ const reasonLabels: Record<string, string> = {
   retry_attempt: '重试尝试',
   retry_fallback: '降级重试',
   reuse: '会话复用',
+};
+
+const blockedByLabels: Record<string, string> = {
+  sensitive_word: '敏感词拦截',
 };
 
 const circuitStateLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -41,6 +47,8 @@ export function ErrorDetailsDialog({
   errorMessage,
   providerChain,
   sessionId,
+  blockedBy,
+  blockedReason,
 }: ErrorDetailsDialogProps) {
   const [open, setOpen] = useState(false);
   const [hasMessages, setHasMessages] = useState(false);
@@ -49,6 +57,17 @@ export function ErrorDetailsDialog({
   const isSuccess = statusCode && statusCode >= 200 && statusCode < 300;
   const isError = statusCode && (statusCode >= 400 || statusCode < 200);
   const isInProgress = !statusCode; // 没有状态码表示请求进行中
+  const isBlocked = !!blockedBy; // 是否被拦截
+
+  // 解析 blockedReason JSON
+  let parsedBlockedReason: { word?: string; matchType?: string; matchedText?: string } | null = null;
+  if (blockedReason) {
+    try {
+      parsedBlockedReason = JSON.parse(blockedReason);
+    } catch (e) {
+      // 解析失败，忽略
+    }
+  }
 
   // 检查 session 是否有 messages 数据
   useEffect(() => {
@@ -114,6 +133,62 @@ export function ErrorDetailsDialog({
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
+          {/* 拦截信息 */}
+          {isBlocked && blockedBy && (
+            <div className="space-y-2">
+              <h4 className="font-semibold text-sm flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-orange-600" />
+                拦截信息
+              </h4>
+              <div className="rounded-md border bg-orange-50 dark:bg-orange-950/20 p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-orange-900 dark:text-orange-100">
+                    拦截类型:
+                  </span>
+                  <Badge variant="outline" className="border-orange-600 text-orange-600">
+                    {blockedByLabels[blockedBy] || blockedBy}
+                  </Badge>
+                </div>
+                {parsedBlockedReason && (
+                  <div className="space-y-1 text-xs">
+                    {parsedBlockedReason.word && (
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-medium text-orange-900 dark:text-orange-100">
+                          敏感词:
+                        </span>
+                        <code className="bg-orange-100 dark:bg-orange-900/50 px-2 py-0.5 rounded text-orange-900 dark:text-orange-100">
+                          {parsedBlockedReason.word}
+                        </code>
+                      </div>
+                    )}
+                    {parsedBlockedReason.matchType && (
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-medium text-orange-900 dark:text-orange-100">
+                          匹配类型:
+                        </span>
+                        <span className="text-orange-800 dark:text-orange-200">
+                          {parsedBlockedReason.matchType === 'contains' && '包含匹配'}
+                          {parsedBlockedReason.matchType === 'exact' && '精确匹配'}
+                          {parsedBlockedReason.matchType === 'regex' && '正则表达式'}
+                        </span>
+                      </div>
+                    )}
+                    {parsedBlockedReason.matchedText && (
+                      <div className="flex flex-col gap-1">
+                        <span className="font-medium text-orange-900 dark:text-orange-100">
+                          匹配内容:
+                        </span>
+                        <pre className="bg-orange-100 dark:bg-orange-900/50 px-2 py-1 rounded text-orange-900 dark:text-orange-100 whitespace-pre-wrap break-words">
+                          {parsedBlockedReason.matchedText}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Session 信息 */}
           {sessionId && (
             <div className="space-y-2">

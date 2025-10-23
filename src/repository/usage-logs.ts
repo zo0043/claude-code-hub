@@ -24,7 +24,7 @@ export interface UsageLogRow {
   sessionId: string | null; // 新增：Session ID
   userName: string;
   keyName: string;
-  providerName: string;
+  providerName: string | null; // 改为可选：被拦截的请求没有 provider
   model: string | null;
   statusCode: number | null;
   inputTokens: number | null;
@@ -36,6 +36,8 @@ export interface UsageLogRow {
   durationMs: number | null;
   errorMessage: string | null;
   providerChain: ProviderChainItem[] | null;
+  blockedBy: string | null; // 新增：拦截类型（如 'sensitive_word'）
+  blockedReason: string | null; // 新增：拦截原因（JSON 字符串）
 }
 
 export interface UsageLogSummary {
@@ -171,7 +173,7 @@ export async function findUsageLogsWithDetails(filters: UsageLogFilters): Promis
     (summaryResult?.totalCacheCreationTokens ?? 0) +
     (summaryResult?.totalCacheReadTokens ?? 0);
 
-  // 查询分页数据（使用 JOIN 获取用户名、密钥名、供应商名）
+  // 查询分页数据（使用 LEFT JOIN 以包含被拦截的请求）
   const offset = (page - 1) * pageSize;
   const results = await db
     .select({
@@ -180,7 +182,7 @@ export async function findUsageLogsWithDetails(filters: UsageLogFilters): Promis
       sessionId: messageRequest.sessionId, // 新增：Session ID
       userName: users.name,
       keyName: keysTable.name,
-      providerName: providers.name,
+      providerName: providers.name, // 被拦截的请求为 null
       model: messageRequest.model,
       statusCode: messageRequest.statusCode,
       inputTokens: messageRequest.inputTokens,
@@ -191,11 +193,13 @@ export async function findUsageLogsWithDetails(filters: UsageLogFilters): Promis
       durationMs: messageRequest.durationMs,
       errorMessage: messageRequest.errorMessage,
       providerChain: messageRequest.providerChain,
+      blockedBy: messageRequest.blockedBy, // 新增：拦截类型
+      blockedReason: messageRequest.blockedReason, // 新增：拦截原因
     })
     .from(messageRequest)
     .innerJoin(users, eq(messageRequest.userId, users.id))
     .innerJoin(keysTable, eq(messageRequest.key, keysTable.key))
-    .innerJoin(providers, eq(messageRequest.providerId, providers.id))
+    .leftJoin(providers, eq(messageRequest.providerId, providers.id)) // 改为 leftJoin
     .where(and(...conditions))
     .orderBy(desc(messageRequest.createdAt))
     .limit(pageSize)

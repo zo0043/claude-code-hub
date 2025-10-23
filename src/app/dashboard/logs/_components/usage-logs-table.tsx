@@ -115,13 +115,19 @@ export function UsageLogsTable({
                   <TableCell>{log.userName}</TableCell>
                   <TableCell className="font-mono text-xs">{log.keyName}</TableCell>
                   <TableCell>
-                    {log.providerChain && log.providerChain.length > 0 ? (
+                    {log.blockedBy ? (
+                      // 被拦截的请求显示拦截标记
+                      <span className="inline-flex items-center gap-1 rounded-md bg-orange-100 dark:bg-orange-950 px-2 py-1 text-xs font-medium text-orange-700 dark:text-orange-300">
+                        <span className="h-1.5 w-1.5 rounded-full bg-orange-600 dark:bg-orange-400" />
+                        被拦截
+                      </span>
+                    ) : log.providerChain && log.providerChain.length > 0 ? (
                       <ProviderChainPopover
                         chain={log.providerChain}
-                        finalProvider={log.providerName}
+                        finalProvider={log.providerName || "未知"}
                       />
                     ) : (
-                      log.providerName
+                      log.providerName || "-"
                     )}
                   </TableCell>
                   <TableCell className="font-mono text-xs">{log.model || "-"}</TableCell>
@@ -149,6 +155,8 @@ export function UsageLogsTable({
                       errorMessage={log.errorMessage}
                       providerChain={log.providerChain}
                       sessionId={log.sessionId}
+                      blockedBy={log.blockedBy}
+                      blockedReason={log.blockedReason}
                     />
                   </TableCell>
                 </TableRow>
