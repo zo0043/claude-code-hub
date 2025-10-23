@@ -387,10 +387,7 @@ export async function findKeysWithStatistics(userId: number): Promise<KeyStatist
       .orderBy(desc(messageRequest.createdAt))
       .limit(1);
 
-    // 查询分模型统计（仅统计最近 30 天）
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
+    // 查询分模型统计（仅统计当天）
     const modelStatsRows = await db
       .select({
         model: messageRequest.model,
@@ -402,7 +399,8 @@ export async function findKeysWithStatistics(userId: number): Promise<KeyStatist
         and(
           eq(messageRequest.key, key.key),
           isNull(messageRequest.deletedAt),
-          gte(messageRequest.createdAt, thirtyDaysAgo),
+          gte(messageRequest.createdAt, today),
+          lt(messageRequest.createdAt, tomorrow),
           sql`${messageRequest.model} IS NOT NULL`
         )
       )

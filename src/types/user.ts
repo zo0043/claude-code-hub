@@ -55,7 +55,7 @@ export interface UserKeyDisplay {
     model: string;
     callCount: number;
     totalCost: number;
-  }>; // 各模型统计（最近30天）
+  }>; // 各模型统计（当天）
   createdAt: Date; // 创建时间
   createdAtFormatted: string; // 格式化后的具体时间
 }
