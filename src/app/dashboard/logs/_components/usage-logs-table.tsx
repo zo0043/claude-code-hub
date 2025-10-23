@@ -15,6 +15,46 @@ import { zhCN } from "date-fns/locale";
 import { ProviderChainPopover } from "./provider-chain-popover";
 import { ErrorDetailsDialog } from "./error-details-dialog";
 
+/**
+ * 格式化时间显示
+ * - 1分钟以内显示具体秒数（如 "30秒前"）
+ * - 超过1分钟使用相对时间（如 "2小时前"）
+ */
+function formatTimeAgo(date: Date | null): string {
+  if (!date) return '-';
+
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  // 1分钟以内显示秒数
+  if (diffInSeconds < 60) {
+    return `${diffInSeconds}秒前`;
+  }
+
+  // 超过1分钟使用相对时间
+  return formatDistanceToNow(date, {
+    addSuffix: true,
+    locale: zhCN,
+  });
+}
+
+/**
+ * 格式化请求耗时
+ * - 1000ms 以上显示为秒（如 "1.23s"）
+ * - 1000ms 以下显示为毫秒（如 "850ms"）
+ */
+function formatDuration(durationMs: number | null): string {
+  if (!durationMs) return '-';
+
+  // 1000ms 以上转换为秒
+  if (durationMs >= 1000) {
+    return `${(durationMs / 1000).toFixed(2)}s`;
+  }
+
+  // 1000ms 以下显示毫秒
+  return `${durationMs}ms`;
+}
+
 interface UsageLogsTableProps {
   logs: UsageLogRow[];
   total: number;
@@ -65,10 +105,7 @@ export function UsageLogsTable({
               logs.map((log) => (
                 <TableRow key={log.id}>
                   <TableCell className="font-mono text-xs">
-                    {log.createdAt ? formatDistanceToNow(log.createdAt, {
-                      addSuffix: true,
-                      locale: zhCN,
-                    }) : '-'}
+                    {formatTimeAgo(log.createdAt)}
                   </TableCell>
                   <TableCell>{log.userName}</TableCell>
                   <TableCell className="font-mono text-xs">{log.keyName}</TableCell>
@@ -99,7 +136,7 @@ export function UsageLogsTable({
                     {log.costUsd ? `$${parseFloat(log.costUsd).toFixed(6)}` : "-"}
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs">
-                    {log.durationMs ? `${log.durationMs}ms` : "-"}
+                    {formatDuration(log.durationMs)}
                   </TableCell>
                   <TableCell>
                     <ErrorDetailsDialog

@@ -124,3 +124,14 @@
     min-height: 100%;
   }
 }
+
+/* 隐藏滚动条但保留滚动功能 */
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

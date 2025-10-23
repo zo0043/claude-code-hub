@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,14 +29,15 @@ export function MetricCard({
 }: MetricCardProps) {
   const [displayValue, setDisplayValue] = useState(value);
   const [isAnimating, setIsAnimating] = useState(false);
+  const prevValueRef = React.useRef(value);
 
   useEffect(() => {
-    if (typeof value === "number" && typeof displayValue === "number") {
-      if (value !== displayValue) {
+    if (typeof value === "number" && typeof prevValueRef.current === "number") {
+      if (value !== prevValueRef.current) {
         setIsAnimating(true);
         // 使用 requestAnimationFrame 实现平滑动画
         const duration = 500; // 动画时长500ms
-        const startValue = displayValue;
+        const startValue = prevValueRef.current;
         const diff = value - startValue;
         const startTime = Date.now();
 
@@ -53,6 +55,7 @@ export function MetricCard({
             requestAnimationFrame(animate);
           } else {
             setIsAnimating(false);
+            prevValueRef.current = value;
           }
         };
 
@@ -60,6 +63,7 @@ export function MetricCard({
       }
     } else {
       setDisplayValue(value);
+      prevValueRef.current = value;
     }
   }, [value]);
 

@@ -5,7 +5,6 @@ import { getConcurrentSessions as getConcurrentSessionsCount } from "./concurren
 import { getActiveSessions as getActiveSessionsFromManager } from "./active-sessions";
 import { logger } from "@/lib/logger";
 import type { ActionResult } from "./types";
-import type { OverviewMetrics } from "@/repository/overview";
 import type { ActiveSessionInfo } from "@/types/session";
 
 /**

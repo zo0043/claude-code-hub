@@ -2,7 +2,7 @@
 
 import { db } from "@/drizzle/db";
 import { messageRequest } from "@/drizzle/schema";
-import { isNull, and, gte, lt, count, sum, avg, sql } from "drizzle-orm";
+import { isNull, and, gte, lt, count, sum, avg } from "drizzle-orm";
 import { Decimal, toCostDecimal } from "@/lib/utils/currency";
 
 /**
