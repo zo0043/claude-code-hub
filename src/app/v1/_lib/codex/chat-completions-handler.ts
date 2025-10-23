@@ -2,6 +2,7 @@ import type { Context } from "hono";
 import { logger } from "@/lib/logger";
 import { ProxySession } from "../proxy/session";
 import { ProxyAuthenticator } from "../proxy/auth-guard";
+import { ProxySessionGuard } from "../proxy/session-guard";
 import { ProxyRateLimitGuard } from "../proxy/rate-limit-guard";
 import { ProxyProviderResolver } from "../proxy/provider-selector";
 import { ProxyMessageService } from "../proxy/message-service";
@@ -178,13 +179,16 @@ export async function handleChatCompletions(c: Context): Promise<Response> {
       return unauthorized;
     }
 
-    // 2. 限流检查
+    // 2. Session 分配（用于会话粘性）
+    await ProxySessionGuard.ensure(session);
+
+    // 3. 限流检查
     const rateLimited = await ProxyRateLimitGuard.ensure(session);
     if (rateLimited) {
       return rateLimited;
     }
 
-    // 3. 供应商选择（指定 Codex 类型）
+    // 4. 供应商选择（指定 Codex 类型）
     const providerUnavailable = await ProxyProviderResolver.ensure(session, "codex");
     if (providerUnavailable) {
       return providerUnavailable;

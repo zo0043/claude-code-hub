@@ -28,9 +28,10 @@ export class RequestTransformer {
    * 转换 Compatible 请求为 Response 请求
    *
    * 极简实现（参考 codex2api）：
-   * - 只发送 4 个字段：model, input, reasoning, stream
+   * - 核心字段：model, input, reasoning, stream
    * - reasoning 总是硬编码为 { effort: 'medium', summary: 'auto' }
-   * - 其他所有参数全部丢弃（避免 Codex 供应商拒绝不支持的字段）
+   * - 保留 metadata（用于会话粘性和追踪）
+   * - 其他参数丢弃（避免 Codex 供应商拒绝不支持的字段）
    */
   static transform(request: ChatCompletionRequest): ResponseRequest {
     return {
@@ -41,6 +42,7 @@ export class RequestTransformer {
         summary: "auto" as const,
       },
       stream: request.stream,
+      metadata: request.metadata, // 保留 metadata（用于会话粘性）
     };
   }
 

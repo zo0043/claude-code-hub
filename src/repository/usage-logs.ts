@@ -1,10 +1,10 @@
 "use server";
 
 import { db } from "@/drizzle/db";
-import { logger } from "@/lib/logger";
 import { messageRequest, users, keys as keysTable, providers } from "@/drizzle/schema";
-import { and, eq, isNull, gte, lte, desc, sql } from "drizzle-orm";
+import { and, eq, isNull, desc, sql } from "drizzle-orm";
 import type { ProviderChainItem } from "@/types/message";
+import { getEnvConfig } from "@/lib/config";
 
 export interface UsageLogFilters {
   userId?: number;
@@ -109,12 +109,37 @@ export async function findUsageLogsWithDetails(filters: UsageLogFilters): Promis
     conditions.push(eq(messageRequest.providerId, providerId));
   }
 
+  // 时区感知的时间比较
+  // 将数据库的 timestamptz 转换为本地时区（Asia/Shanghai）后再与前端传来的本地时间比较
+  const timezone = getEnvConfig().TZ;
+
   if (startDate) {
-    conditions.push(gte(messageRequest.createdAt, startDate));
+    // 从 Date 对象提取本地时间（不要用 toISOString，那会转换为 UTC）
+    const year = startDate.getFullYear();
+    const month = String(startDate.getMonth() + 1).padStart(2, '0');
+    const day = String(startDate.getDate()).padStart(2, '0');
+    const hours = String(startDate.getHours()).padStart(2, '0');
+    const minutes = String(startDate.getMinutes()).padStart(2, '0');
+    const seconds = String(startDate.getSeconds()).padStart(2, '0');
+    const localTimeStr = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+    conditions.push(
+      sql`(${messageRequest.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::timestamp >= ${localTimeStr}::timestamp`
+    );
   }
 
   if (endDate) {
-    conditions.push(lte(messageRequest.createdAt, endDate));
+    const year = endDate.getFullYear();
+    const month = String(endDate.getMonth() + 1).padStart(2, '0');
+    const day = String(endDate.getDate()).padStart(2, '0');
+    const hours = String(endDate.getHours()).padStart(2, '0');
+    const minutes = String(endDate.getMinutes()).padStart(2, '0');
+    const seconds = String(endDate.getSeconds()).padStart(2, '0');
+    const localTimeStr = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+    conditions.push(
+      sql`(${messageRequest.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::timestamp < ${localTimeStr}::timestamp`
+    );
   }
 
   if (statusCode !== undefined) {

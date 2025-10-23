@@ -138,7 +138,7 @@ export class RateLimitService {
       const key = `provider:${providerId}:active_sessions`;
       const now = Date.now();
 
-      // 执行 Lua 脚本：原子性检查 + 追踪
+      // 执行 Lua 脚本：原子性检查 + 追踪（TC-041 修复版）
       const result = (await this.redis.eval(
         CHECK_AND_TRACK_SESSION,
         1, // KEYS count
@@ -146,9 +146,9 @@ export class RateLimitService {
         sessionId, // ARGV[1]
         limit.toString(), // ARGV[2]
         now.toString() // ARGV[3]
-      )) as [number, number];
+      )) as [number, number, number];
 
-      const [allowed, count] = result;
+      const [allowed, count, tracked] = result;
 
       if (allowed === 0) {
         return {
@@ -162,7 +162,7 @@ export class RateLimitService {
       return {
         allowed: true,
         count,
-        tracked: true, // Lua 脚本中已追踪
+        tracked: tracked === 1, // Lua 返回 1 表示新追踪，0 表示已存在
       };
     } catch (error) {
       logger.error("[RateLimit] Atomic check-and-track failed:", error);

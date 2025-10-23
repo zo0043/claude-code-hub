@@ -17,6 +17,29 @@ import type { UserDisplay } from "@/types/user";
 import type { ProviderDisplay } from "@/types/provider";
 import type { Key } from "@/types/key";
 
+/**
+ * 将 Date 对象格式化为 datetime-local 输入所需的格式
+ * 保持本地时区，不转换为 UTC
+ */
+function formatDateTimeLocal(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+/**
+ * 解析 datetime-local 输入的值为 Date 对象
+ * 保持本地时区语义
+ */
+function parseDateTimeLocal(value: string): Date {
+  // datetime-local 返回格式: "2025-10-23T10:30"
+  // 直接用 new Date() 会按照本地时区解析
+  return new Date(value);
+}
+
 interface UsageLogsFiltersProps {
   isAdmin: boolean;
   users: UserDisplay[];
@@ -110,11 +133,11 @@ export function UsageLogsFilters({
           <Label>开始时间</Label>
           <Input
             type="datetime-local"
-            value={localFilters.startDate?.toISOString().slice(0, 16) || ""}
+            value={localFilters.startDate ? formatDateTimeLocal(localFilters.startDate) : ""}
             onChange={(e) =>
               setLocalFilters({
                 ...localFilters,
-                startDate: e.target.value ? new Date(e.target.value) : undefined,
+                startDate: e.target.value ? parseDateTimeLocal(e.target.value) : undefined,
               })
             }
           />
@@ -124,11 +147,11 @@ export function UsageLogsFilters({
           <Label>结束时间</Label>
           <Input
             type="datetime-local"
-            value={localFilters.endDate?.toISOString().slice(0, 16) || ""}
+            value={localFilters.endDate ? formatDateTimeLocal(localFilters.endDate) : ""}
             onChange={(e) =>
               setLocalFilters({
                 ...localFilters,
-                endDate: e.target.value ? new Date(e.target.value) : undefined,
+                endDate: e.target.value ? parseDateTimeLocal(e.target.value) : undefined,
               })
             }
           />

@@ -184,8 +184,14 @@ export class SessionManager {
       return clientSessionId;
     }
 
-    // 2. 降级方案：计算 messages 内容哈希
-    logger.trace("SessionManager: No client session ID, falling back to content hash");
+    // 2. 降级方案：计算 messages 内容哈希（TC-047 警告：不可靠）
+    logger.warn(
+      "SessionManager: No client session ID, falling back to content hash (unreliable for compressed dialogs)",
+      {
+        keyId,
+        messagesLength: Array.isArray(messages) ? messages.length : 0,
+      }
+    );
     const contentHash = this.calculateMessagesHash(messages);
     if (!contentHash) {
       // 降级：无法计算哈希，生成新 session
@@ -284,15 +290,32 @@ export class SessionManager {
   }
 
   /**
-   * 绑定 session 到 provider
+   * 绑定 session 到 provider（TC-009 修复：使用 SET NX 避免竞态条件）
    */
   static async bindSessionToProvider(sessionId: string, providerId: number): Promise<void> {
     const redis = getRedisClient();
     if (!redis || redis.status !== "ready") return;
 
     try {
-      await redis.setex(`session:${sessionId}:provider`, this.SESSION_TTL, providerId.toString());
-      logger.trace("SessionManager: Bound session to provider", { sessionId, providerId });
+      const key = `session:${sessionId}:provider`;
+      // 使用 SET ... NX 保证只有第一次绑定成功（原子操作）
+      const result = await redis.set(
+        key,
+        providerId.toString(),
+        "EX",
+        this.SESSION_TTL,
+        "NX" // Only set if not exists
+      );
+
+      if (result === "OK") {
+        logger.trace("SessionManager: Bound session to provider", { sessionId, providerId });
+      } else {
+        // 已绑定过，不覆盖（避免并发请求选择不同供应商）
+        logger.debug("SessionManager: Session already bound, skipping", {
+          sessionId,
+          attemptedProviderId: providerId,
+        });
+      }
     } catch (error) {
       logger.error("SessionManager: Failed to bind provider", { error });
     }

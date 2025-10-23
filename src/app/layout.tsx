@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { Footer } from "@/components/customs/footer";
 import { AppProviders } from "./providers";
 import { getSystemSettings } from "@/repository/system-config";
+import { logger } from "@/lib/logger";
 
 const FALLBACK_TITLE = "Claude Code Hub";
 
@@ -17,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
       description: title,
     };
   } catch (error) {
-    console.error("Failed to load system settings for metadata:", error);
+    logger.error("Failed to load system settings for metadata", { error });
     return {
       title: FALLBACK_TITLE,
       description: FALLBACK_TITLE,

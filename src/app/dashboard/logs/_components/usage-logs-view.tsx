@@ -12,6 +12,19 @@ import type { UsageLogsResult } from "@/repository/usage-logs";
 import type { UserDisplay } from "@/types/user";
 import type { ProviderDisplay } from "@/types/provider";
 
+/**
+ * 将 Date 对象格式化为 datetime-local 格式的字符串
+ * 用于 URL 参数传递，保持本地时区
+ */
+function formatDateTimeLocal(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
 interface UsageLogsViewProps {
   isAdmin: boolean;
   users: UserDisplay[];
@@ -109,8 +122,9 @@ export function UsageLogsView({
     if (newFilters.userId) query.set("userId", newFilters.userId.toString());
     if (newFilters.keyId) query.set("keyId", newFilters.keyId.toString());
     if (newFilters.providerId) query.set("providerId", newFilters.providerId.toString());
-    if (newFilters.startDate) query.set("startDate", newFilters.startDate.toISOString());
-    if (newFilters.endDate) query.set("endDate", newFilters.endDate.toISOString());
+    // 使用本地时间格式传递，而不是 ISO（UTC）格式
+    if (newFilters.startDate) query.set("startDate", formatDateTimeLocal(newFilters.startDate));
+    if (newFilters.endDate) query.set("endDate", formatDateTimeLocal(newFilters.endDate));
     if (newFilters.statusCode) query.set("statusCode", newFilters.statusCode.toString());
     if (newFilters.model) query.set("model", newFilters.model);
 

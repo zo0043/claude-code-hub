@@ -12,6 +12,10 @@ export class ProxyProviderResolver {
     session: ProxySession,
     targetProviderType: "claude" | "codex" = "claude"
   ): Promise<Response | null> {
+    // 最大重试次数（避免无限循环）
+    const MAX_RETRIES = 3;
+    const excludedProviders: number[] = [];
+
     // 标记选择方法
     let selectionMethod: "reuse" | "random" | "group_filter" | "fallback" = "random";
 
@@ -25,65 +29,117 @@ export class ProxyProviderResolver {
     // 如果没有可复用的，随机选择
     if (!session.provider) {
       session.setProvider(
-        await ProxyProviderResolver.pickRandomProvider(session, [], targetProviderType)
+        await ProxyProviderResolver.pickRandomProvider(session, excludedProviders, targetProviderType)
       );
     }
 
-    // 选定供应商后，进行原子性并发检查并追踪
-    if (session.provider && session.sessionId) {
-      const limit = session.provider.limitConcurrentSessions || 0;
-
-      // 使用原子性检查并追踪（解决竞态条件）
-      const checkResult = await RateLimitService.checkAndTrackProviderSession(
-        session.provider.id,
-        session.sessionId,
-        limit
-      );
-
-      if (!checkResult.allowed) {
-        // 并发限制失败
-        logger.warn("ProviderSelector: Provider concurrent session limit exceeded", {
-          providerName: session.provider.name,
-          providerId: session.provider.id,
-          current: checkResult.count,
-          limit,
-        });
-
-        // 返回错误
-        return ProxyResponses.buildError(503, checkResult.reason || "供应商并发限制已达到");
+    // 故障转移循环：尝试多个供应商直到成功或达到最大重试次数
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      if (!session.provider) {
+        break; // 无可用供应商，退出循环
       }
 
-      logger.debug("ProviderSelector: Session tracked atomically", {
-        sessionId: session.sessionId,
-        providerName: session.provider.name,
-        count: checkResult.count,
-      });
+      // 选定供应商后，进行原子性并发检查并追踪
+      if (session.sessionId) {
+        const limit = session.provider.limitConcurrentSessions || 0;
 
-      // 记录到决策链
-      session.addProviderToChain(session.provider, {
-        reason: "initial_selection",
-        selectionMethod,
-        circuitState: getCircuitState(session.provider.id),
-      });
+        // 使用原子性检查并追踪（解决竞态条件）
+        const checkResult = await RateLimitService.checkAndTrackProviderSession(
+          session.provider.id,
+          session.sessionId,
+          limit
+        );
 
-      // 绑定 session 到 provider（异步，不阻塞）
-      void SessionManager.bindSessionToProvider(session.sessionId, session.provider.id);
+        if (!checkResult.allowed) {
+          // 并发限制失败 - 记录并尝试其他供应商
+          logger.warn("ProviderSelector: Provider concurrent session limit exceeded, trying fallback", {
+            providerName: session.provider.name,
+            providerId: session.provider.id,
+            current: checkResult.count,
+            limit,
+            attempt: attempt + 1,
+          });
 
-      // 更新 session 详细信息中的 provider 信息
-      void SessionManager.updateSessionProvider(session.sessionId, {
-        providerId: session.provider.id,
-        providerName: session.provider.name,
-      }).catch((error) => {
-        logger.error("ProviderSelector: Failed to update session provider info", { error });
-      });
+          // 记录失败的供应商到决策链
+          session.addProviderToChain(session.provider, {
+            reason: attempt === 0 ? "initial_selection" : "retry_fallback",
+            selectionMethod,
+            circuitState: getCircuitState(session.provider.id),
+            attemptNumber: attempt + 1,
+            errorMessage: checkResult.reason || "并发限制已达到",
+          });
 
+          // 加入排除列表
+          excludedProviders.push(session.provider.id);
+
+          // 尝试选择其他供应商
+          const fallbackProvider = await ProxyProviderResolver.pickRandomProvider(
+            session,
+            excludedProviders,
+            targetProviderType
+          );
+
+          if (!fallbackProvider) {
+            // 无其他可用供应商
+            logger.error("ProviderSelector: No fallback providers available", {
+              excludedCount: excludedProviders.length,
+            });
+            return ProxyResponses.buildError(
+              503,
+              `所有供应商并发限制已达到（尝试了 ${excludedProviders.length} 个供应商）`
+            );
+          }
+
+          // 切换到新供应商
+          session.setProvider(fallbackProvider);
+          selectionMethod = "fallback";
+          continue; // 继续下一次循环，检查新供应商
+        }
+
+        // 并发检查通过，记录成功
+        logger.debug("ProviderSelector: Session tracked atomically", {
+          sessionId: session.sessionId,
+          providerName: session.provider.name,
+          count: checkResult.count,
+          attempt: attempt + 1,
+        });
+
+        // 记录到决策链
+        session.addProviderToChain(session.provider, {
+          reason: attempt === 0 ? "initial_selection" : "retry_fallback",
+          selectionMethod,
+          circuitState: getCircuitState(session.provider.id),
+          attemptNumber: attempt > 0 ? attempt + 1 : undefined,
+        });
+
+        // 绑定 session 到 provider（同步等待，确保写入成功）
+        await SessionManager.bindSessionToProvider(session.sessionId, session.provider.id);
+
+        // 更新 session 详细信息中的 provider 信息（异步，非关键路径）
+        void SessionManager.updateSessionProvider(session.sessionId, {
+          providerId: session.provider.id,
+          providerName: session.provider.name,
+        }).catch((error) => {
+          logger.error("ProviderSelector: Failed to update session provider info", { error });
+        });
+
+        return null; // 成功
+      }
+
+      // sessionId 为空的情况（理论上不应该发生）
+      logger.warn("ProviderSelector: sessionId is null, skipping concurrent check");
       return null;
     }
 
-    // 无可用供应商
+    // 达到最大重试次数或无可用供应商
     const status = 503;
-    const message = "暂无可用的上游服务";
-    logger.error("ProviderSelector: No available providers");
+    const message = excludedProviders.length > 0
+      ? `所有供应商不可用（尝试了 ${excludedProviders.length} 个供应商）`
+      : "暂无可用的上游服务";
+    logger.error("ProviderSelector: No available providers after retries", {
+      excludedProviders,
+      maxRetries: MAX_RETRIES,
+    });
     return ProxyResponses.buildError(status, message);
   }
 
@@ -126,6 +182,17 @@ export class ProxyProviderResolver {
       logger.debug("ProviderSelector: Session provider unavailable", {
         sessionId: session.sessionId,
         providerId,
+      });
+      return null;
+    }
+
+    // 检查熔断器状态（TC-055 修复）
+    if (isCircuitOpen(provider.id)) {
+      logger.debug("ProviderSelector: Session provider circuit is open", {
+        sessionId: session.sessionId,
+        providerId: provider.id,
+        providerName: provider.name,
+        circuitState: getCircuitState(provider.id),
       });
       return null;
     }
