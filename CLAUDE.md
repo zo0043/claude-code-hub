@@ -1,193 +1,282 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 ## 项目简介
 
-Claude Code Hub 是一个 Claude Code API 代理中转服务平台，用于统一管理多个 CC 服务提供商，提供智能负载均衡、用户权限管理和使用统计功能。
+Claude Code Hub 是一个 Claude Code API 代理中转服务平台，用于统一管理多个 AI 服务提供商（支持 Claude Code 格式和 OpenAI 兼容格式），提供智能负载均衡、用户权限管理、使用统计和实时监控功能。
+
+本项目基于 [zsio/claude-code-hub](https://github.com/zsio/claude-code-hub) 进行了增强，新增了详细日志记录、并发控制、多时段限流、熔断保护、决策链追踪、OpenAI 兼容等功能。
+
 使用中文和用户沟通。
 
 ## 常用命令
 
+### 开发命令
 ```bash
-# 开发
-pnpm dev              # 启动开发服务器 (http://localhost:13500, 使用 Turbopack, 当前已经启动, 直接调用即可。)
-pnpm build            # 构建生产版本
+pnpm dev              # 启动开发服务器 (http://localhost:13500, 使用 Turbopack)
+pnpm build            # 构建生产版本 (自动复制 VERSION 文件)
 pnpm start            # 启动生产服务器
 pnpm lint             # 运行 ESLint
 pnpm typecheck        # TypeScript 类型检查
+pnpm format           # 格式化代码
+pnpm format:check     # 检查代码格式
+```
 
-# 数据库
+### 数据库命令
+```bash
 pnpm db:generate      # 生成 Drizzle 迁移文件
 pnpm db:migrate       # 执行数据库迁移
-pnpm db:push          # 直接推送 schema 到数据库
+pnpm db:push          # 直接推送 schema 到数据库（开发环境）
 pnpm db:studio        # 启动 Drizzle Studio 可视化管理界面
 ```
 
-## 核心架构
+### Docker 部署
+```bash
+docker compose up -d             # 启动所有服务（后台运行）
+docker compose logs -f           # 查看所有服务日志
+docker compose logs -f app       # 仅查看应用日志
+docker compose restart app       # 重启应用
+docker compose pull && docker compose up -d  # 升级到最新版本
+docker compose down              # 停止并删除容器
+```
 
-### 技术栈
+## 核心技术栈
 
 - **Next.js 15** (App Router) + **React 19** + **TypeScript**
 - **Hono** - 用于 API 路由处理
 - **Drizzle ORM** + **PostgreSQL** - 数据持久化
+- **Redis** + **ioredis** - 限流、会话追踪、熔断器
 - **Tailwind CSS v4** + **Shadcn UI** (orange 主题) - UI 框架
+- **Pino** - 结构化日志
 - **包管理器**: pnpm 9.15.0
+
+## 架构概览
 
 ### 目录结构
 
 ```
 src/
 ├── app/                          # Next.js App Router
-│   ├── v1/[...route]/route.ts    # 主代理 API 入口 (Hono)
-│   ├── api/auth/                 # 认证相关 API
-│   ├── dashboard/                # 仪表盘页面
-│   ├── settings/                 # 设置页面 (供应商、价格等)
-│   └── login/                    # 登录页面
-├── actions/                      # Server Actions (用户、密钥、供应商等)
-├── repository/                   # 数据访问层 (Drizzle 查询)
-├── drizzle/                      # 数据库 schema 和连接
-├── lib/                          # 工具函数和配置
-│   ├── config/                   # 环境变量配置和验证
-│   ├── utils/                    # 通用工具 (成本计算、货币等)
-│   └── auth.ts                   # 认证逻辑
-├── components/                   # UI 组件
-│   ├── ui/                       # shadcn ui安装的组件目录，此目录禁止修改和删除。只能使用 shadcn ui cli 进行添加和更新。
-│   └── customs/*                 # 自定义的组件，一般用于多个页面或者 layout 共用组件
-└── types/                        # TypeScript 类型定义
+│   ├── v1/                       # API 代理核心逻辑
+│   │   ├── _lib/
+│   │   │   ├── proxy/            # Claude Code 格式代理 (guards, session, forwarder)
+│   │   │   ├── codex/            # OpenAI 兼容层 (chat/completions)
+│   │   │   └── proxy-handler.ts  # 代理请求主入口
+│   │   └── [...route]/route.ts   # 动态路由处理器
+│   ├── dashboard/                # 仪表盘 (统计、日志、排行榜、实时监控)
+│   ├── settings/                 # 设置页面 (用户、供应商、价格、系统配置)
+│   └── api/                      # 内部 API (auth, admin, leaderboard, version)
+├── lib/                          # 核心业务逻辑
+│   ├── circuit-breaker.ts        # 熔断器 (内存实现)
+│   ├── session-manager.ts        # Session 追踪和缓存
+│   ├── rate-limit/               # 限流服务 (Redis + Lua 脚本)
+│   ├── redis/                    # Redis 客户端和工具
+│   ├── proxy-status-tracker.ts   # 实时代理状态追踪
+│   └── price-sync.ts             # LiteLLM 价格同步
+├── repository/                   # 数据访问层 (Drizzle ORM)
+├── drizzle/                      # 数据库 schema 和迁移
+├── types/                        # TypeScript 类型定义
+└── components/                   # React UI 组件
 ```
 
-> 每个 `page` 的目录下都可以有 `_components` 目录，用于存储当前 `page` 下封装的组件。
-> 如果有多个页面或者 layout 使用，则应该放在 `src/components/customs/` 目录下，并且根据模块划分不同文件夹。
+### 代理请求处理流程
 
-### 代理系统架构
+代理请求经过以下步骤 (参见 `src/app/v1/_lib/proxy-handler.ts`):
 
-代理请求处理流程 (`src/app/v1/_lib/proxy-handler.ts`) 采用职责链模式：
+1. **认证检查** (`ProxyAuthenticator`) - 验证 API Key
+2. **Session 分配** (`ProxySessionGuard`) - 并发 Session 限制检查
+3. **限流检查** (`ProxyRateLimitGuard`) - RPM + 金额限制 (5小时/周/月)
+4. **供应商选择** (`ProxyProviderResolver`) - 智能选择和故障转移
+   - Session 复用（5分钟缓存）
+   - 权重 + 优先级 + 分组
+   - 熔断器状态检查
+   - 并发限制检查（原子性操作）
+   - 故障转移循环（最多 3 次重试）
+5. **消息服务** (`ProxyMessageService`) - 创建消息上下文和日志记录
+6. **请求转发** (`ProxyForwarder`) - 转发到上游供应商
+7. **响应处理** (`ProxyResponseHandler`) - 流式/非流式响应处理
+8. **错误处理** (`ProxyErrorHandler`) - 统一错误处理和熔断器记录
 
-1. **ProxySession** - 会话上下文管理
-2. **ProxyAuthenticator** - API Key 认证和权限验证
-3. **ProxyRateLimitGuard** - 限流检查（金额限制、并发 Session 限制）
-4. **ProxyProviderResolver** - 智能供应商选择
-   - 支持会话复用（连续对话使用同一供应商）
-   - 加权随机负载均衡
-5. **ProxyMessageService** - 消息上下文处理
-6. **ProxyForwarder** - 转发请求到上游供应商
-7. **ProxyResponseHandler** - 处理响应（支持 SSE 流式）
-8. **ProxyErrorHandler** - 统一错误处理
+### OpenAI 兼容层
 
-### Codex 支持架构
+支持 `/v1/chat/completions` 端点 (参见 `src/app/v1/_lib/codex/chat-completions-handler.ts`):
 
-#### OpenAI Compatible API 实现
+- 自动检测 OpenAI 格式 (`messages`) 和 Response API 格式 (`input`)
+- OpenAI → Response API 转换 (`RequestTransformer`)
+- Codex CLI instructions 注入 (`adaptForCodexCLI`)
+- Response API → OpenAI 转换 (`ResponseTransformer`)
+- 支持 `tools`、`reasoning`、`stream` 等功能
 
-本系统支持 OpenAI Chat Completions API 格式，可直接对接 Codex 类型供应商。核心组件位于 `src/app/v1/_lib/codex/`：
+### 熔断器机制
 
-**请求流程**：
+内存实现的熔断器 (`src/lib/circuit-breaker.ts`):
 
-```
-客户端 (OpenAI 格式)
-  → /v1/chat/completions 端点
-  → RequestTransformer (OpenAI → Response API)
-  → 复用现有代理流程 (认证、限流、路由)
-  → ProxyForwarder 转发到 Codex 供应商
-  → ResponseTransformer (Response API → OpenAI)
-  → 客户端 (OpenAI 格式)
-```
+- **状态机**: Closed → Open → Half-Open → Closed
+- **阈值**: 失败 5 次后打开，持续 30 分钟
+- **半开状态**: 成功 2 次后关闭
+- 自动记录失败并打开熔断器
+- 供应商选择时跳过已打开的熔断器
 
-**核心组件**：
+### 限流策略
 
-1. **RequestTransformer** (`transformers/request.ts`)
-   - 转换 OpenAI Chat Completion 请求为 Response API 格式
-   - 处理 `messages` → `input` 转换
-   - 支持 `reasoning`、`max_tokens`、`temperature` 等参数映射
+多层限流 (`src/lib/rate-limit/service.ts`):
 
-2. **ResponseTransformer** (`transformers/response.ts`)
-   - 转换 Response API 响应为 OpenAI 格式
-   - 映射 `content` → `choices[].message.content`
-   - 处理 `usage` 统计信息
+1. **RPM 限流** - 用户级别每分钟请求数
+2. **金额限流** - 用户/密钥/供应商级别的 5小时/周/月 限制
+3. **并发 Session 限流** - 用户/供应商级别的并发会话数
+4. **Redis Lua 脚本** - 原子性检查和递增（解决竞态条件）
+5. **Fail Open 策略** - Redis 不可用时降级，不影响服务
 
-3. **StreamTransformer** (`transformers/stream.ts`)
-   - 处理 SSE 流式响应转换
-   - `message_start` → 初始 chunk
-   - `content_block_delta` → 增量内容 chunk
-   - `message_delta` → usage 统计 chunk
+### Session 管理
 
-4. **ChatCompletionsHandler** (`chat-completions-handler.ts`)
-   - 统一入口，处理 `/v1/chat/completions` 请求
-   - 标记 `originalFormat = 'openai'`（用于响应转换）
-   - 调用 `ProxyProviderResolver` 时指定供应商类型为 `'codex'`
+Session 追踪和缓存 (`src/lib/session-manager.ts`):
 
-**供应商隔离机制**：
-
-- 数据库字段：`providers.provider_type` (`'claude'` | `'codex'`)
-- 路由策略：OpenAI 请求仅选择 `provider_type = 'codex'` 的供应商
-- Claude 请求仅选择 `provider_type = 'claude'` 的供应商（默认）
-
-**模型重定向**：
-
-- 数据库字段：`providers.model_redirects` (JSONB)
-- 示例配置：`{"gpt-5": "gpt-5-codex", "gpt-4": "gpt-4-turbo"}`
-- ModelRedirector 在转发前自动重写模型名称
-
-**会话粘性**：
-
-- OpenAI 请求通过 `conversation_id` 识别会话
-- Session 5 分钟内复用同一供应商（利用上下文缓存）
-- Redis key: `session:{conversationId}:provider`
-
-**价格管理**：
-
-- 支持为 OpenAI 格式模型单独配置价格（如 `gpt-5-codex`）
-- 价格表 `model_prices` 同时支持 Claude 和 OpenAI 模型
-- 自动按 `usage.input_tokens` 和 `usage.output_tokens` 计费
+- **5 分钟上下文缓存** - 避免频繁切换供应商
+- **并发 Session 计数** - Redis 原子性追踪
+- **决策链记录** - 完整的供应商选择和失败切换记录
+- **自动清理** - TTL 过期自动清理
 
 ### 数据库 Schema
 
-核心表 (`src/drizzle/schema.ts`)：
+核心表结构 (`src/drizzle/schema.ts`):
 
-- **users** - 用户表 (RPM 限制、每日额度)
-- **keys** - API 密钥表
-- **providers** - 上游供应商表 (URL、权重、流量限制)
-  - `provider_type` - 供应商类型 (`'claude'` | `'codex'`)，默认 `'claude'`
-  - `model_redirects` - 模型重定向映射 (JSONB)，如 `{"gpt-5": "gpt-5-codex"}`
-- **message_request** - 请求日志表 (成本追踪)
-  - `api_type` - API 类型 (`'chat'` | `'codex'`)，用于区分不同的请求格式
-  - `status_code` - HTTP 状态码
-  - `input_tokens`, `output_tokens` - Token 使用统计
-  - `cache_creation_input_tokens`, `cache_read_input_tokens` - 缓存 Token 统计
-  - `provider_chain` - 供应商调用链 (JSON)，记录重试和降级路径
-- **model_prices** - 模型价格表
-  - 支持 Claude 模型（如 `claude-sonnet-4-5`）和 OpenAI 模型（如 `gpt-5-codex`）
-  - 独立配置输入/输出/缓存 Token 单价
+- **users** - 用户管理 (RPM 限制、每日额度、供应商分组)
+- **keys** - API 密钥 (金额限流、并发限制、过期时间)
+- **providers** - 供应商管理 (权重、优先级、成本倍数、模型重定向、并发限制)
+- **messages** - 消息日志 (请求/响应、Token 使用、成本计算、决策链)
+- **model_prices** - 模型价格 (支持 Claude 和 OpenAI 格式、缓存 Token 定价)
+- **statistics** - 统计数据 (小时级别聚合)
 
-### 环境配置
+## 环境变量
 
-必需的环境变量 (`.env.local` 或 `.env`)：
+关键环境变量 (参见 `.env.example`):
 
-- `ADMIN_TOKEN` - 管理员登录令牌
-- `DSN` - PostgreSQL 连接字符串
-- `AUTO_MIGRATE` - 是否自动执行数据库迁移 (默认 true)
-- `NODE_ENV` - 运行环境 (development/production/test)
+```bash
+# 管理员认证
+ADMIN_TOKEN=change-me              # 管理后台登录令牌（必须修改）
 
-### TypeScript 配置
+# 数据库配置
+DSN="postgres://..."               # PostgreSQL 连接字符串
+AUTO_MIGRATE=true                  # 启动时自动执行迁移
 
-- 路径别名 `@/*` → `./src/*`
-- 严格模式已启用
+# Redis 配置
+REDIS_URL=redis://localhost:6379   # Redis 连接地址
+ENABLE_RATE_LIMIT=true             # 启用限流功能
 
-### 样式系统
+# Session 配置
+SESSION_TTL=300                    # Session 缓存过期时间（秒）
+STORE_SESSION_MESSAGES=false       # 是否存储请求 messages（用于实时监控）
 
-- 使用 Shadcn UI orange 主题
-- 主题变量已在 `globals.css` 中配置
-- 尽量使用 CSS 变量，避免直接修改 `globals.css`
+# 应用配置
+APP_PORT=23000                     # 应用端口
+NODE_ENV=production                # 环境模式
+TZ=Asia/Shanghai                   # 时区设置
+LOG_LEVEL=info                     # 日志级别
+```
 
 ## 开发注意事项
 
-### MCP 集成
+### 1. Redis 依赖和降级策略
 
-项目配置了 MCP (Model Context Protocol) 数据库工具 (`.mcp.json`)，可通过 `@bytebase/dbhub` 进行数据库操作。
+- **Fail Open 策略**: Redis 不可用时自动降级，限流功能失效但服务仍可用
+- 所有 Redis 操作都有 try-catch 和降级逻辑
+- 不要在 Redis 操作失败时抛出错误，应该记录日志并继续
 
-### 数据库迁移
+### 2. 并发控制和竞态条件
 
-- 修改 schema 后，运行 `pnpm db:generate` 生成迁移文件
-- 生产环境通过 `AUTO_MIGRATE=true` 或手动执行 `pnpm db:migrate`
+- **原子性操作**: 使用 Redis Lua 脚本进行检查并递增（`src/lib/redis/lua-scripts.ts`）
+- **Session 分配**: 先检查并追踪，失败时尝试其他供应商
+- 避免在没有原子性保证的情况下进行并发限制检查
 
-### API 认证
+### 3. 数据库迁移
 
-- 管理面板使用 `ADMIN_TOKEN` 认证
-- 普通用户则使用名下的用户密钥进行登录
-- 代理 API 使用用户密钥 (`Authorization: Bearer sk-xxx`)调用本服务代理的接口。
+- 使用 `pnpm db:generate` 生成迁移文件
+- 生产环境使用 `AUTO_MIGRATE=true` 自动执行迁移
+- 索引优化: 所有查询都有对应的复合索引（参见 schema.ts 中的 index 定义）
+- 时区处理: 所有 timestamp 字段使用 `withTimezone: true`
+
+### 4. 时区处理
+
+- 数据库统计查询使用 `AT TIME ZONE 'Asia/Shanghai'` 转换
+- 前端显示使用 `date-fns` 和 `timeago.js`
+- 环境变量 `TZ` 和 `PGTZ` 统一设置为 `Asia/Shanghai`
+
+### 5. 成本计算
+
+- 支持 Claude 格式 (`input_tokens`, `output_tokens`, `cache_creation_input_tokens`, `cache_read_input_tokens`)
+- 支持 OpenAI 格式 (`prompt_tokens`, `completion_tokens`)
+- 价格单位: USD/M tokens (百万 tokens)
+- 成本倍数: 供应商级别的 `cost_multiplier`
+
+### 6. 日志记录
+
+- 使用 Pino 结构化日志 (`src/lib/logger.ts`)
+- 日志级别: `fatal` > `error` > `warn` > `info` > `debug` > `trace`
+- 开发环境使用 `pino-pretty` 美化输出
+- 关键业务逻辑必须有 info 级别日志
+
+### 7. 代码风格
+
+- 使用 ESLint + Prettier
+- 提交前运行 `pnpm typecheck` 确保类型正确
+- 遵循现有代码风格（参考 `src/app/v1/_lib/proxy/` 中的代码）
+
+## 常见任务
+
+### 添加新的供应商类型
+
+1. 在 `src/drizzle/schema.ts` 中扩展 `providerType` 枚举
+2. 在 `src/app/v1/_lib/proxy/provider-selector.ts` 中添加类型过滤逻辑
+3. 如需格式转换，在 `src/app/v1/_lib/codex/transformers/` 中添加转换器
+
+### 添加新的限流维度
+
+1. 在 `src/lib/rate-limit/service.ts` 中添加新的限流方法
+2. 在 `src/lib/redis/lua-scripts.ts` 中添加对应的 Lua 脚本
+3. 在 `src/app/v1/_lib/proxy/rate-limit-guard.ts` 中集成新的检查
+
+### 添加新的统计维度
+
+1. 在 `src/drizzle/schema.ts` 中扩展 `statistics` 表
+2. 在 `src/repository/statistics.ts` 中添加查询方法
+3. 在 `src/app/dashboard/_components/` 中添加可视化组件
+
+### 修改数据库 Schema
+
+1. 修改 `src/drizzle/schema.ts`
+2. 运行 `pnpm db:generate` 生成迁移文件
+3. 检查生成的 SQL 文件 (`drizzle/` 目录)
+4. 运行 `pnpm db:push` (开发) 或 `pnpm db:migrate` (生产)
+
+## 故障排查
+
+### 数据库连接失败
+- 检查 `DSN` 环境变量格式
+- Docker 部署: 确保 postgres 服务已启动 (`docker compose ps`)
+- 本地开发: 检查 PostgreSQL 服务是否运行
+
+### Redis 连接失败
+- 服务仍然可用（Fail Open 策略）
+- 检查 `REDIS_URL` 环境变量
+- 查看日志中的 Redis 连接错误
+- Docker 部署: `docker compose exec redis redis-cli ping`
+
+### 熔断器误触发
+- 查看日志中的 `[CircuitBreaker]` 记录
+- 检查供应商健康状态（Dashboard → 供应商管理）
+- 等待 30 分钟自动恢复或手动重启应用重置状态
+
+### 供应商选择失败
+- 检查供应商是否启用 (`is_enabled = true`)
+- 检查熔断器状态（日志中的 `circuitState`）
+- 检查并发限制配置（`limit_concurrent_sessions`）
+- 查看决策链记录（日志详情页面）
+
+## 参考资源
+
+- [Next.js 15 文档](https://nextjs.org/docs)
+- [Hono 文档](https://hono.dev/)
+- [Drizzle ORM 文档](https://orm.drizzle.team/)
+- [Shadcn UI 文档](https://ui.shadcn.com/)
+- [LiteLLM 价格表](https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json)

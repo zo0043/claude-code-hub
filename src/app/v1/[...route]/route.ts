@@ -4,12 +4,18 @@ import { handle } from "hono/vercel";
 import { handleProxyRequest } from "@/app/v1/_lib/proxy-handler";
 import { handleChatCompletions } from "@/app/v1/_lib/codex/chat-completions-handler";
 import { SessionTracker } from "@/lib/session-tracker";
+import { sensitiveWordDetector } from "@/lib/sensitive-word-detector";
 
 export const runtime = "nodejs";
 
 // 初始化 SessionTracker（清理旧 Set 格式数据）
 SessionTracker.initialize().catch((err) => {
   logger.error("[App] SessionTracker initialization failed:", err);
+});
+
+// 初始化敏感词检测器（加载缓存）
+sensitiveWordDetector.reload().catch((err) => {
+  logger.error("[App] SensitiveWordDetector initialization failed:", err);
 });
 
 const app = new Hono().basePath("/v1");

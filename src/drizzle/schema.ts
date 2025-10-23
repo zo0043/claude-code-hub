@@ -133,6 +133,10 @@ export const messageRequest = pgTable('message_request', {
   // 错误信息
   errorMessage: text('error_message'),
 
+  // 拦截原因（用于记录被敏感词等规则拦截的请求）
+  blockedBy: varchar('blocked_by', { length: 50 }),
+  blockedReason: text('blocked_reason'),
+
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
@@ -164,6 +168,22 @@ export const modelPrices = pgTable('model_prices', {
   // 基础索引
   modelPricesModelNameIdx: index('idx_model_prices_model_name').on(table.modelName),
   modelPricesCreatedAtIdx: index('idx_model_prices_created_at').on(table.createdAt.desc()),
+}));
+
+// Sensitive Words table
+export const sensitiveWords = pgTable('sensitive_words', {
+  id: serial('id').primaryKey(),
+  word: varchar('word', { length: 255 }).notNull(),
+  matchType: varchar('match_type', { length: 20 }).notNull().default('contains'),
+  description: text('description'),
+  isEnabled: boolean('is_enabled').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  // 优化启用状态和匹配类型的查询
+  sensitiveWordsEnabledIdx: index('idx_sensitive_words_enabled').on(table.isEnabled, table.matchType),
+  // 基础索引
+  sensitiveWordsCreatedAtIdx: index('idx_sensitive_words_created_at').on(table.createdAt),
 }));
 
 // System Settings table

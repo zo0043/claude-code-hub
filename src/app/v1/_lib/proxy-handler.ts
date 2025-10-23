@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 import { ProxySession } from "./proxy/session";
 import { ProxyAuthenticator } from "./proxy/auth-guard";
 import { ProxySessionGuard } from "./proxy/session-guard";
+import { ProxySensitiveWordGuard } from "./proxy/sensitive-word-guard";
 import { ProxyRateLimitGuard } from "./proxy/rate-limit-guard";
 import { ProxyProviderResolver } from "./proxy/provider-selector";
 import { ProxyMessageService } from "./proxy/message-service";
@@ -24,13 +25,19 @@ export async function handleProxyRequest(c: Context): Promise<Response> {
     // 2. Session 分配（新增）
     await ProxySessionGuard.ensure(session);
 
-    // 3. 限流检查
+    // 3. 敏感词检查（在计费之前）
+    const blockedBySensitiveWord = await ProxySensitiveWordGuard.ensure(session);
+    if (blockedBySensitiveWord) {
+      return blockedBySensitiveWord;
+    }
+
+    // 4. 限流检查
     const rateLimited = await ProxyRateLimitGuard.ensure(session);
     if (rateLimited) {
       return rateLimited;
     }
 
-    // 4. 供应商选择
+    // 5. 供应商选择
     const providerUnavailable = await ProxyProviderResolver.ensure(session);
     if (providerUnavailable) {
       return providerUnavailable;
