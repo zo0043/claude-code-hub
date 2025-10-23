@@ -3,7 +3,18 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, TrendingUp, DollarSign, Clock, User, Key, Cpu, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import {
+  Activity,
+  TrendingUp,
+  DollarSign,
+  Clock,
+  User,
+  Key,
+  Cpu,
+  CheckCircle,
+  XCircle,
+  Loader2,
+} from "lucide-react";
 import { getOverviewData } from "@/actions/overview";
 import { MetricCard } from "./metric-card";
 import { formatCurrency } from "@/lib/utils/currency";
@@ -79,7 +90,10 @@ function SessionListItem({ session }: { session: ActiveSessionInfo }) {
         {/* 密钥 */}
         <div className="flex items-center gap-1 min-w-0">
           <Key className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-          <span className="truncate text-muted-foreground text-xs font-mono max-w-[80px]" title={session.keyName}>
+          <span
+            className="truncate text-muted-foreground text-xs font-mono max-w-[80px]"
+            title={session.keyName}
+          >
             {session.keyName}
           </span>
         </div>
@@ -87,9 +101,14 @@ function SessionListItem({ session }: { session: ActiveSessionInfo }) {
         {/* 模型和供应商 */}
         <div className="flex items-center gap-1 min-w-0">
           <Cpu className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-          <span className="truncate text-xs font-mono max-w-[120px]" title={`${session.model} @ ${session.providerName}`}>
+          <span
+            className="truncate text-xs font-mono max-w-[120px]"
+            title={`${session.model} @ ${session.providerName}`}
+          >
             {session.model}
-            {session.providerName && <span className="text-muted-foreground"> @ {session.providerName}</span>}
+            {session.providerName && (
+              <span className="text-muted-foreground"> @ {session.providerName}</span>
+            )}
           </span>
         </div>
 
@@ -111,9 +130,7 @@ function SessionListItem({ session }: { session: ActiveSessionInfo }) {
             </span>
           )}
           {session.costUsd && (
-            <span className="font-medium">
-              ${parseFloat(session.costUsd).toFixed(4)}
-            </span>
+            <span className="font-medium">${parseFloat(session.costUsd).toFixed(4)}</span>
           )}
         </div>
       </div>

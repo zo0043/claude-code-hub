@@ -76,7 +76,10 @@ function SessionListItem({ session }: { session: ActiveSessionInfo }) {
         {/* 密钥 */}
         <div className="flex items-center gap-1 min-w-0">
           <Key className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-          <span className="truncate text-muted-foreground text-xs font-mono max-w-[80px]" title={session.keyName}>
+          <span
+            className="truncate text-muted-foreground text-xs font-mono max-w-[80px]"
+            title={session.keyName}
+          >
             {session.keyName}
           </span>
         </div>
@@ -84,9 +87,14 @@ function SessionListItem({ session }: { session: ActiveSessionInfo }) {
         {/* 模型和供应商 */}
         <div className="flex items-center gap-1 min-w-0">
           <Cpu className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-          <span className="truncate text-xs font-mono max-w-[120px]" title={`${session.model} @ ${session.providerName}`}>
+          <span
+            className="truncate text-xs font-mono max-w-[120px]"
+            title={`${session.model} @ ${session.providerName}`}
+          >
             {session.model}
-            {session.providerName && <span className="text-muted-foreground"> @ {session.providerName}</span>}
+            {session.providerName && (
+              <span className="text-muted-foreground"> @ {session.providerName}</span>
+            )}
           </span>
         </div>
 
@@ -108,9 +116,7 @@ function SessionListItem({ session }: { session: ActiveSessionInfo }) {
             </span>
           )}
           {session.costUsd && (
-            <span className="font-medium">
-              ${parseFloat(session.costUsd).toFixed(4)}
-            </span>
+            <span className="font-medium">${parseFloat(session.costUsd).toFixed(4)}</span>
           )}
         </div>
       </div>
@@ -137,9 +143,7 @@ export function ActiveSessionsPanel() {
         <div className="flex items-center gap-2">
           <Activity className="h-4 w-4 text-primary" />
           <h3 className="font-semibold text-sm">活跃 Session</h3>
-          <span className="text-xs text-muted-foreground">
-            ({data.length} 个活跃，最近 5 分钟)
-          </span>
+          <span className="text-xs text-muted-foreground">({data.length} 个活跃，最近 5 分钟)</span>
         </div>
         <button
           onClick={() => router.push("/dashboard/sessions")}
