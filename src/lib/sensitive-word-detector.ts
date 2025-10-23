@@ -69,17 +69,12 @@ class SensitiveWordCache {
               const pattern = new RegExp(word.word, "i");
               this.regex.push({ pattern, word: word.word });
             } catch (error) {
-              logger.error(
-                `[SensitiveWordCache] Invalid regex pattern: ${word.word}`,
-                error
-              );
+              logger.error(`[SensitiveWordCache] Invalid regex pattern: ${word.word}`, error);
             }
             break;
 
           default:
-            logger.warn(
-              `[SensitiveWordCache] Unknown match type: ${word.matchType}`
-            );
+            logger.warn(`[SensitiveWordCache] Unknown match type: ${word.matchType}`);
         }
       }
 
@@ -186,9 +181,7 @@ class SensitiveWordCache {
    * 检查缓存是否为空
    */
   isEmpty(): boolean {
-    return (
-      this.contains.length === 0 && this.exact.size === 0 && this.regex.length === 0
-    );
+    return this.contains.length === 0 && this.exact.size === 0 && this.regex.length === 0;
   }
 }
 

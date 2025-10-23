@@ -39,9 +39,7 @@ export async function getOverviewData(): Promise<ActionResult<OverviewData>> {
     const concurrentSessions = concurrentResult.ok ? concurrentResult.data : 0;
 
     // 处理Session列表（失败时返回空数组，最多取10个）
-    const recentSessions = sessionsResult.ok
-      ? sessionsResult.data.slice(0, 10)
-      : [];
+    const recentSessions = sessionsResult.ok ? sessionsResult.data.slice(0, 10) : [];
 
     return {
       ok: true,

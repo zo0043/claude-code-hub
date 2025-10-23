@@ -8,10 +8,7 @@ import { RefreshCacheButton } from "./_components/refresh-cache-button";
 export const dynamic = "force-dynamic";
 
 export default async function SensitiveWordsPage() {
-  const [words, cacheStats] = await Promise.all([
-    listSensitiveWords(),
-    getCacheStats(),
-  ]);
+  const [words, cacheStats] = await Promise.all([listSensitiveWords(), getCacheStats()]);
 
   return (
     <>

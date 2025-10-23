@@ -99,23 +99,15 @@ export function AddWordDialog() {
               <Label htmlFor="matchType">匹配类型 *</Label>
               <Select
                 value={matchType}
-                onValueChange={(value) =>
-                  setMatchType(value as "contains" | "exact" | "regex")
-                }
+                onValueChange={(value) => setMatchType(value as "contains" | "exact" | "regex")}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="contains">
-                    包含匹配 - 文本中包含该词即拦截
-                  </SelectItem>
-                  <SelectItem value="exact">
-                    精确匹配 - 完全匹配该词才拦截
-                  </SelectItem>
-                  <SelectItem value="regex">
-                    正则表达式 - 支持复杂模式匹配
-                  </SelectItem>
+                  <SelectItem value="contains">包含匹配 - 文本中包含该词即拦截</SelectItem>
+                  <SelectItem value="exact">精确匹配 - 完全匹配该词才拦截</SelectItem>
+                  <SelectItem value="regex">正则表达式 - 支持复杂模式匹配</SelectItem>
                 </SelectContent>
               </Select>
             </div>

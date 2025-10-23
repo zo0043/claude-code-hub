@@ -2,10 +2,7 @@
 
 import { useState } from "react";
 import type { SensitiveWord } from "@/repository/sensitive-words";
-import {
-  updateSensitiveWordAction,
-  deleteSensitiveWordAction,
-} from "@/actions/sensitive-words";
+import { updateSensitiveWordAction, deleteSensitiveWordAction } from "@/actions/sensitive-words";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Trash2, Pencil } from "lucide-react";
@@ -88,13 +85,12 @@ export function WordListTable({ words }: WordListTableProps) {
             {words.map((word) => (
               <tr key={word.id} className="border-b hover:bg-muted/30">
                 <td className="px-4 py-3">
-                  <code className="rounded bg-muted px-2 py-1 text-sm">
-                    {word.word}
-                  </code>
+                  <code className="rounded bg-muted px-2 py-1 text-sm">{word.word}</code>
                 </td>
                 <td className="px-4 py-3">
                   <Badge variant={matchTypeColors[word.matchType as keyof typeof matchTypeColors]}>
-                    {matchTypeLabels[word.matchType as keyof typeof matchTypeLabels] || word.matchType}
+                    {matchTypeLabels[word.matchType as keyof typeof matchTypeLabels] ||
+                      word.matchType}
                   </Badge>
                 </td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">
@@ -103,9 +99,7 @@ export function WordListTable({ words }: WordListTableProps) {
                 <td className="px-4 py-3">
                   <Switch
                     checked={word.isEnabled}
-                    onCheckedChange={(checked) =>
-                      handleToggleEnabled(word.id, checked)
-                    }
+                    onCheckedChange={(checked) => handleToggleEnabled(word.id, checked)}
                   />
                 </td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">
@@ -113,11 +107,7 @@ export function WordListTable({ words }: WordListTableProps) {
                 </td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(word)}
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(word)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button

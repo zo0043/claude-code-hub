@@ -188,10 +188,7 @@ export function OverviewPanel() {
               {/* 复制一遍用于无缝循环 */}
               {metrics.recentSessions.length > 0 &&
                 metrics.recentSessions.map((session, index) => (
-                  <SessionCard
-                    key={`${session.sessionId}-copy-${index}`}
-                    session={session}
-                  />
+                  <SessionCard key={`${session.sessionId}-copy-${index}`} session={session} />
                 ))}
             </>
           )}

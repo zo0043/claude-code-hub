@@ -111,14 +111,10 @@ export function SessionCard({ session, className }: SessionCardProps) {
           <div className="flex items-center justify-between text-xs border-t pt-2">
             <div className="flex items-center gap-2 text-muted-foreground">
               {session.inputTokens !== undefined && (
-                <span className="font-mono">
-                  ↑{session.inputTokens.toLocaleString()}
-                </span>
+                <span className="font-mono">↑{session.inputTokens.toLocaleString()}</span>
               )}
               {session.outputTokens !== undefined && (
-                <span className="font-mono">
-                  ↓{session.outputTokens.toLocaleString()}
-                </span>
+                <span className="font-mono">↓{session.outputTokens.toLocaleString()}</span>
               )}
             </div>
             {session.costUsd && (

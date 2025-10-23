@@ -209,7 +209,9 @@ export async function deleteSensitiveWordAction(id: number): Promise<ActionResul
 /**
  * 手动刷新缓存
  */
-export async function refreshCacheAction(): Promise<ActionResult<{ stats: ReturnType<typeof sensitiveWordDetector.getStats> }>> {
+export async function refreshCacheAction(): Promise<
+  ActionResult<{ stats: ReturnType<typeof sensitiveWordDetector.getStats> }>
+> {
   try {
     const session = await getSession();
     if (!session || session.user.role !== "admin") {
