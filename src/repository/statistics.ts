@@ -40,7 +40,7 @@ export async function getUserStatisticsFromDB(timeRange: TimeRange): Promise<Dat
           FROM users u
           CROSS JOIN hour_range hr
           LEFT JOIN message_request mr ON u.id = mr.user_id
-            AND DATE_TRUNC('hour', mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone}) = hr.hour
+            AND DATE_TRUNC('hour', mr.created_at AT TIME ZONE ${timezone}) = hr.hour
             AND mr.deleted_at IS NULL
           WHERE u.deleted_at IS NULL
           GROUP BY u.id, u.name, hr.hour
@@ -76,7 +76,7 @@ export async function getUserStatisticsFromDB(timeRange: TimeRange): Promise<Dat
           FROM users u
           CROSS JOIN date_range dr
           LEFT JOIN message_request mr ON u.id = mr.user_id
-            AND (mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = dr.date
+            AND (mr.created_at AT TIME ZONE ${timezone})::date = dr.date
             AND mr.deleted_at IS NULL
           WHERE u.deleted_at IS NULL
           GROUP BY u.id, u.name, dr.date
@@ -112,7 +112,7 @@ export async function getUserStatisticsFromDB(timeRange: TimeRange): Promise<Dat
           FROM users u
           CROSS JOIN date_range dr
           LEFT JOIN message_request mr ON u.id = mr.user_id
-            AND (mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = dr.date
+            AND (mr.created_at AT TIME ZONE ${timezone})::date = dr.date
             AND mr.deleted_at IS NULL
           WHERE u.deleted_at IS NULL
           GROUP BY u.id, u.name, dr.date
@@ -188,7 +188,7 @@ export async function getKeyStatisticsFromDB(
           CROSS JOIN hour_range hr
           LEFT JOIN message_request mr ON mr.key = k.key
             AND mr.user_id = ${userId}
-            AND DATE_TRUNC('hour', mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone}) = hr.hour
+            AND DATE_TRUNC('hour', mr.created_at AT TIME ZONE ${timezone}) = hr.hour
             AND mr.deleted_at IS NULL
           GROUP BY k.id, k.name, hr.hour
         )
@@ -229,7 +229,7 @@ export async function getKeyStatisticsFromDB(
           CROSS JOIN date_range dr
           LEFT JOIN message_request mr ON mr.key = k.key
             AND mr.user_id = ${userId}
-            AND (mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = dr.date
+            AND (mr.created_at AT TIME ZONE ${timezone})::date = dr.date
             AND mr.deleted_at IS NULL
           GROUP BY k.id, k.name, dr.date
         )
@@ -270,7 +270,7 @@ export async function getKeyStatisticsFromDB(
           CROSS JOIN date_range dr
           LEFT JOIN message_request mr ON mr.key = k.key
             AND mr.user_id = ${userId}
-            AND (mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = dr.date
+            AND (mr.created_at AT TIME ZONE ${timezone})::date = dr.date
             AND mr.deleted_at IS NULL
           GROUP BY k.id, k.name, dr.date
         )
@@ -352,7 +352,7 @@ export async function getMixedStatisticsFromDB(
           CROSS JOIN hour_range hr
           LEFT JOIN message_request mr ON mr.key = k.key
             AND mr.user_id = ${userId}
-            AND DATE_TRUNC('hour', mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone}) = hr.hour
+            AND DATE_TRUNC('hour', mr.created_at AT TIME ZONE ${timezone}) = hr.hour
             AND mr.deleted_at IS NULL
           GROUP BY k.id, k.name, hr.hour
         )
@@ -381,7 +381,7 @@ export async function getMixedStatisticsFromDB(
             COUNT(mr.id) AS api_calls,
             COALESCE(SUM(mr.cost_usd), 0) AS total_cost
           FROM hour_range hr
-          LEFT JOIN message_request mr ON DATE_TRUNC('hour', mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone}) = hr.hour
+          LEFT JOIN message_request mr ON DATE_TRUNC('hour', mr.created_at AT TIME ZONE ${timezone}) = hr.hour
             AND mr.user_id != ${userId}
             AND mr.deleted_at IS NULL
           GROUP BY hr.hour
@@ -424,7 +424,7 @@ export async function getMixedStatisticsFromDB(
           CROSS JOIN date_range dr
           LEFT JOIN message_request mr ON mr.key = k.key
             AND mr.user_id = ${userId}
-            AND (mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = dr.date
+            AND (mr.created_at AT TIME ZONE ${timezone})::date = dr.date
             AND mr.deleted_at IS NULL
           GROUP BY k.id, k.name, dr.date
         )
@@ -453,7 +453,7 @@ export async function getMixedStatisticsFromDB(
             COUNT(mr.id) AS api_calls,
             COALESCE(SUM(mr.cost_usd), 0) AS total_cost
           FROM date_range dr
-          LEFT JOIN message_request mr ON (mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = dr.date
+          LEFT JOIN message_request mr ON (mr.created_at AT TIME ZONE ${timezone})::date = dr.date
             AND mr.user_id != ${userId}
             AND mr.deleted_at IS NULL
           GROUP BY dr.date
@@ -496,7 +496,7 @@ export async function getMixedStatisticsFromDB(
           CROSS JOIN date_range dr
           LEFT JOIN message_request mr ON mr.key = k.key
             AND mr.user_id = ${userId}
-            AND (mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = dr.date
+            AND (mr.created_at AT TIME ZONE ${timezone})::date = dr.date
             AND mr.deleted_at IS NULL
           GROUP BY k.id, k.name, dr.date
         )
@@ -525,7 +525,7 @@ export async function getMixedStatisticsFromDB(
             COUNT(mr.id) AS api_calls,
             COALESCE(SUM(mr.cost_usd), 0) AS total_cost
           FROM date_range dr
-          LEFT JOIN message_request mr ON (mr.created_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = dr.date
+          LEFT JOIN message_request mr ON (mr.created_at AT TIME ZONE ${timezone})::date = dr.date
             AND mr.user_id != ${userId}
             AND mr.deleted_at IS NULL
           GROUP BY dr.date
