@@ -62,6 +62,7 @@ interface UsageLogsTableProps {
   pageSize: number;
   onPageChange: (page: number) => void;
   isPending: boolean;
+  newLogIds?: Set<number>; // 新增记录 ID 集合（用于动画高亮）
 }
 
 export function UsageLogsTable({
@@ -71,6 +72,7 @@ export function UsageLogsTable({
   pageSize,
   onPageChange,
   isPending,
+  newLogIds,
 }: UsageLogsTableProps) {
   const totalPages = Math.ceil(total / pageSize);
 
@@ -103,7 +105,10 @@ export function UsageLogsTable({
               </TableRow>
             ) : (
               logs.map((log) => (
-                <TableRow key={log.id}>
+                <TableRow
+                  key={log.id}
+                  className={newLogIds?.has(log.id) ? 'animate-highlight-flash' : ''}
+                >
                   <TableCell className="font-mono text-xs">
                     {formatTimeAgo(log.createdAt)}
                   </TableCell>

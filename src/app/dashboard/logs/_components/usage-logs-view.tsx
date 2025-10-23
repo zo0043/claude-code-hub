@@ -46,6 +46,11 @@ export function UsageLogsView({
   const [isAutoRefresh, setIsAutoRefresh] = useState(true);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
+  // 追踪新增记录（用于动画高亮）
+  const [newLogIds, setNewLogIds] = useState<Set<number>>(new Set());
+  const previousLogsRef = useRef<Map<number, boolean>>(new Map());
+  const previousParamsRef = useRef<string>('');
+
   // 从 URL 参数解析筛选条件
   const filters: {
     userId?: number;
@@ -77,10 +82,30 @@ export function UsageLogsView({
   filtersRef.current = filters;
 
   // 加载数据
-  const loadData = async () => {
+  // shouldDetectNew: 是否检测新增记录（只在刷新时为 true，筛选/翻页时为 false）
+  const loadData = async (shouldDetectNew = false) => {
     startTransition(async () => {
       const result = await getUsageLogs(filtersRef.current);
       if (result.ok && result.data) {
+        // 只在刷新时检测新增（非筛选/翻页）
+        if (shouldDetectNew && previousLogsRef.current.size > 0) {
+          const newIds = result.data.logs
+            .filter(log => !previousLogsRef.current.has(log.id))
+            .map(log => log.id)
+            .slice(0, 10); // 限制最多高亮 10 条
+
+          if (newIds.length > 0) {
+            setNewLogIds(new Set(newIds));
+            // 800ms 后清除高亮
+            setTimeout(() => setNewLogIds(new Set()), 800);
+          }
+        }
+
+        // 更新记录缓存
+        previousLogsRef.current = new Map(
+          result.data.logs.map(log => [log.id, true])
+        );
+
         setData(result.data);
         setError(null);
       } else {
@@ -90,27 +115,38 @@ export function UsageLogsView({
     });
   };
 
-  // 手动刷新
+  // 手动刷新（检测新增）
   const handleManualRefresh = async () => {
     setIsManualRefreshing(true);
-    await loadData();
+    await loadData(true); // 刷新时检测新增
     setTimeout(() => setIsManualRefreshing(false), 500);
   };
 
-  // 初始加载
+  // 监听 URL 参数变化（筛选/翻页时重置缓存）
   useEffect(() => {
-    loadData();
-  }, []);  
+    const currentParams = params.toString();
 
-  // 自动轮询
+    if (previousParamsRef.current && previousParamsRef.current !== currentParams) {
+      // URL 变化 = 用户操作（筛选/翻页），重置缓存，不检测新增
+      previousLogsRef.current = new Map();
+      loadData(false);
+    } else if (!previousParamsRef.current) {
+      // 首次加载，不检测新增
+      loadData(false);
+    }
+
+    previousParamsRef.current = currentParams;
+  }, [params]);
+
+  // 自动轮询（3秒间隔，检测新增）
   useEffect(() => {
     if (!isAutoRefresh) return;
 
     const intervalId = setInterval(() => {
       // 如果正在加载,跳过本次轮询
       if (isPendingRef.current) return;
-      loadData();
-    }, 10000); // 10 秒间隔
+      loadData(true); // 自动刷新时检测新增
+    }, 3000); // 3 秒间隔
 
     return () => clearInterval(intervalId);
   }, [isAutoRefresh]);  
@@ -273,6 +309,7 @@ export function UsageLogsView({
               pageSize={50}
               onPageChange={handlePageChange}
               isPending={isPending}
+              newLogIds={newLogIds}
             />
           )}
         </CardContent>

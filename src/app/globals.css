@@ -134,4 +134,23 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* 新增记录高亮动画 */
+  @keyframes highlight-flash {
+    0% {
+      background-color: hsl(var(--primary) / 0.15);
+      transform: translateX(0);
+    }
+    50% {
+      background-color: hsl(var(--primary) / 0.1);
+    }
+    100% {
+      background-color: transparent;
+      transform: translateX(0);
+    }
+  }
+
+  .animate-highlight-flash {
+    animation: highlight-flash 800ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
 }
