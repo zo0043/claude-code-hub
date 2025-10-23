@@ -29,7 +29,11 @@ export class ProxyProviderResolver {
     // 如果没有可复用的，随机选择
     if (!session.provider) {
       session.setProvider(
-        await ProxyProviderResolver.pickRandomProvider(session, excludedProviders, targetProviderType)
+        await ProxyProviderResolver.pickRandomProvider(
+          session,
+          excludedProviders,
+          targetProviderType
+        )
       );
     }
 
@@ -52,13 +56,16 @@ export class ProxyProviderResolver {
 
         if (!checkResult.allowed) {
           // 并发限制失败 - 记录并尝试其他供应商
-          logger.warn("ProviderSelector: Provider concurrent session limit exceeded, trying fallback", {
-            providerName: session.provider.name,
-            providerId: session.provider.id,
-            current: checkResult.count,
-            limit,
-            attempt: attempt + 1,
-          });
+          logger.warn(
+            "ProviderSelector: Provider concurrent session limit exceeded, trying fallback",
+            {
+              providerName: session.provider.name,
+              providerId: session.provider.id,
+              current: checkResult.count,
+              limit,
+              attempt: attempt + 1,
+            }
+          );
 
           // 记录失败的供应商到决策链
           session.addProviderToChain(session.provider, {
@@ -133,9 +140,10 @@ export class ProxyProviderResolver {
 
     // 达到最大重试次数或无可用供应商
     const status = 503;
-    const message = excludedProviders.length > 0
-      ? `所有供应商不可用（尝试了 ${excludedProviders.length} 个供应商）`
-      : "暂无可用的上游服务";
+    const message =
+      excludedProviders.length > 0
+        ? `所有供应商不可用（尝试了 ${excludedProviders.length} 个供应商）`
+        : "暂无可用的上游服务";
     logger.error("ProviderSelector: No available providers after retries", {
       excludedProviders,
       maxRetries: MAX_RETRIES,

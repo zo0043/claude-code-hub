@@ -116,11 +116,11 @@ export async function findUsageLogsWithDetails(filters: UsageLogFilters): Promis
   if (startDate) {
     // 从 Date 对象提取本地时间（不要用 toISOString，那会转换为 UTC）
     const year = startDate.getFullYear();
-    const month = String(startDate.getMonth() + 1).padStart(2, '0');
-    const day = String(startDate.getDate()).padStart(2, '0');
-    const hours = String(startDate.getHours()).padStart(2, '0');
-    const minutes = String(startDate.getMinutes()).padStart(2, '0');
-    const seconds = String(startDate.getSeconds()).padStart(2, '0');
+    const month = String(startDate.getMonth() + 1).padStart(2, "0");
+    const day = String(startDate.getDate()).padStart(2, "0");
+    const hours = String(startDate.getHours()).padStart(2, "0");
+    const minutes = String(startDate.getMinutes()).padStart(2, "0");
+    const seconds = String(startDate.getSeconds()).padStart(2, "0");
     const localTimeStr = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 
     conditions.push(
@@ -130,11 +130,11 @@ export async function findUsageLogsWithDetails(filters: UsageLogFilters): Promis
 
   if (endDate) {
     const year = endDate.getFullYear();
-    const month = String(endDate.getMonth() + 1).padStart(2, '0');
-    const day = String(endDate.getDate()).padStart(2, '0');
-    const hours = String(endDate.getHours()).padStart(2, '0');
-    const minutes = String(endDate.getMinutes()).padStart(2, '0');
-    const seconds = String(endDate.getSeconds()).padStart(2, '0');
+    const month = String(endDate.getMonth() + 1).padStart(2, "0");
+    const day = String(endDate.getDate()).padStart(2, "0");
+    const hours = String(endDate.getHours()).padStart(2, "0");
+    const minutes = String(endDate.getMinutes()).padStart(2, "0");
+    const seconds = String(endDate.getSeconds()).padStart(2, "0");
     const localTimeStr = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 
     conditions.push(
