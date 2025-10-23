@@ -3,21 +3,18 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, TrendingUp, DollarSign, Clock, User, Key, Cpu, CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { getOverviewData } from "@/actions/overview";
-import { MetricCard } from "./metric-card";
-import { formatCurrency } from "@/lib/utils/currency";
+import { Activity, User, Key, Cpu, Clock, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { getActiveSessions } from "@/actions/active-sessions";
 import { cn } from "@/lib/utils";
-import type { OverviewData } from "@/actions/overview";
 import type { ActiveSessionInfo } from "@/types/session";
 import Link from "next/link";
 
 const REFRESH_INTERVAL = 5000; // 5秒刷新一次
 
-async function fetchOverviewData(): Promise<OverviewData> {
-  const result = await getOverviewData();
+async function fetchActiveSessions(): Promise<ActiveSessionInfo[]> {
+  const result = await getActiveSessions();
   if (!result.ok) {
-    throw new Error(result.error || "获取概览数据失败");
+    throw new Error(result.error || "获取活跃 Session 失败");
   }
   return result.data;
 }
@@ -122,112 +119,53 @@ function SessionListItem({ session }: { session: ActiveSessionInfo }) {
 }
 
 /**
- * 概览面板
- * 左侧：4个指标卡片
- * 右侧：简洁的活跃 Session 列表
+ * 活跃 Session 面板
+ * 显示最近 5 分钟内的活跃 session 列表（简洁文字+图标形式）
  */
-export function OverviewPanel() {
+export function ActiveSessionsPanel() {
   const router = useRouter();
 
-  const { data, isLoading } = useQuery<OverviewData, Error>({
-    queryKey: ["overview-data"],
-    queryFn: fetchOverviewData,
+  const { data = [], isLoading } = useQuery<ActiveSessionInfo[], Error>({
+    queryKey: ["active-sessions"],
+    queryFn: fetchActiveSessions,
     refetchInterval: REFRESH_INTERVAL,
   });
 
-  // 格式化响应时间
-  const formatResponseTime = (ms: number) => {
-    if (ms < 1000) return `${ms}ms`;
-    return `${(ms / 1000).toFixed(1)}s`;
-  };
-
-  const metrics = data || {
-    concurrentSessions: 0,
-    todayRequests: 0,
-    todayCost: 0,
-    avgResponseTime: 0,
-    recentSessions: [],
-  };
-
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 w-full">
-      {/* 左侧：指标卡片区域 */}
-      <div className="lg:col-span-3">
-        <div className="grid grid-cols-2 gap-3">
-          <MetricCard
-            title="当前并发"
-            value={metrics.concurrentSessions}
-            description="最近 5 分钟"
-            icon={Activity}
-          />
-          <MetricCard
-            title="今日请求"
-            value={metrics.todayRequests}
-            description="API 调用次数"
-            icon={TrendingUp}
-          />
-          <MetricCard
-            title="今日消耗"
-            value={formatCurrency(metrics.todayCost)}
-            description="总费用"
-            icon={DollarSign}
-          />
-          <MetricCard
-            title="平均响应"
-            value={metrics.avgResponseTime}
-            description="响应时间"
-            icon={Clock}
-            formatter={formatResponseTime}
-          />
+    <div className="border rounded-lg bg-card">
+      <div className="px-4 py-3 border-b flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Activity className="h-4 w-4 text-primary" />
+          <h3 className="font-semibold text-sm">活跃 Session</h3>
+          <span className="text-xs text-muted-foreground">
+            ({data.length} 个活跃，最近 5 分钟)
+          </span>
         </div>
-        <div className="mt-3">
-          <button
-            onClick={() => router.push("/dashboard/sessions")}
-            className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center py-1.5 hover:bg-muted rounded-md"
-          >
-            点击查看详情 →
-          </button>
-        </div>
+        <button
+          onClick={() => router.push("/dashboard/sessions")}
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          查看全部 →
+        </button>
       </div>
 
-      {/* 右侧：活跃 Session 列表 */}
-      <div className="lg:col-span-9">
-        <div className="border rounded-lg bg-card">
-          <div className="px-4 py-3 border-b flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-primary" />
-              <h3 className="font-semibold text-sm">活跃 Session</h3>
-              <span className="text-xs text-muted-foreground">
-                ({metrics.recentSessions.length} 个活跃)
-              </span>
-            </div>
-            <button
-              onClick={() => router.push("/dashboard/sessions")}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              查看全部 →
-            </button>
+      <div className="max-h-[200px] overflow-y-auto">
+        {isLoading && data.length === 0 ? (
+          <div className="flex items-center justify-center h-[200px] text-muted-foreground text-sm">
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            加载中...
           </div>
-
-          <div className="max-h-[200px] overflow-y-auto">
-            {isLoading && metrics.recentSessions.length === 0 ? (
-              <div className="flex items-center justify-center h-[200px] text-muted-foreground text-sm">
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                加载中...
-              </div>
-            ) : metrics.recentSessions.length === 0 ? (
-              <div className="flex items-center justify-center h-[200px] text-muted-foreground text-sm">
-                暂无活跃 Session
-              </div>
-            ) : (
-              <div className="divide-y">
-                {metrics.recentSessions.map((session) => (
-                  <SessionListItem key={session.sessionId} session={session} />
-                ))}
-              </div>
-            )}
+        ) : data.length === 0 ? (
+          <div className="flex items-center justify-center h-[200px] text-muted-foreground text-sm">
+            暂无活跃 Session
           </div>
-        </div>
+        ) : (
+          <div className="divide-y">
+            {data.map((session) => (
+              <SessionListItem key={session.sessionId} session={session} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
