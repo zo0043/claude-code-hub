@@ -2,8 +2,7 @@
 
 import { db } from "@/drizzle/db";
 import { messageRequest, users } from "@/drizzle/schema";
-import { and, gte, lte, desc, sql, isNull } from "drizzle-orm";
-import { startOfDay, startOfMonth } from "date-fns";
+import { and, gte, lt, desc, sql, isNull } from "drizzle-orm";
 
 /**
  * 排行榜条目类型
@@ -21,10 +20,11 @@ export interface LeaderboardEntry {
  */
 export async function findDailyLeaderboard(): Promise<LeaderboardEntry[]> {
   const today = new Date();
-  const startTime = startOfDay(today);
-  const endTime = new Date(); // 使用当前时刻，而不是今日结束时间
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
 
-  return findLeaderboard(startTime, endTime);
+  return findLeaderboard(today, tomorrow);
 }
 
 /**
@@ -32,8 +32,8 @@ export async function findDailyLeaderboard(): Promise<LeaderboardEntry[]> {
  */
 export async function findMonthlyLeaderboard(): Promise<LeaderboardEntry[]> {
   const today = new Date();
-  const startTime = startOfMonth(today);
-  const endTime = new Date(); // 使用当前时刻，而不是本月结束时间
+  const startTime = new Date(today.getFullYear(), today.getMonth(), 1);
+  const endTime = new Date(today.getFullYear(), today.getMonth() + 1, 1);
 
   return findLeaderboard(startTime, endTime);
 }
@@ -63,7 +63,7 @@ async function findLeaderboard(startTime: Date, endTime: Date): Promise<Leaderbo
       and(
         isNull(messageRequest.deletedAt),
         gte(messageRequest.createdAt, startTime),
-        lte(messageRequest.createdAt, endTime)
+        lt(messageRequest.createdAt, endTime)
       )
     )
     .groupBy(messageRequest.userId, users.name)
