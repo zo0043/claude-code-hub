@@ -95,6 +95,13 @@ export class ProxyResponseHandler {
           // 非 JSON 响应时保持原始日志
         }
 
+        // 存储响应体到 Redis（5分钟过期）
+        if (session.sessionId) {
+          void SessionManager.storeSessionResponse(session.sessionId, responseText).catch((err) => {
+            logger.error("[ResponseHandler] Failed to store response:", err);
+          });
+        }
+
         const messageContext = session.messageContext;
         if (usageRecord && usageMetrics && messageContext) {
           await updateRequestCostFromUsage(
@@ -268,6 +275,14 @@ export class ProxyResponseHandler {
         }
 
         const allContent = chunks.join("");
+
+        // 存储响应体到 Redis（5分钟过期）
+        if (session.sessionId) {
+          void SessionManager.storeSessionResponse(session.sessionId, allContent).catch((err) => {
+            logger.error("[ResponseHandler] Failed to store stream response:", err);
+          });
+        }
+
         const parsedEvents = parseSSEData(allContent);
 
         const duration = Date.now() - session.startTime;

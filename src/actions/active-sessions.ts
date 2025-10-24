@@ -6,16 +6,53 @@ import type { ActionResult } from "./types";
 import type { ActiveSessionInfo } from "@/types/session";
 
 /**
- * 获取所有活跃 session 的详细信息
+ * 获取所有活跃 session 的详细信息（使用聚合数据）
  * 用于实时监控页面
  */
 export async function getActiveSessions(): Promise<ActionResult<ActiveSessionInfo[]>> {
   try {
-    const sessions = await SessionManager.getActiveSessions();
-    return {
-      ok: true,
-      data: sessions,
-    };
+    // 1. 从 SessionTracker 获取活跃 session ID 列表
+    const { SessionTracker } = await import("@/lib/session-tracker");
+    const sessionIds = await SessionTracker.getActiveSessions();
+
+    if (sessionIds.length === 0) {
+      return { ok: true, data: [] };
+    }
+
+    // 2. 并行查询每个 session 的聚合数据
+    const { aggregateSessionStats } = await import("@/repository/message");
+    const sessionsData = await Promise.all(sessionIds.map((id) => aggregateSessionStats(id)));
+
+    // 3. 过滤掉查询失败的 session，并转换格式
+    const sessions: ActiveSessionInfo[] = sessionsData
+      .filter((s): s is NonNullable<typeof s> => s !== null)
+      .map((s) => ({
+        sessionId: s.sessionId,
+        userName: s.userName,
+        userId: s.userId,
+        keyId: s.keyId,
+        keyName: s.keyName,
+        providerId: s.providers[0]?.id || null,
+        providerName: s.providers.map((p) => p.name).join(", ") || null,
+        model: s.models.join(", ") || null,
+        apiType: (s.apiType as "chat" | "codex") || "chat",
+        startTime: s.firstRequestAt ? new Date(s.firstRequestAt).getTime() : Date.now(),
+        inputTokens: s.totalInputTokens,
+        outputTokens: s.totalOutputTokens,
+        cacheCreationInputTokens: s.totalCacheCreationTokens,
+        cacheReadInputTokens: s.totalCacheReadTokens,
+        totalTokens:
+          s.totalInputTokens +
+          s.totalOutputTokens +
+          s.totalCacheCreationTokens +
+          s.totalCacheReadTokens,
+        costUsd: s.totalCostUsd,
+        status: "completed",
+        durationMs: s.totalDurationMs,
+        requestCount: s.requestCount,
+      }));
+
+    return { ok: true, data: sessions };
   } catch (error) {
     logger.error("Failed to get active sessions:", error);
     return {
@@ -92,6 +129,43 @@ export async function hasSessionMessages(sessionId: string): Promise<ActionResul
     return {
       ok: true,
       data: false, // 出错时默认返回 false,避免显示无效按钮
+    };
+  }
+}
+
+/**
+ * 获取 session 的完整详情（messages + response + 聚合统计）
+ * 用于 session messages 详情页面
+ */
+export async function getSessionDetails(sessionId: string): Promise<
+  ActionResult<{
+    messages: unknown | null;
+    response: string | null;
+    sessionStats: Awaited<ReturnType<typeof import("@/repository/message").aggregateSessionStats>> | null;
+  }>
+> {
+  try {
+    // 并行获取三项数据：messages, response, 聚合统计
+    const { aggregateSessionStats } = await import("@/repository/message");
+    const [messages, response, sessionStats] = await Promise.all([
+      SessionManager.getSessionMessages(sessionId),
+      SessionManager.getSessionResponse(sessionId),
+      aggregateSessionStats(sessionId),
+    ]);
+
+    return {
+      ok: true,
+      data: {
+        messages,
+        response,
+        sessionStats,
+      },
+    };
+  } catch (error) {
+    logger.error("Failed to get session details:", error);
+    return {
+      ok: false,
+      error: "获取 session 详情失败",
     };
   }
 }

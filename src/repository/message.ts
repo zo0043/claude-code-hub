@@ -2,7 +2,7 @@
 
 import { db } from "@/drizzle/db";
 import { logger } from "@/lib/logger";
-import { messageRequest } from "@/drizzle/schema";
+import { messageRequest, users, keys as keysTable, providers } from "@/drizzle/schema";
 import { eq, isNull, and, desc, sql } from "drizzle-orm";
 import type { MessageRequest, CreateMessageRequestData } from "@/types/message";
 import { toMessageRequest } from "./_shared/transformers";
@@ -22,8 +22,10 @@ export async function createMessageRequest(
     model: data.model,
     durationMs: data.duration_ms,
     costUsd: formattedCost ?? undefined,
-    costMultiplier: data.cost_multiplier?.toString() ?? undefined, // 新增：供应商倍率（转为字符串）
-    sessionId: data.session_id, // 新增：Session ID
+    costMultiplier: data.cost_multiplier?.toString() ?? undefined, // 供应商倍率（转为字符串）
+    sessionId: data.session_id, // Session ID
+    userAgent: data.user_agent, // User-Agent
+    messagesCount: data.messages_count, // Messages 数量
   };
 
   const [result] = await db.insert(messageRequest).values(dbData).returning({
@@ -36,6 +38,8 @@ export async function createMessageRequest(
     costUsd: messageRequest.costUsd,
     costMultiplier: messageRequest.costMultiplier, // 新增
     sessionId: messageRequest.sessionId, // 新增
+    userAgent: messageRequest.userAgent, // 新增
+    messagesCount: messageRequest.messagesCount, // 新增
     createdAt: messageRequest.createdAt,
     updatedAt: messageRequest.updatedAt,
     deletedAt: messageRequest.deletedAt,
@@ -145,6 +149,170 @@ export async function findLatestMessageRequestByKey(key: string): Promise<Messag
 
   if (!result) return null;
   return toMessageRequest(result);
+}
+
+/**
+ * 根据 session ID 查询消息请求记录（用于获取完整元数据）
+ * 返回该 session 的最后一条记录（最新的）
+ */
+export async function findMessageRequestBySessionId(
+  sessionId: string
+): Promise<MessageRequest | null> {
+  const [result] = await db
+    .select({
+      id: messageRequest.id,
+      providerId: messageRequest.providerId,
+      userId: messageRequest.userId,
+      key: messageRequest.key,
+      model: messageRequest.model,
+      originalModel: messageRequest.originalModel,
+      durationMs: messageRequest.durationMs,
+      costUsd: messageRequest.costUsd,
+      costMultiplier: messageRequest.costMultiplier,
+      sessionId: messageRequest.sessionId,
+      userAgent: messageRequest.userAgent,
+      messagesCount: messageRequest.messagesCount,
+      statusCode: messageRequest.statusCode,
+      inputTokens: messageRequest.inputTokens,
+      outputTokens: messageRequest.outputTokens,
+      cacheCreationInputTokens: messageRequest.cacheCreationInputTokens,
+      cacheReadInputTokens: messageRequest.cacheReadInputTokens,
+      errorMessage: messageRequest.errorMessage,
+      providerChain: messageRequest.providerChain,
+      blockedBy: messageRequest.blockedBy,
+      blockedReason: messageRequest.blockedReason,
+      createdAt: messageRequest.createdAt,
+      updatedAt: messageRequest.updatedAt,
+      deletedAt: messageRequest.deletedAt,
+    })
+    .from(messageRequest)
+    .where(and(eq(messageRequest.sessionId, sessionId), isNull(messageRequest.deletedAt)))
+    .orderBy(desc(messageRequest.createdAt))
+    .limit(1);
+
+  if (!result) return null;
+  return toMessageRequest(result);
+}
+
+/**
+ * 聚合查询指定 session 的所有请求数据
+ * 返回总成本、总 Token、请求次数、供应商列表等
+ *
+ * @param sessionId - Session ID
+ * @returns 聚合统计数据，如果 session 不存在返回 null
+ */
+export async function aggregateSessionStats(sessionId: string): Promise<{
+  sessionId: string;
+  requestCount: number;
+  totalCostUsd: string;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCacheCreationTokens: number;
+  totalCacheReadTokens: number;
+  totalDurationMs: number;
+  firstRequestAt: Date | null;
+  lastRequestAt: Date | null;
+  providers: Array<{ id: number; name: string }>;
+  models: string[];
+  userName: string;
+  userId: number;
+  keyName: string;
+  keyId: number;
+  userAgent: string | null;
+  apiType: string | null;
+} | null> {
+  // 1. 聚合统计
+  const [stats] = await db
+    .select({
+      requestCount: sql<number>`count(*)::int`,
+      totalCostUsd: sql<string>`COALESCE(sum(${messageRequest.costUsd}), 0)`,
+      totalInputTokens: sql<number>`COALESCE(sum(${messageRequest.inputTokens}), 0)::int`,
+      totalOutputTokens: sql<number>`COALESCE(sum(${messageRequest.outputTokens}), 0)::int`,
+      totalCacheCreationTokens: sql<number>`COALESCE(sum(${messageRequest.cacheCreationInputTokens}), 0)::int`,
+      totalCacheReadTokens: sql<number>`COALESCE(sum(${messageRequest.cacheReadInputTokens}), 0)::int`,
+      totalDurationMs: sql<number>`COALESCE(sum(${messageRequest.durationMs}), 0)::int`,
+      firstRequestAt: sql<Date>`min(${messageRequest.createdAt})`,
+      lastRequestAt: sql<Date>`max(${messageRequest.createdAt})`,
+    })
+    .from(messageRequest)
+    .where(and(eq(messageRequest.sessionId, sessionId), isNull(messageRequest.deletedAt)));
+
+  if (!stats || stats.requestCount === 0) {
+    return null;
+  }
+
+  // 2. 查询供应商列表（去重）
+  const providerList = await db
+    .selectDistinct({
+      providerId: messageRequest.providerId,
+      providerName: providers.name,
+    })
+    .from(messageRequest)
+    .leftJoin(providers, eq(messageRequest.providerId, providers.id))
+    .where(
+      and(
+        eq(messageRequest.sessionId, sessionId),
+        isNull(messageRequest.deletedAt),
+        sql`${messageRequest.providerId} IS NOT NULL`
+      )
+    );
+
+  // 3. 查询模型列表（去重）
+  const modelList = await db
+    .selectDistinct({ model: messageRequest.model })
+    .from(messageRequest)
+    .where(
+      and(
+        eq(messageRequest.sessionId, sessionId),
+        isNull(messageRequest.deletedAt),
+        sql`${messageRequest.model} IS NOT NULL`
+      )
+    );
+
+  // 4. 获取用户信息（第一条请求）
+  const [userInfo] = await db
+    .select({
+      userName: users.name,
+      userId: users.id,
+      keyName: keysTable.name,
+      keyId: keysTable.id,
+      userAgent: messageRequest.userAgent,
+      apiType: messageRequest.apiType,
+    })
+    .from(messageRequest)
+    .innerJoin(users, eq(messageRequest.userId, users.id))
+    .innerJoin(keysTable, eq(messageRequest.key, keysTable.key))
+    .where(and(eq(messageRequest.sessionId, sessionId), isNull(messageRequest.deletedAt)))
+    .orderBy(messageRequest.createdAt)
+    .limit(1);
+
+  if (!userInfo) {
+    return null;
+  }
+
+  return {
+    sessionId,
+    requestCount: stats.requestCount,
+    totalCostUsd: stats.totalCostUsd,
+    totalInputTokens: stats.totalInputTokens,
+    totalOutputTokens: stats.totalOutputTokens,
+    totalCacheCreationTokens: stats.totalCacheCreationTokens,
+    totalCacheReadTokens: stats.totalCacheReadTokens,
+    totalDurationMs: stats.totalDurationMs,
+    firstRequestAt: stats.firstRequestAt,
+    lastRequestAt: stats.lastRequestAt,
+    providers: providerList.map((p) => ({
+      id: p.providerId!,
+      name: p.providerName || "未知",
+    })),
+    models: modelList.map((m) => m.model!),
+    userName: userInfo.userName,
+    userId: userInfo.userId,
+    keyName: userInfo.keyName,
+    keyId: userInfo.keyId,
+    userAgent: userInfo.userAgent,
+    apiType: userInfo.apiType,
+  };
 }
 
 /**
