@@ -122,7 +122,7 @@ export function formatProviderTimeline(chain: ProviderChainItem[]): {
     const elapsed = item.timestamp ? item.timestamp - startTime : 0;
 
     if (i > 0) {
-      timeline += "\n\n├────────────────────────────────────────────┤\n\n";
+      timeline += "\n\n├──────────────┤\n\n";
     }
 
     // === 时间戳 ===
@@ -207,6 +207,22 @@ export function formatProviderTimeline(chain: ProviderChainItem[]): {
 
       timeline += `剩余候选: ${ctx.afterHealthCheck}个\n`;
       timeline += `选择: ${item.name}`;
+      continue;
+    }
+
+    // === 重试失败（上游 API 错误、超时等） ===
+    if (item.reason === "retry_failed") {
+      timeline += `❌ 第 ${item.attemptNumber} 次尝试失败\n\n`;
+      timeline += `供应商: ${item.name}\n`;
+
+      // 显示完整错误信息（这是最关键的调试信息）
+      if (item.errorMessage) {
+        timeline += `错误详情:\n`;
+        timeline += `${item.errorMessage}\n`;
+      } else {
+        timeline += `错误: 未知\n`;
+      }
+
       continue;
     }
 

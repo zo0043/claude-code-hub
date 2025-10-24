@@ -41,8 +41,8 @@ export function ProviderChainPopover({ chain, finalProvider }: ProviderChainPopo
             <Badge variant="outline">{chain.length}次</Badge>
           </div>
 
-          <div className="rounded-md border bg-muted/50 p-4 max-h-[300px] overflow-y-auto">
-            <pre className="text-xs whitespace-pre-wrap leading-relaxed">
+          <div className="rounded-md border bg-muted/50 p-4 max-h-[300px] overflow-y-auto overflow-x-hidden">
+            <pre className="text-xs whitespace-pre-wrap break-words leading-relaxed">
               {formatProviderDescription(chain)}
             </pre>
           </div>

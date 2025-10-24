@@ -312,8 +312,8 @@ export function ErrorDetailsDialog({
                 const { timeline, totalDuration } = formatProviderTimeline(providerChain);
                 return (
                   <>
-                    <div className="rounded-md border bg-muted/50 p-4 max-h-[500px] overflow-y-auto">
-                      <pre className="text-xs whitespace-pre-wrap font-mono leading-relaxed">
+                    <div className="rounded-md border bg-muted/50 p-4 max-h-[500px] overflow-y-auto overflow-x-hidden">
+                      <pre className="text-xs whitespace-pre-wrap break-words font-mono leading-relaxed">
                         {timeline}
                       </pre>
                     </div>
