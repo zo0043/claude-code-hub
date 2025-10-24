@@ -8,10 +8,9 @@ import { SessionManager } from "@/lib/session-manager";
  * @param sessionId - Session ID
  * @returns 响应体内容或错误信息
  */
-export async function getSessionResponse(sessionId: string): Promise<
-  | { ok: true; data: string }
-  | { ok: false; error: string }
-> {
+export async function getSessionResponse(
+  sessionId: string
+): Promise<{ ok: true; data: string } | { ok: false; error: string }> {
   try {
     const response = await SessionManager.getSessionResponse(sessionId);
 

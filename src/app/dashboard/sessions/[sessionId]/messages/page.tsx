@@ -21,7 +21,10 @@ export default function SessionMessagesPage() {
 
   const [messages, setMessages] = useState<unknown | null>(null);
   const [response, setResponse] = useState<string | null>(null);
-  const [sessionStats, setSessionStats] = useState<Extract<Awaited<ReturnType<typeof getSessionDetails>>, { ok: true }>["data"]["sessionStats"]>(null);
+  const [sessionStats, setSessionStats] =
+    useState<
+      Extract<Awaited<ReturnType<typeof getSessionDetails>>, { ok: true }>["data"]["sessionStats"]
+    >(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copiedMessages, setCopiedMessages] = useState(false);
@@ -125,7 +128,12 @@ export default function SessionMessagesPage() {
         {/* 操作按钮 */}
         {messages !== null && (
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleCopyMessages} disabled={copiedMessages}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCopyMessages}
+              disabled={copiedMessages}
+            >
               {copiedMessages ? (
                 <>
                   <Check className="h-4 w-4 mr-2" />

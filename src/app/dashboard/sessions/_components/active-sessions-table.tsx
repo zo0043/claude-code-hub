@@ -108,10 +108,16 @@ export function ActiveSessionsTable({
                   </TableCell>
                   <TableCell>{session.userName}</TableCell>
                   <TableCell className="font-mono text-xs">{session.keyName}</TableCell>
-                  <TableCell className="max-w-[120px] truncate" title={session.providerName || undefined}>
+                  <TableCell
+                    className="max-w-[120px] truncate"
+                    title={session.providerName || undefined}
+                  >
                     {session.providerName || "-"}
                   </TableCell>
-                  <TableCell className="font-mono text-xs max-w-[150px] truncate" title={session.model || undefined}>
+                  <TableCell
+                    className="font-mono text-xs max-w-[150px] truncate"
+                    title={session.model || undefined}
+                  >
                     {session.model || "-"}
                   </TableCell>
                   <TableCell className="text-center">

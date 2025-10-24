@@ -27,7 +27,10 @@ export function formatProviderSummary(chain: ProviderChainItem[]): string {
 
   // 多次重试
   if (chain.length > 1) {
-    const failed = chain.slice(0, -1).map((c) => c.name).join(",");
+    const failed = chain
+      .slice(0, -1)
+      .map((c) => c.name)
+      .join(",");
     const success = chain[chain.length - 1];
     return `${failed}失败→重试${success.name}✓`;
   }

@@ -141,7 +141,9 @@ export async function getSessionDetails(sessionId: string): Promise<
   ActionResult<{
     messages: unknown | null;
     response: string | null;
-    sessionStats: Awaited<ReturnType<typeof import("@/repository/message").aggregateSessionStats>> | null;
+    sessionStats: Awaited<
+      ReturnType<typeof import("@/repository/message").aggregateSessionStats>
+    > | null;
   }>
 > {
   try {

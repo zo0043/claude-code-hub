@@ -183,10 +183,7 @@ export class SessionManager {
     // 1. 优先使用客户端传递的 session_id (来自 metadata.user_id 或 metadata.session_id)
     if (clientSessionId) {
       // 2. 短上下文并发检测（方案E）
-      if (
-        this.ENABLE_SHORT_CONTEXT_DETECTION &&
-        messagesLength <= this.SHORT_CONTEXT_THRESHOLD
-      ) {
+      if (this.ENABLE_SHORT_CONTEXT_DETECTION && messagesLength <= this.SHORT_CONTEXT_THRESHOLD) {
         // 检查该 session 是否有其他请求正在运行
         const concurrentCount = await SessionTracker.getConcurrentCount(clientSessionId);
 

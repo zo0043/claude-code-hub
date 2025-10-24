@@ -99,23 +99,25 @@ export class ProxyProviderResolver {
             circuitState: getCircuitState(session.provider.id),
             attemptNumber: attempt + 1,
             errorMessage: checkResult.reason || "并发限制已达到",
-            decisionContext: failedContext ? {
-              ...failedContext,
-              concurrentLimit: limit,
-              currentConcurrent: checkResult.count,
-            } : {
-              totalProviders: 0,
-              enabledProviders: 0,
-              targetType: targetProviderType,
-              groupFilterApplied: false,
-              beforeHealthCheck: 0,
-              afterHealthCheck: 0,
-              priorityLevels: [],
-              selectedPriority: 0,
-              candidatesAtPriority: [],
-              concurrentLimit: limit,
-              currentConcurrent: checkResult.count,
-            },
+            decisionContext: failedContext
+              ? {
+                  ...failedContext,
+                  concurrentLimit: limit,
+                  currentConcurrent: checkResult.count,
+                }
+              : {
+                  totalProviders: 0,
+                  enabledProviders: 0,
+                  targetType: targetProviderType,
+                  groupFilterApplied: false,
+                  beforeHealthCheck: 0,
+                  afterHealthCheck: 0,
+                  priorityLevels: [],
+                  selectedPriority: 0,
+                  candidatesAtPriority: [],
+                  concurrentLimit: limit,
+                  currentConcurrent: checkResult.count,
+                },
           });
 
           // 加入排除列表
@@ -284,7 +286,10 @@ export class ProxyProviderResolver {
     session?: ProxySession,
     excludeIds: number[] = [], // 排除已失败的供应商
     targetProviderType: "claude" | "codex" = "claude" // 目标供应商类型
-  ): Promise<{ provider: Provider | null; context: NonNullable<ProviderChainItem["decisionContext"]> }> {
+  ): Promise<{
+    provider: Provider | null;
+    context: NonNullable<ProviderChainItem["decisionContext"]>;
+  }> {
     const allProviders = await findProviderList();
 
     // === 初始化决策上下文 ===

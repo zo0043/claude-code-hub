@@ -109,7 +109,15 @@ export class ProxySession {
           : null,
     };
 
-    return new ProxySession({ startTime, method, requestUrl, headers, headerLog, request, userAgent });
+    return new ProxySession({
+      startTime,
+      method,
+      requestUrl,
+      headers,
+      headerLog,
+      request,
+      userAgent,
+    });
   }
 
   setAuthState(state: AuthState): void {
@@ -175,8 +183,17 @@ export class ProxySession {
   addProviderToChain(
     provider: Provider,
     metadata?: {
-      reason?: "session_reuse" | "initial_selection" | "concurrent_limit_failed" | "retry_success" | "retry_failed";
-      selectionMethod?: "session_reuse" | "weighted_random" | "group_filtered" | "fail_open_fallback";
+      reason?:
+        | "session_reuse"
+        | "initial_selection"
+        | "concurrent_limit_failed"
+        | "retry_success"
+        | "retry_failed";
+      selectionMethod?:
+        | "session_reuse"
+        | "weighted_random"
+        | "group_filtered"
+        | "fail_open_fallback";
       circuitState?: "closed" | "open" | "half-open";
       attemptNumber?: number;
       errorMessage?: string; // 错误信息（失败时记录）

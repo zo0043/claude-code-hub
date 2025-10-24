@@ -6,24 +6,18 @@ import { logger } from "@/lib/logger";
  */
 export const EnvSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-  DSN: z.preprocess(
-    (val) => {
-      // 构建时如果 DSN 为空或是占位符,转为 undefined
-      if (!val || typeof val !== "string") return undefined;
-      if (val.includes("user:password@host:port")) return undefined; // 占位符模板
-      return val;
-    },
-    z.string().url("数据库URL格式无效").optional()
-  ),
-  ADMIN_TOKEN: z.preprocess(
-    (val) => {
-      // 空字符串或 "change-me" 占位符转为 undefined
-      if (!val || typeof val !== "string") return undefined;
-      if (val === "change-me") return undefined;
-      return val;
-    },
-    z.string().min(1, "管理员令牌不能为空").optional()
-  ),
+  DSN: z.preprocess((val) => {
+    // 构建时如果 DSN 为空或是占位符,转为 undefined
+    if (!val || typeof val !== "string") return undefined;
+    if (val.includes("user:password@host:port")) return undefined; // 占位符模板
+    return val;
+  }, z.string().url("数据库URL格式无效").optional()),
+  ADMIN_TOKEN: z.preprocess((val) => {
+    // 空字符串或 "change-me" 占位符转为 undefined
+    if (!val || typeof val !== "string") return undefined;
+    if (val === "change-me") return undefined;
+    return val;
+  }, z.string().min(1, "管理员令牌不能为空").optional()),
   AUTO_MIGRATE: z.coerce.boolean().default(true),
   PORT: z.coerce.number().default(23000),
   REDIS_URL: z.string().optional(),
