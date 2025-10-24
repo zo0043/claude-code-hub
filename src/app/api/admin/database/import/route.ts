@@ -52,10 +52,7 @@ export async function POST(request: Request) {
 
     // 4. 验证文件类型
     if (!file.name.endsWith(".dump")) {
-      return Response.json(
-        { error: "文件格式错误，仅支持 .dump 格式的备份文件" },
-        { status: 400 }
-      );
+      return Response.json({ error: "文件格式错误，仅支持 .dump 格式的备份文件" }, { status: 400 });
     }
 
     logger.info({
