@@ -236,9 +236,7 @@ export class ProxySession {
    * 检查是否发生了模型重定向
    */
   isModelRedirected(): boolean {
-    return (
-      this.originalModelName !== null && this.originalModelName !== this.request.model
-    );
+    return this.originalModelName !== null && this.originalModelName !== this.request.model;
   }
 }
 
