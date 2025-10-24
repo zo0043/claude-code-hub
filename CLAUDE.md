@@ -44,6 +44,51 @@ docker compose pull && docker compose up -d  # 升级到最新版本
 docker compose down              # 停止并删除容器
 ```
 
+### 本地开发工具（推荐）
+
+本项目提供了完整的本地开发工具集（位于 `dev/` 目录），可以快速启动开发环境、测试部署流程和清理资源。
+
+**快速开始**：
+```bash
+cd dev
+make help      # 查看所有可用命令
+make dev       # 一键启动完整开发环境
+```
+
+**常用命令**：
+```bash
+# 环境管理
+make dev          # 启动完整开发环境 (DB + pnpm dev)
+make db           # 仅启动数据库和 Redis
+make stop         # 停止所有服务
+make status       # 查看服务状态
+
+# 镜像构建和测试
+make build        # 构建 Docker 镜像
+make compose      # 启动三容器完整编排
+
+# 数据库操作
+make migrate      # 执行数据库迁移
+make db-shell     # 进入 PostgreSQL shell
+make redis-shell  # 进入 Redis CLI
+
+# 日志查看
+make logs         # 查看所有服务日志
+make logs-app     # 查看应用日志
+
+# 清理和重置
+make clean        # 一键清理所有资源
+make reset        # 完全重置 (clean + dev)
+```
+
+**开发环境配置**：
+- PostgreSQL: `localhost:5433` (避免与本地 5432 冲突)
+- Redis: `localhost:6380` (避免与本地 6379 冲突)
+- 应用: `http://localhost:13500` (Turbopack 开发服务器)
+- 管理员 Token: `dev-admin-token`
+
+**完整文档**: 详见 `dev/README.md`
+
 ## 核心技术栈
 
 - **Next.js 15** (App Router) + **React 19** + **TypeScript**
