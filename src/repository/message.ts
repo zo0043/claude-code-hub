@@ -22,6 +22,7 @@ export async function createMessageRequest(
     model: data.model,
     durationMs: data.duration_ms,
     costUsd: formattedCost ?? undefined,
+    costMultiplier: data.cost_multiplier?.toString() ?? undefined, // 新增：供应商倍率（转为字符串）
     sessionId: data.session_id, // 新增：Session ID
   };
 
@@ -33,6 +34,7 @@ export async function createMessageRequest(
     model: messageRequest.model,
     durationMs: messageRequest.durationMs,
     costUsd: messageRequest.costUsd,
+    costMultiplier: messageRequest.costMultiplier, // 新增
     sessionId: messageRequest.sessionId, // 新增
     createdAt: messageRequest.createdAt,
     updatedAt: messageRequest.updatedAt,

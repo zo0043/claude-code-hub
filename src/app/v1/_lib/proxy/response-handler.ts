@@ -99,7 +99,8 @@ export class ProxyResponseHandler {
         if (usageRecord && usageMetrics && messageContext) {
           await updateRequestCostFromUsage(
             messageContext.id,
-            session.request.model,
+            session.getOriginalModel(),
+            session.getCurrentModel(),
             usageMetrics,
             provider.costMultiplier
           );
@@ -291,7 +292,8 @@ export class ProxyResponseHandler {
 
         await updateRequestCostFromUsage(
           messageContext.id,
-          session.request.model,
+          session.getOriginalModel(),
+          session.getCurrentModel(),
           usageForCost,
           provider.costMultiplier
         );
@@ -388,20 +390,84 @@ function extractUsageMetrics(value: unknown): UsageMetrics | null {
 
 async function updateRequestCostFromUsage(
   messageId: number,
-  modelName: string | null,
+  originalModel: string | null,
+  redirectedModel: string | null,
   usage: UsageMetrics | null,
   costMultiplier: number = 1.0
 ): Promise<void> {
-  if (!modelName || !usage) {
+  if (!usage) {
+    logger.warn("[CostCalculation] No usage data, skipping cost update", { messageId });
     return;
   }
 
-  const priceData = await findLatestPriceByModel(modelName);
-  if (priceData?.priceData) {
-    const cost = calculateRequestCost(usage, priceData.priceData, costMultiplier);
-    if (cost.gt(0)) {
-      await updateMessageRequestCost(messageId, cost);
+  if (!originalModel && !redirectedModel) {
+    logger.warn("[CostCalculation] No model name available", { messageId });
+    return;
+  }
+
+  // Fallback 逻辑：优先原始模型，找不到则用重定向模型
+  let priceData = null;
+  let usedModelForPricing = null;
+
+  // Step 1: 尝试原始模型
+  if (originalModel) {
+    priceData = await findLatestPriceByModel(originalModel);
+    if (priceData?.priceData) {
+      usedModelForPricing = originalModel;
+      logger.debug("[CostCalculation] Using original model for pricing", {
+        messageId,
+        model: originalModel,
+      });
     }
+  }
+
+  // Step 2: Fallback 到重定向模型
+  if (!priceData && redirectedModel && redirectedModel !== originalModel) {
+    priceData = await findLatestPriceByModel(redirectedModel);
+    if (priceData?.priceData) {
+      usedModelForPricing = redirectedModel;
+      logger.warn("[CostCalculation] Original model price not found, using redirected model", {
+        messageId,
+        originalModel,
+        redirectedModel,
+      });
+    }
+  }
+
+  // Step 3: 完全失败
+  if (!priceData?.priceData) {
+    logger.error("[CostCalculation] No price data found for any model", {
+      messageId,
+      originalModel,
+      redirectedModel,
+      note: "Cost will be $0. Please check price table or model name.",
+    });
+    return;
+  }
+
+  // 计算费用
+  const cost = calculateRequestCost(usage, priceData.priceData, costMultiplier);
+
+  logger.info("[CostCalculation] Cost calculated successfully", {
+    messageId,
+    usedModelForPricing,
+    costUsd: cost.toString(),
+    costMultiplier,
+    usage,
+  });
+
+  if (cost.gt(0)) {
+    await updateMessageRequestCost(messageId, cost);
+  } else {
+    logger.warn("[CostCalculation] Calculated cost is zero or negative", {
+      messageId,
+      usedModelForPricing,
+      costUsd: cost.toString(),
+      priceData: {
+        inputCost: priceData.priceData.input_cost_per_token,
+        outputCost: priceData.priceData.output_cost_per_token,
+      },
+    });
   }
 }
 

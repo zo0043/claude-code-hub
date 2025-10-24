@@ -53,6 +53,9 @@ export class ProxySession {
   originalFormat: "response" | "openai" | "claude" = "claude";
   providerType: "claude" | "codex" | null = null;
 
+  // 模型重定向追踪：保存原始模型名（重定向前）
+  private originalModelName: string | null = null;
+
   // 上游决策链（记录尝试的供应商列表）
   private providerChain: ProviderChainItem[];
 
@@ -202,6 +205,40 @@ export class ProxySession {
    */
   getProviderChain(): ProviderChainItem[] {
     return this.providerChain;
+  }
+
+  /**
+   * 获取原始模型（用户请求的，用于计费）
+   * 如果没有发生重定向，返回当前模型
+   */
+  getOriginalModel(): string | null {
+    return this.originalModelName ?? this.request.model;
+  }
+
+  /**
+   * 获取当前模型（可能已重定向，用于转发）
+   */
+  getCurrentModel(): string | null {
+    return this.request.model;
+  }
+
+  /**
+   * 设置原始模型（在重定向前调用）
+   * 只能设置一次，避免多次重定向覆盖
+   */
+  setOriginalModel(model: string | null): void {
+    if (this.originalModelName === null) {
+      this.originalModelName = model;
+    }
+  }
+
+  /**
+   * 检查是否发生了模型重定向
+   */
+  isModelRedirected(): boolean {
+    return (
+      this.originalModelName !== null && this.originalModelName !== this.request.model
+    );
   }
 }
 

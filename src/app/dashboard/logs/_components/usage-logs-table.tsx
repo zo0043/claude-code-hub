@@ -9,6 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import type { UsageLogRow } from "@/repository/usage-logs";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -121,13 +122,34 @@ export function UsageLogsTable({
                         <span className="h-1.5 w-1.5 rounded-full bg-orange-600 dark:bg-orange-400" />
                         被拦截
                       </span>
-                    ) : log.providerChain && log.providerChain.length > 0 ? (
-                      <ProviderChainPopover
-                        chain={log.providerChain}
-                        finalProvider={log.providerName || "未知"}
-                      />
                     ) : (
-                      log.providerName || "-"
+                      <div className="flex items-center gap-2">
+                        {log.providerChain && log.providerChain.length > 0 ? (
+                          <ProviderChainPopover
+                            chain={log.providerChain}
+                            finalProvider={log.providerName || "未知"}
+                          />
+                        ) : (
+                          <span>{log.providerName || "-"}</span>
+                        )}
+                        {/* 显示供应商倍率 Badge（不为 1.0 时） */}
+                        {log.costMultiplier && parseFloat(log.costMultiplier) !== 1.0 && (
+                          <Badge
+                            variant={
+                              parseFloat(log.costMultiplier) > 1.0
+                                ? "destructive" // 加价，红色
+                                : "secondary" // 折扣，灰色
+                            }
+                            className={
+                              parseFloat(log.costMultiplier) < 1.0
+                                ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800" // 折扣用绿色
+                                : undefined
+                            }
+                          >
+                            ×{parseFloat(log.costMultiplier).toFixed(2)}
+                          </Badge>
+                        )}
+                      </div>
                     )}
                   </TableCell>
                   <TableCell className="font-mono text-xs">{log.model || "-"}</TableCell>

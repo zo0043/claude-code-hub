@@ -33,6 +33,7 @@ export interface UsageLogRow {
   cacheReadInputTokens: number | null;
   totalTokens: number;
   costUsd: string | null;
+  costMultiplier: string | null; // 新增：供应商倍率
   durationMs: number | null;
   errorMessage: string | null;
   providerChain: ProviderChainItem[] | null;
@@ -190,6 +191,7 @@ export async function findUsageLogsWithDetails(filters: UsageLogFilters): Promis
       cacheCreationInputTokens: messageRequest.cacheCreationInputTokens,
       cacheReadInputTokens: messageRequest.cacheReadInputTokens,
       costUsd: messageRequest.costUsd,
+      costMultiplier: messageRequest.costMultiplier, // 新增：供应商倍率
       durationMs: messageRequest.durationMs,
       errorMessage: messageRequest.errorMessage,
       providerChain: messageRequest.providerChain,

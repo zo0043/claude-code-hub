@@ -43,6 +43,9 @@ export class ModelRedirector {
       `[ModelRedirector] Redirecting model: "${originalModel}" → "${redirectedModel}" (provider ${provider.id})`
     );
 
+    // 保存原始模型（用于计费，必须在修改 request.model 之前）
+    session.setOriginalModel(originalModel);
+
     // 修改 message 对象中的模型
     session.request.message.model = redirectedModel;
 

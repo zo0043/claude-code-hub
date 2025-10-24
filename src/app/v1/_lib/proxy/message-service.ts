@@ -24,6 +24,7 @@ export class ProxyMessageService {
       key: authState.apiKey,
       model: session.request.model ?? undefined,
       session_id: session.sessionId ?? undefined, // 新增：传入 session_id
+      cost_multiplier: provider.costMultiplier, // 新增：传入 cost_multiplier
     });
 
     session.setMessageContext({

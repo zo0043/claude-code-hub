@@ -112,6 +112,9 @@ export const messageRequest = pgTable('message_request', {
   durationMs: integer('duration_ms'),
   costUsd: numeric('cost_usd', { precision: 21, scale: 15 }).default('0'),
 
+  // 供应商倍率（用于日志展示，记录该请求使用的 cost_multiplier）
+  costMultiplier: numeric('cost_multiplier', { precision: 10, scale: 4 }),
+
   // Session ID（用于会话粘性和日志追踪）
   sessionId: varchar('session_id', { length: 64 }),
 

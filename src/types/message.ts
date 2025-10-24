@@ -42,6 +42,9 @@ export interface MessageRequest {
   durationMs?: number;
   costUsd?: string; // 单次请求费用（美元），保持高精度字符串表示
 
+  // 供应商倍率（记录该请求使用的 cost_multiplier）
+  costMultiplier?: number;
+
   // Session ID（用于会话粘性和日志追踪）
   sessionId?: string;
 
@@ -75,6 +78,9 @@ export interface CreateMessageRequestData {
   model?: string;
   duration_ms?: number;
   cost_usd?: Numeric; // 单次请求费用（美元），支持高精度
+
+  // 供应商倍率（记录该请求使用的 cost_multiplier）
+  cost_multiplier?: number;
 
   // Session ID（用于会话粘性和日志追踪）
   session_id?: string;
