@@ -49,6 +49,7 @@ docker compose down              # 停止并删除容器
 本项目提供了完整的本地开发工具集（位于 `dev/` 目录），可以快速启动开发环境、测试部署流程和清理资源。
 
 **快速开始**：
+
 ```bash
 cd dev
 make help      # 查看所有可用命令
@@ -56,6 +57,7 @@ make dev       # 一键启动完整开发环境
 ```
 
 **常用命令**：
+
 ```bash
 # 环境管理
 make dev          # 启动完整开发环境 (DB + pnpm dev)
@@ -82,6 +84,7 @@ make reset        # 完全重置 (clean + dev)
 ```
 
 **开发环境配置**：
+
 - PostgreSQL: `localhost:5433` (避免与本地 5432 冲突)
 - Redis: `localhost:6380` (避免与本地 6379 冲突)
 - 应用: `http://localhost:13500` (Turbopack 开发服务器)
