@@ -55,4 +55,7 @@ logs/
 # docker volumes data
 /data/*
 !/data/.gitkeep
-!/data/README.mddev/
+!/data/README.md
+
+# dev tools (local development utilities)
+/dev/
