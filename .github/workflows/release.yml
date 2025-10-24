@@ -146,6 +146,35 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm format
 
+      - name: Update seed price table
+        if: steps.check.outputs.needs_bump == 'true'
+        continue-on-error: true
+        run: |
+          echo "📦 正在下载最新的 LiteLLM 价格表..."
+
+          # 确保目录存在
+          mkdir -p public/seed
+
+          # 下载最新价格表
+          if curl -sSL -f "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json" -o public/seed/litellm-prices.json; then
+            echo "✅ 价格表下载成功"
+
+            # 验证 JSON 格式
+            if node -e "JSON.parse(require('fs').readFileSync('public/seed/litellm-prices.json', 'utf-8'))"; then
+              echo "✅ JSON 格式验证通过"
+
+              # 显示统计信息
+              TOTAL_MODELS=$(node -e "console.log(Object.keys(JSON.parse(require('fs').readFileSync('public/seed/litellm-prices.json', 'utf-8'))).length)")
+              CLAUDE_MODELS=$(node -e "console.log(Object.keys(JSON.parse(require('fs').readFileSync('public/seed/litellm-prices.json', 'utf-8'))).filter(m => m.toLowerCase().startsWith('claude-')).length)")
+              echo "📊 价格表统计: 总模型数 $TOTAL_MODELS, Claude 模型 $CLAUDE_MODELS"
+            else
+              echo "❌ JSON 格式验证失败，保留旧文件"
+              git checkout public/seed/litellm-prices.json
+            fi
+          else
+            echo "⚠️  价格表下载失败，保留现有文件"
+          fi
+
       - name: Commit VERSION and formatted code
         if: steps.check.outputs.needs_bump == 'true'
         run: |
@@ -153,7 +182,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # 添加所有更改（VERSION文件 + 格式化后的代码）
+          # 添加所有更改（VERSION文件 + 格式化后的代码 + 价格表）
           git add -A
 
           # 检查是否有更改需要提交

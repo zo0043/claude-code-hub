@@ -41,7 +41,7 @@ function PageLoadingOverlay({ active }: PageLoadingOverlayProps) {
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/80 backdrop-blur-sm">
       <div className="flex items-center gap-3 rounded-lg bg-card/90 px-5 py-4 shadow-lg ring-1 ring-border/40">
         <Loader2 className="h-5 w-5 animate-spin text-primary" />
-        <span className="text-sm text-muted-foreground">正在导入模型价格...</span>
+        <span className="text-sm text-muted-foreground">正在更新模型价格...</span>
       </div>
     </div>,
     document.body
@@ -107,15 +107,15 @@ export function UploadPriceDialog({
       }
 
       if (!response.data) {
-        toast.error("价格表上传成功但未返回处理结果");
+        toast.error("价格表更新成功但未返回处理结果");
         return;
       }
 
       setResult(response.data);
-      toast.success("价格表上传成功");
+      toast.success("价格表更新成功");
     } catch (error) {
-      console.error("上传失败:", error);
-      toast.error("上传失败，请重试");
+      console.error("更新失败:", error);
+      toast.error("更新失败，请重试");
     } finally {
       setUploading(false);
       // 清除文件输入
@@ -148,7 +148,7 @@ export function UploadPriceDialog({
         <DialogTrigger asChild>
           <Button variant="outline" size="sm" disabled={uploading}>
             <Upload className="h-4 w-4 mr-2" />
-            上传价格表
+            更新价格表
           </Button>
         </DialogTrigger>
         <DialogContent
@@ -165,11 +165,11 @@ export function UploadPriceDialog({
           }}
         >
           <DialogHeader>
-            <DialogTitle>{isRequired ? "请务必先上传价格表" : "上传模型价格表"}</DialogTitle>
+            <DialogTitle>{isRequired ? "更新模型价格表" : "更新模型价格表"}</DialogTitle>
             <DialogDescription>
               {isRequired
-                ? "系统检测到尚未配置模型价格，请选择包含模型价格数据的JSON文件进行上传"
-                : "选择包含模型价格数据的JSON文件进行上传"}
+                ? "选择包含模型价格数据的 JSON 文件以更新价格表"
+                : "选择包含模型价格数据的 JSON 文件以更新价格表"}
             </DialogDescription>
           </DialogHeader>
 
@@ -184,7 +184,7 @@ export function UploadPriceDialog({
                   </div>
                   <label htmlFor="price-file-input">
                     <Button variant="secondary" size="sm" disabled={uploading} asChild>
-                      <span>{uploading ? "上传中..." : "选择文件"}</span>
+                      <span>{uploading ? "更新中..." : "选择文件"}</span>
                     </Button>
                   </label>
                   <input
@@ -199,7 +199,7 @@ export function UploadPriceDialog({
               </div>
 
               <div className="text-xs text-muted-foreground space-y-1">
-                <p>• 推荐使用左侧&quot;同步 LiteLLM 价格&quot;按钮自动获取最新价格</p>
+                <p>• 系统已内置 LiteLLM 价格表，如需更新可使用左侧&quot;同步 LiteLLM 价格&quot;按钮</p>
                 <p>
                   • 也可以手动下载{" "}
                   <a
@@ -208,9 +208,9 @@ export function UploadPriceDialog({
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    LiteLLM 价格表
+                    最新价格表
                   </a>{" "}
-                  并上传
+                  并通过此按钮更新
                 </p>
                 <p>• 支持 Claude 和 OpenAI 模型（claude-, gpt-, o1-, o3- 前缀）</p>
               </div>

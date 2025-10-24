@@ -139,7 +139,7 @@ export function PriceList({ prices }: PriceListProps) {
                       <>
                         <Package className="h-8 w-8 opacity-50" />
                         <p>暂无价格数据</p>
-                        <p className="text-sm">请上传价格表JSON文件</p>
+                        <p className="text-sm">系统已内置价格表，请通过上方按钮同步或更新</p>
                       </>
                     )}
                   </div>

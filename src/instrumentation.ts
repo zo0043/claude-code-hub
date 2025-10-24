@@ -25,6 +25,10 @@ export async function register() {
       // 执行迁移
       await runMigrations();
 
+      // 初始化价格表（如果数据库为空）
+      const { ensurePriceTable } = await import("@/lib/price-sync/seed-initializer");
+      await ensurePriceTable();
+
       logger.info("Application ready");
     }
   }
