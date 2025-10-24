@@ -109,8 +109,13 @@ function analyzeRestoreErrors(errors: string[]): {
   fatalCount: number;
   summary: string;
 } {
-  // 可忽略的错误模式（对象已存在）
-  const ignorablePatterns = [/already exists/i, /multiple primary keys/i, /duplicate key value/i];
+  // 可忽略的错误模式（对象已存在、角色不存在）
+  const ignorablePatterns = [
+    /already exists/i,
+    /multiple primary keys/i,
+    /duplicate key value/i,
+    /role .* does not exist/i, // 角色不存在（使用 --no-owner 时可忽略）
+  ];
 
   // 致命错误模式
   const fatalPatterns = [
@@ -180,7 +185,7 @@ export function executePgRestore(
 
   // 覆盖模式：清除现有数据
   if (cleanFirst) {
-    args.push("--clean", "--if-exists");
+    args.push("--clean", "--if-exists", "--no-owner");
   }
 
   // 直接指定文件路径（比 stdin 更高效，避免额外的流处理）
