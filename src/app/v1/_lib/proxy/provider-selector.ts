@@ -6,6 +6,7 @@ import { isCircuitOpen, getCircuitState } from "@/lib/circuit-breaker";
 import { ProxyResponses } from "./responses";
 import { logger } from "@/lib/logger";
 import type { ProxySession } from "./session";
+import type { ProviderChainItem } from "@/types/message";
 
 export class ProxyProviderResolver {
   static async ensure(
@@ -16,28 +17,50 @@ export class ProxyProviderResolver {
     const MAX_RETRIES = 3;
     const excludedProviders: number[] = [];
 
-    // 标记选择方法
-    let selectionMethod: "reuse" | "random" | "group_filter" | "fallback" = "random";
-
-    // 尝试复用之前的供应商（基于 session）
+    // === 会话复用 ===
     const reusedProvider = await ProxyProviderResolver.findReusable(session, targetProviderType);
     if (reusedProvider) {
       session.setProvider(reusedProvider);
-      selectionMethod = "reuse";
+
+      // 记录会话复用上下文
+      session.addProviderToChain(reusedProvider, {
+        reason: "session_reuse",
+        selectionMethod: "session_reuse",
+        circuitState: getCircuitState(reusedProvider.id),
+        decisionContext: {
+          totalProviders: 0, // 复用不需要筛选
+          enabledProviders: 0,
+          targetType: targetProviderType,
+          groupFilterApplied: false,
+          beforeHealthCheck: 0,
+          afterHealthCheck: 0,
+          priorityLevels: [reusedProvider.priority || 0],
+          selectedPriority: reusedProvider.priority || 0,
+          candidatesAtPriority: [
+            {
+              id: reusedProvider.id,
+              name: reusedProvider.name,
+              weight: reusedProvider.weight,
+              costMultiplier: reusedProvider.costMultiplier,
+            },
+          ],
+          sessionId: session.sessionId || undefined,
+        },
+      });
     }
 
-    // 如果没有可复用的，随机选择
+    // === 首次选择或重试 ===
     if (!session.provider) {
-      session.setProvider(
-        await ProxyProviderResolver.pickRandomProvider(
-          session,
-          excludedProviders,
-          targetProviderType
-        )
+      const { provider, context } = await ProxyProviderResolver.pickRandomProvider(
+        session,
+        excludedProviders,
+        targetProviderType
       );
+      session.setProvider(provider);
+      session.setLastSelectionContext(context); // 保存用于后续记录
     }
 
-    // 故障转移循环：尝试多个供应商直到成功或达到最大重试次数
+    // === 故障转移循环 ===
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       if (!session.provider) {
         break; // 无可用供应商，退出循环
@@ -55,7 +78,7 @@ export class ProxyProviderResolver {
         );
 
         if (!checkResult.allowed) {
-          // 并发限制失败 - 记录并尝试其他供应商
+          // === 并发限制失败 ===
           logger.warn(
             "ProviderSelector: Provider concurrent session limit exceeded, trying fallback",
             {
@@ -67,24 +90,44 @@ export class ProxyProviderResolver {
             }
           );
 
-          // 记录失败的供应商到决策链
+          const failedContext = session.getLastSelectionContext();
           session.addProviderToChain(session.provider, {
-            reason: attempt === 0 ? "initial_selection" : "retry_fallback",
-            selectionMethod,
+            reason: "concurrent_limit_failed",
+            selectionMethod: failedContext?.groupFilterApplied
+              ? "group_filtered"
+              : "weighted_random",
             circuitState: getCircuitState(session.provider.id),
             attemptNumber: attempt + 1,
             errorMessage: checkResult.reason || "并发限制已达到",
+            decisionContext: failedContext ? {
+              ...failedContext,
+              concurrentLimit: limit,
+              currentConcurrent: checkResult.count,
+            } : {
+              totalProviders: 0,
+              enabledProviders: 0,
+              targetType: targetProviderType,
+              groupFilterApplied: false,
+              beforeHealthCheck: 0,
+              afterHealthCheck: 0,
+              priorityLevels: [],
+              selectedPriority: 0,
+              candidatesAtPriority: [],
+              concurrentLimit: limit,
+              currentConcurrent: checkResult.count,
+            },
           });
 
           // 加入排除列表
           excludedProviders.push(session.provider.id);
 
-          // 尝试选择其他供应商
-          const fallbackProvider = await ProxyProviderResolver.pickRandomProvider(
-            session,
-            excludedProviders,
-            targetProviderType
-          );
+          // === 重试选择 ===
+          const { provider: fallbackProvider, context: retryContext } =
+            await ProxyProviderResolver.pickRandomProvider(
+              session,
+              excludedProviders,
+              targetProviderType
+            );
 
           if (!fallbackProvider) {
             // 无其他可用供应商
@@ -99,11 +142,11 @@ export class ProxyProviderResolver {
 
           // 切换到新供应商
           session.setProvider(fallbackProvider);
-          selectionMethod = "fallback";
+          session.setLastSelectionContext(retryContext);
           continue; // 继续下一次循环，检查新供应商
         }
 
-        // 并发检查通过，记录成功
+        // === 成功 ===
         logger.debug("ProviderSelector: Session tracked atomically", {
           sessionId: session.sessionId,
           providerName: session.provider.name,
@@ -111,12 +154,25 @@ export class ProxyProviderResolver {
           attempt: attempt + 1,
         });
 
-        // 记录到决策链
+        const successContext = session.getLastSelectionContext();
         session.addProviderToChain(session.provider, {
-          reason: attempt === 0 ? "initial_selection" : "retry_fallback",
-          selectionMethod,
+          reason: attempt === 0 ? "initial_selection" : "retry_success",
+          selectionMethod: successContext?.groupFilterApplied
+            ? "group_filtered"
+            : "weighted_random",
           circuitState: getCircuitState(session.provider.id),
           attemptNumber: attempt > 0 ? attempt + 1 : undefined,
+          decisionContext: successContext || {
+            totalProviders: 0,
+            enabledProviders: 0,
+            targetType: targetProviderType,
+            groupFilterApplied: false,
+            beforeHealthCheck: 0,
+            afterHealthCheck: 0,
+            priorityLevels: [],
+            selectedPriority: 0,
+            candidatesAtPriority: [],
+          },
         });
 
         // 绑定 session 到 provider（同步等待，确保写入成功）
@@ -161,7 +217,8 @@ export class ProxyProviderResolver {
   ): Promise<Provider | null> {
     // 从 session 读取供应商类型，避免参数传递和类型不一致
     const targetProviderType = session.providerType || "claude";
-    return this.pickRandomProvider(session, excludeIds, targetProviderType);
+    const { provider } = await this.pickRandomProvider(session, excludeIds, targetProviderType);
+    return provider;
   }
 
   /**
@@ -227,8 +284,23 @@ export class ProxyProviderResolver {
     session?: ProxySession,
     excludeIds: number[] = [], // 排除已失败的供应商
     targetProviderType: "claude" | "codex" = "claude" // 目标供应商类型
-  ): Promise<Provider | null> {
+  ): Promise<{ provider: Provider | null; context: NonNullable<ProviderChainItem["decisionContext"]> }> {
     const allProviders = await findProviderList();
+
+    // === 初始化决策上下文 ===
+    const context: NonNullable<ProviderChainItem["decisionContext"]> = {
+      totalProviders: allProviders.length,
+      enabledProviders: 0,
+      targetType: targetProviderType,
+      groupFilterApplied: false,
+      beforeHealthCheck: 0,
+      afterHealthCheck: 0,
+      filteredProviders: [],
+      priorityLevels: [],
+      selectedPriority: 0,
+      candidatesAtPriority: [],
+      excludedProviderIds: excludeIds.length > 0 ? excludeIds : undefined,
+    };
 
     // Step 0: 第一层过滤 - 排除已禁用、类型不匹配和黑名单中的供应商
     const enabledProviders = allProviders.filter(
@@ -238,64 +310,111 @@ export class ProxyProviderResolver {
         !excludeIds.includes(provider.id)
     );
 
+    context.enabledProviders = allProviders.filter(
+      (p) => p.isEnabled && p.providerType === targetProviderType
+    ).length;
+
+    // 记录被排除的供应商
+    for (const id of excludeIds) {
+      const p = allProviders.find((x) => x.id === id);
+      if (p) {
+        context.filteredProviders!.push({
+          id: p.id,
+          name: p.name,
+          reason: "excluded",
+          details: "已在前序尝试中失败",
+        });
+      }
+    }
+
     if (enabledProviders.length === 0) {
       logger.warn("ProviderSelector: No enabled providers after exclusion filter");
-      return null;
+      return { provider: null, context };
     }
 
     // Step 1: 用户分组过滤（如果用户指定了分组）
     let candidateProviders = enabledProviders;
     const userGroup = session?.authState?.user?.providerGroup;
+
     if (userGroup) {
+      context.userGroup = userGroup;
       const groupFiltered = enabledProviders.filter((p) => p.groupTag === userGroup);
 
       if (groupFiltered.length > 0) {
         candidateProviders = groupFiltered;
+        context.groupFilterApplied = true;
+        context.afterGroupFilter = groupFiltered.length;
         logger.debug("ProviderSelector: User group filter applied", {
           userGroup,
           count: groupFiltered.length,
         });
       } else {
+        context.groupFilterApplied = false;
+        context.afterGroupFilter = 0;
         logger.warn("ProviderSelector: User group has no providers, falling back", {
           userGroup,
         });
       }
     }
 
+    context.beforeHealthCheck = candidateProviders.length;
+
     // Step 2: 过滤超限供应商（健康度过滤）
     const healthyProviders = await this.filterByLimits(candidateProviders);
+    context.afterHealthCheck = healthyProviders.length;
 
     // 记录过滤掉的供应商（熔断或限流）
     const filteredOut = candidateProviders.filter(
       (p) => !healthyProviders.find((hp) => hp.id === p.id)
     );
-    if (filteredOut.length > 0) {
-      const reasons = await Promise.all(
-        filteredOut.map(async (p) => {
-          if (isCircuitOpen(p.id)) {
-            const state = getCircuitState(p.id);
-            return `${p.name}(id=${p.id}, circuit=${state})`;
-          }
-          return `${p.name}(id=${p.id}, rate-limited)`;
-        })
-      );
-      logger.debug("ProviderSelector: Filtered out providers", { providers: reasons });
+
+    for (const p of filteredOut) {
+      if (isCircuitOpen(p.id)) {
+        const state = getCircuitState(p.id);
+        context.filteredProviders!.push({
+          id: p.id,
+          name: p.name,
+          reason: "circuit_open",
+          details: `熔断器${state === "open" ? "打开" : "半开"}`,
+        });
+      } else {
+        context.filteredProviders!.push({
+          id: p.id,
+          name: p.name,
+          reason: "rate_limited",
+          details: "费用限制",
+        });
+      }
     }
 
     if (healthyProviders.length === 0) {
       logger.warn("ProviderSelector: All providers rate limited, falling back to random");
       // Fail Open：降级到随机选择（让上游拒绝）
-      return this.weightedRandom(candidateProviders);
+      const fallback = this.weightedRandom(candidateProviders);
+      return { provider: fallback, context };
     }
 
     // Step 3: 优先级分层（只选择最高优先级的供应商）
     const topPriorityProviders = this.selectTopPriority(healthyProviders);
+    const priorities = [...new Set(healthyProviders.map((p) => p.priority || 0))].sort(
+      (a, b) => a - b
+    );
+    context.priorityLevels = priorities;
+    context.selectedPriority = Math.min(...healthyProviders.map((p) => p.priority || 0));
 
-    // Step 4: 成本排序 + 加权选择
+    // Step 4: 成本排序 + 加权选择 + 计算概率
+    const totalWeight = topPriorityProviders.reduce((sum, p) => sum + p.weight, 0);
+    context.candidatesAtPriority = topPriorityProviders.map((p) => ({
+      id: p.id,
+      name: p.name,
+      weight: p.weight,
+      costMultiplier: p.costMultiplier,
+      probability: totalWeight > 0 ? Math.round((p.weight / totalWeight) * 100) : 0,
+    }));
+
     const selected = this.selectOptimal(topPriorityProviders);
 
     // 详细的选择日志
-    const minPriority = Math.min(...healthyProviders.map((p) => p.priority || 0));
     logger.info("ProviderSelector: Selection decision", {
       targetProviderType,
       totalProviders: allProviders.length,
@@ -305,12 +424,8 @@ export class ProxyProviderResolver {
       afterGroupFilter: candidateProviders.map((p) => p.name),
       afterHealthFilter: healthyProviders.length,
       filteredOut: filteredOut.map((p) => p.name),
-      topPriorityLevel: minPriority,
-      topPriorityCandidates: topPriorityProviders.map((p) => ({
-        name: p.name,
-        weight: p.weight,
-        cost: p.costMultiplier,
-      })),
+      topPriorityLevel: context.selectedPriority,
+      topPriorityCandidates: context.candidatesAtPriority,
       selected: {
         name: selected.name,
         id: selected.id,
@@ -322,7 +437,7 @@ export class ProxyProviderResolver {
       },
     });
 
-    return selected;
+    return { provider: selected, context };
   }
 
   /**

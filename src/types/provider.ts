@@ -8,7 +8,7 @@ export interface Provider {
   // 权重（0-100）
   weight: number;
 
-  // 新增：优先级和分组配置
+  // 优先级和分组配置
   priority: number;
   costMultiplier: number;
   groupTag: string | null;
@@ -17,7 +17,7 @@ export interface Provider {
   providerType: string;
   modelRedirects: Record<string, string> | null;
 
-  // 新增：金额限流配置
+  // 金额限流配置
   limit5hUsd: number | null;
   limitWeeklyUsd: number | null;
   limitMonthlyUsd: number | null;
@@ -46,14 +46,14 @@ export interface ProviderDisplay {
   maskedKey: string;
   isEnabled: boolean;
   weight: number;
-  // 新增：优先级和分组配置
+  // 优先级和分组配置
   priority: number;
   costMultiplier: number;
   groupTag: string | null;
   // Codex 支持：供应商类型和模型重定向
   providerType: string;
   modelRedirects: Record<string, string> | null;
-  // 新增：金额限流配置
+  // 金额限流配置
   limit5hUsd: number | null;
   limitWeeklyUsd: number | null;
   limitMonthlyUsd: number | null;
@@ -81,7 +81,7 @@ export interface CreateProviderData {
   // 权重（默认 1）
   weight?: number;
 
-  // 新增：优先级和分组配置
+  // 优先级和分组配置
   priority?: number;
   cost_multiplier?: number;
   group_tag?: string | null;
@@ -90,7 +90,7 @@ export interface CreateProviderData {
   provider_type?: string;
   model_redirects?: Record<string, string> | null;
 
-  // 新增：金额限流配置
+  // 金额限流配置
   limit_5h_usd?: number | null;
   limit_weekly_usd?: number | null;
   limit_monthly_usd?: number | null;
@@ -116,7 +116,7 @@ export interface UpdateProviderData {
   // 权重（0-100）
   weight?: number;
 
-  // 新增：优先级和分组配置
+  // 优先级和分组配置
   priority?: number;
   cost_multiplier?: number;
   group_tag?: string | null;
@@ -125,7 +125,7 @@ export interface UpdateProviderData {
   provider_type?: string;
   model_redirects?: Record<string, string> | null;
 
-  // 新增：金额限流配置
+  // 金额限流配置
   limit_5h_usd?: number | null;
   limit_weekly_usd?: number | null;
   limit_monthly_usd?: number | null;
