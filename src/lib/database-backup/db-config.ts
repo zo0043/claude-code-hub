@@ -26,14 +26,16 @@ export function parseDatabaseDSN(dsn: string): DatabaseConfig {
     const url = new URL(dsn);
 
     return {
-      host: url.hostname || 'localhost',
+      host: url.hostname || "localhost",
       port: url.port ? parseInt(url.port, 10) : 5432,
-      user: url.username || 'postgres',
-      password: url.password || '',
-      database: url.pathname.slice(1) || 'postgres', // 移除开头的 /
+      user: url.username || "postgres",
+      password: url.password || "",
+      database: url.pathname.slice(1) || "postgres", // 移除开头的 /
     };
   } catch (error) {
-    throw new Error(`Invalid database DSN: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Invalid database DSN: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -44,7 +46,7 @@ export function getDatabaseConfig(): DatabaseConfig {
   const dsn = process.env.DSN;
 
   if (!dsn) {
-    throw new Error('DSN environment variable is not set');
+    throw new Error("DSN environment variable is not set");
   }
 
   return parseDatabaseDSN(dsn);

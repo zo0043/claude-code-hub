@@ -1,5 +1,4 @@
 import { spawn } from "child_process";
-import { createReadStream } from "fs";
 import { logger } from "@/lib/logger";
 import { getDatabaseConfig } from "./db-config";
 
@@ -98,7 +97,10 @@ export function executePgDump(): ReadableStream<Uint8Array> {
  * @param cleanFirst 是否清除现有数据
  * @returns ReadableStream SSE 格式的进度流
  */
-export function executePgRestore(filePath: string, cleanFirst: boolean): ReadableStream<Uint8Array> {
+export function executePgRestore(
+  filePath: string,
+  cleanFirst: boolean
+): ReadableStream<Uint8Array> {
   const dbConfig = getDatabaseConfig();
 
   const args = [
@@ -118,6 +120,9 @@ export function executePgRestore(filePath: string, cleanFirst: boolean): Readabl
     args.push("--clean", "--if-exists");
   }
 
+  // 直接指定文件路径（比 stdin 更高效，避免额外的流处理）
+  args.push(filePath);
+
   const pgProcess = spawn("pg_restore", args, {
     env: {
       ...process.env,
@@ -133,10 +138,6 @@ export function executePgRestore(filePath: string, cleanFirst: boolean): Readabl
     cleanFirst,
     filePath,
   });
-
-  // 将备份文件通过 stdin 传给 pg_restore
-  const fileStream = createReadStream(filePath);
-  fileStream.pipe(pgProcess.stdin);
 
   const encoder = new TextEncoder();
 
@@ -210,7 +211,6 @@ export function executePgRestore(filePath: string, cleanFirst: boolean): Readabl
 
     cancel() {
       pgProcess.kill();
-      fileStream.destroy();
       logger.warn({
         action: "pg_restore_cancelled",
         database: dbConfig.database,
@@ -231,9 +231,10 @@ export async function getDatabaseInfo(): Promise<{
 
   return new Promise((resolve, reject) => {
     // 查询数据库大小和表数量
+    // 使用 current_database() 避免 SQL 注入风险
     const query = `
       SELECT
-        pg_size_pretty(pg_database_size('${dbConfig.database}')) as size,
+        pg_size_pretty(pg_database_size(current_database())) as size,
         (SELECT count(*) FROM information_schema.tables
          WHERE table_schema = 'public' AND table_type = 'BASE TABLE') as table_count,
         version() as version;
@@ -307,7 +308,16 @@ export async function checkDatabaseConnection(): Promise<boolean> {
   return new Promise((resolve) => {
     const pgProcess = spawn(
       "pg_isready",
-      ["-h", dbConfig.host, "-p", dbConfig.port.toString(), "-U", dbConfig.user, "-d", dbConfig.database],
+      [
+        "-h",
+        dbConfig.host,
+        "-p",
+        dbConfig.port.toString(),
+        "-U",
+        dbConfig.user,
+        "-d",
+        dbConfig.database,
+      ],
       {
         env: {
           ...process.env,

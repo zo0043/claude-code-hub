@@ -1,4 +1,5 @@
 import { executePgDump, checkDatabaseConnection } from "@/lib/database-backup/docker-executor";
+import { acquireBackupLock, releaseBackupLock } from "@/lib/database-backup/backup-lock";
 import { logger } from "@/lib/logger";
 import { getSession } from "@/lib/auth";
 
@@ -9,7 +10,9 @@ import { getSession } from "@/lib/auth";
  *
  * 响应: application/octet-stream (pg_dump custom format)
  */
-export async function GET() {
+export async function GET(request: Request) {
+  let lockId: string | null = null;
+
   try {
     // 1. 验证管理员权限
     const session = await getSession();
@@ -18,32 +21,80 @@ export async function GET() {
       return new Response("Unauthorized", { status: 401 });
     }
 
-    // 2. 检查数据库连接
+    // 2. 尝试获取分布式锁（防止并发操作）
+    lockId = await acquireBackupLock("export");
+    if (!lockId) {
+      logger.warn({
+        action: "database_export_lock_conflict",
+        user: session.user.name,
+      });
+      return Response.json(
+        {
+          error: "其他管理员正在执行备份操作，请稍后重试",
+          details: "为确保数据一致性，同一时间只能执行一个备份操作",
+        },
+        { status: 409 }
+      );
+    }
+
+    // 3. 检查数据库连接
     const isAvailable = await checkDatabaseConnection();
     if (!isAvailable) {
       logger.error({
         action: "database_export_connection_unavailable",
       });
-      return Response.json(
-        { error: "数据库连接不可用，请检查数据库服务状态" },
-        { status: 503 }
-      );
+      return Response.json({ error: "数据库连接不可用，请检查数据库服务状态" }, { status: 503 });
     }
 
-    // 3. 执行 pg_dump
+    // 4. 执行 pg_dump
     const stream = executePgDump();
 
-    // 4. 生成文件名（带时间戳）
+    // 5. 生成文件名（带时间戳）
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
     const filename = `backup_${timestamp}.dump`;
 
     logger.info({
       action: "database_export_initiated",
       filename,
+      user: session.user.name,
     });
 
-    // 5. 返回流式响应
-    return new Response(stream, {
+    // 6. 监听请求取消（用户关闭浏览器）
+    request.signal.addEventListener("abort", () => {
+      if (lockId) {
+        releaseBackupLock(lockId, "export").catch((err) => {
+          logger.error({
+            action: "database_export_lock_release_error",
+            lockId,
+            reason: "request_aborted",
+            error: err.message,
+          });
+        });
+      }
+    });
+
+    // 7. 包装流以确保锁的释放
+    const cleanupStream = new TransformStream({
+      transform(chunk, controller) {
+        controller.enqueue(chunk);
+      },
+      flush() {
+        // 流正常结束时释放锁
+        if (lockId) {
+          releaseBackupLock(lockId, "export").catch((err) => {
+            logger.error({
+              action: "database_export_lock_release_error",
+              lockId,
+              reason: "stream_completed",
+              error: err.message,
+            });
+          });
+        }
+      },
+    });
+
+    // 8. 返回流式响应
+    return new Response(stream.pipeThrough(cleanupStream), {
       status: 200,
       headers: {
         "Content-Type": "application/octet-stream",
@@ -56,6 +107,18 @@ export async function GET() {
       action: "database_export_error",
       error: error instanceof Error ? error.message : String(error),
     });
+
+    // 出错时释放锁
+    if (lockId) {
+      releaseBackupLock(lockId, "export").catch((err) => {
+        logger.error({
+          action: "database_export_lock_release_error",
+          lockId,
+          reason: "error",
+          error: err.message,
+        });
+      });
+    }
 
     return Response.json(
       {
