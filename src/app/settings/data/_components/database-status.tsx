@@ -15,22 +15,9 @@ export function DatabaseStatusDisplay() {
     setError(null);
 
     try {
-      // 从 cookie 中获取 admin token
-      const token = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('admin_token='))
-        ?.split('=')[1];
-
-      if (!token) {
-        setError('未登录或会话已过期');
-        return;
-      }
-
       const response = await fetch('/api/admin/database/status', {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        credentials: 'include',
       });
 
       if (!response.ok) {

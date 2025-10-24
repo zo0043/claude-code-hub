@@ -61,28 +61,15 @@ export function DatabaseImport() {
     setProgressMessages([]);
 
     try {
-      // 从 cookie 中获取 admin token
-      const token = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('admin_token='))
-        ?.split('=')[1];
-
-      if (!token) {
-        toast.error('未登录或会话已过期');
-        return;
-      }
-
       // 构造表单数据
       const formData = new FormData();
       formData.append('file', selectedFile);
       formData.append('cleanFirst', cleanFirst.toString());
 
-      // 调用导入 API（SSE 流式响应）
+      // 调用导入 API（SSE 流式响应，自动携带 cookie）
       const response = await fetch('/api/admin/database/import', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        credentials: 'include',
         body: formData,
       });
 

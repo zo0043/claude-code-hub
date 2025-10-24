@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
 import { executePgDump, checkDockerContainer } from "@/lib/database-backup/docker-executor";
 import { logger } from "@/lib/logger";
+import { getSession } from "@/lib/auth";
 
 const CONTAINER_NAME = process.env.POSTGRES_CONTAINER_NAME || "claude-code-hub-db";
 const DATABASE_NAME = process.env.DB_NAME || "claude_code_hub";
@@ -12,13 +12,13 @@ const DATABASE_NAME = process.env.DB_NAME || "claude_code_hub";
  *
  * 响应: application/octet-stream (pg_dump custom format)
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // 1. 验证管理员权限
-    const token = request.headers.get("authorization")?.replace("Bearer ", "");
-    if (token !== process.env.ADMIN_TOKEN) {
+    const session = await getSession();
+    if (!session || session.user.role !== "admin") {
       logger.warn({ action: "database_export_unauthorized" });
-      return NextResponse.json({ error: "未授权访问" }, { status: 401 });
+      return new Response("Unauthorized", { status: 401 });
     }
 
     // 2. 检查 Docker 容器是否可用
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
         action: "database_export_container_unavailable",
         containerName: CONTAINER_NAME,
       });
-      return NextResponse.json(
+      return Response.json(
         { error: `Docker 容器 ${CONTAINER_NAME} 不可用，请确保使用 docker compose 部署` },
         { status: 503 }
       );
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
       error: error instanceof Error ? error.message : String(error),
     });
 
-    return NextResponse.json(
+    return Response.json(
       {
         error: "导出数据库失败",
         details: error instanceof Error ? error.message : String(error),

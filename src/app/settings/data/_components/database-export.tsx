@@ -12,23 +12,10 @@ export function DatabaseExport() {
     setIsExporting(true);
 
     try {
-      // 从 cookie 中获取 admin token
-      const token = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('admin_token='))
-        ?.split('=')[1];
-
-      if (!token) {
-        toast.error('未登录或会话已过期');
-        return;
-      }
-
-      // 调用导出 API
+      // 调用导出 API（自动携带 cookie）
       const response = await fetch('/api/admin/database/export', {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        credentials: 'include',
       });
 
       if (!response.ok) {

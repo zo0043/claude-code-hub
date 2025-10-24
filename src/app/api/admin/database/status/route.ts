@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
 import { checkDockerContainer, getDatabaseInfo } from "@/lib/database-backup/docker-executor";
 import { logger } from "@/lib/logger";
+import { getSession } from "@/lib/auth";
 import type { DatabaseStatus } from "@/types/database-backup";
 
 const CONTAINER_NAME = process.env.POSTGRES_CONTAINER_NAME || "claude-code-hub-db";
@@ -13,13 +13,13 @@ const DATABASE_NAME = process.env.DB_NAME || "claude_code_hub";
  *
  * 响应: DatabaseStatus JSON
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // 1. 验证管理员权限
-    const token = request.headers.get("authorization")?.replace("Bearer ", "");
-    if (token !== process.env.ADMIN_TOKEN) {
+    const session = await getSession();
+    if (!session || session.user.role !== "admin") {
       logger.warn({ action: "database_status_unauthorized" });
-      return NextResponse.json({ error: "未授权访问" }, { status: 401 });
+      return new Response("Unauthorized", { status: 401 });
     }
 
     // 2. 检查 Docker 容器是否可用
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
         containerName: CONTAINER_NAME,
       });
 
-      return NextResponse.json(status, { status: 200 });
+      return Response.json(status, { status: 200 });
     }
 
     // 3. 获取数据库详细信息
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
         ...status,
       });
 
-      return NextResponse.json(status, { status: 200 });
+      return Response.json(status, { status: 200 });
     } catch (infoError) {
       const status: DatabaseStatus = {
         isAvailable: true,
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
         error: infoError instanceof Error ? infoError.message : String(infoError),
       });
 
-      return NextResponse.json(status, { status: 200 });
+      return Response.json(status, { status: 200 });
     }
   } catch (error) {
     logger.error({
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
       error: error instanceof Error ? error.message : String(error),
     });
 
-    return NextResponse.json(
+    return Response.json(
       {
         error: "获取数据库状态失败",
         details: error instanceof Error ? error.message : String(error),
