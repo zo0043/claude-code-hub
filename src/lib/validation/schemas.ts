@@ -58,7 +58,7 @@ export const KeyFormSchema = z.object({
     .optional()
     .default("")
     .transform((val) => (val === "" ? undefined : val)),
-  // 新增：金额限流配置
+  // 金额限流配置
   limit5hUsd: z.coerce
     .number()
     .min(0, "5小时消费上限不能为负数")
@@ -108,7 +108,7 @@ export const CreateProviderSchema = z.object({
   // Codex 支持:供应商类型和模型重定向
   provider_type: z.string().max(20, "供应商类型不能超过20个字符").optional().default("claude"),
   model_redirects: z.record(z.string(), z.string()).nullable().optional(),
-  // 新增：金额限流配置
+  // 金额限流配置
   limit_5h_usd: z.coerce
     .number()
     .min(0, "5小时消费上限不能为负数")
@@ -162,7 +162,7 @@ export const UpdateProviderSchema = z
     // Codex 支持:供应商类型和模型重定向
     provider_type: z.string().max(20, "供应商类型不能超过20个字符").optional(),
     model_redirects: z.record(z.string(), z.string()).nullable().optional(),
-    // 新增：金额限流配置
+    // 金额限流配置
     limit_5h_usd: z.coerce
       .number()
       .min(0, "5小时消费上限不能为负数")

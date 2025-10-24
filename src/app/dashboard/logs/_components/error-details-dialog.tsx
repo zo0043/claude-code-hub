@@ -12,24 +12,30 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle, ChevronRight, ExternalLink, Loader2 } from "lucide-react";
+import { AlertCircle, ArrowRight, CheckCircle, ChevronRight, ExternalLink, Loader2, Monitor } from "lucide-react";
 import type { ProviderChainItem } from "@/types/message";
 import { hasSessionMessages } from "@/actions/active-sessions";
+import { formatProviderTimeline } from "@/lib/utils/provider-chain-formatter";
 
 interface ErrorDetailsDialogProps {
   statusCode: number | null;
   errorMessage: string | null;
   providerChain: ProviderChainItem[] | null;
   sessionId: string | null;
-  blockedBy?: string | null; // 新增：拦截类型
-  blockedReason?: string | null; // 新增：拦截原因（JSON 字符串）
+  blockedBy?: string | null; // 拦截类型
+  blockedReason?: string | null; // 拦截原因（JSON 字符串）
+  originalModel?: string | null; // 原始模型（重定向前）
+  currentModel?: string | null; // 当前模型（重定向后）
+  userAgent?: string | null; // User-Agent
+  messagesCount?: number | null; // Messages 数量
 }
 
 const reasonLabels: Record<string, string> = {
-  initial_selection: '初始选择',
-  retry_attempt: '重试尝试',
-  retry_fallback: '降级重试',
-  reuse: '会话复用',
+  session_reuse: "会话复用",
+  initial_selection: "首次选择",
+  concurrent_limit_failed: "并发限制",
+  retry_success: "重试成功",
+  retry_failed: "重试失败",
 };
 
 const blockedByLabels: Record<string, string> = {
@@ -49,6 +55,10 @@ export function ErrorDetailsDialog({
   sessionId,
   blockedBy,
   blockedReason,
+  originalModel,
+  currentModel,
+  userAgent,
+  messagesCount,
 }: ErrorDetailsDialogProps) {
   const [open, setOpen] = useState(false);
   const [hasMessages, setHasMessages] = useState(false);
@@ -111,7 +121,7 @@ export function ErrorDetailsDialog({
           </Badge>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {isInProgress ? (
@@ -211,6 +221,73 @@ export function ErrorDetailsDialog({
             </div>
           )}
 
+          {/* Messages 数量 */}
+          {messagesCount !== null && messagesCount !== undefined && (
+            <div className="space-y-2">
+              <h4 className="font-semibold text-sm">消息数量</h4>
+              <div className="rounded-md border bg-muted/50 p-3">
+                <div className="text-sm">
+                  <span className="font-medium">Messages:</span>{" "}
+                  <code className="text-base font-mono font-semibold">{messagesCount}</code> 条
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* User-Agent 信息 */}
+          {userAgent && (
+            <div className="space-y-2">
+              <h4 className="font-semibold text-sm flex items-center gap-2">
+                <Monitor className="h-4 w-4 text-blue-600" />
+                客户端信息
+              </h4>
+              <div className="rounded-md border bg-muted/50 p-3">
+                <code className="text-xs font-mono break-all">
+                  {userAgent}
+                </code>
+              </div>
+            </div>
+          )}
+
+          {/* 模型重定向信息 */}
+          {originalModel && currentModel && originalModel !== currentModel && (
+            <div className="space-y-2">
+              <h4 className="font-semibold text-sm flex items-center gap-2">
+                <ArrowRight className="h-4 w-4 text-blue-600" />
+                模型重定向
+              </h4>
+              <div className="rounded-md border bg-blue-50 dark:bg-blue-950/20 p-4 space-y-3">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-blue-900 dark:text-blue-100">
+                      请求模型:
+                    </span>
+                    <div className="mt-1">
+                      <code className="bg-blue-100 dark:bg-blue-900/50 px-2 py-1 rounded text-blue-900 dark:text-blue-100">
+                        {originalModel}
+                      </code>
+                    </div>
+                  </div>
+                  <div>
+                    <span className="font-medium text-blue-900 dark:text-blue-100">
+                      实际调用:
+                    </span>
+                    <div className="mt-1">
+                      <code className="bg-blue-100 dark:bg-blue-900/50 px-2 py-1 rounded text-blue-900 dark:text-blue-100">
+                        {currentModel}
+                      </code>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-xs text-blue-800 dark:text-blue-200 border-t border-blue-200 dark:border-blue-800 pt-2">
+                  <span className="font-medium">计费说明:</span>{" "}
+                  系统优先使用请求模型（{originalModel}）的价格计费。
+                  如果价格表中不存在该模型，则使用实际调用模型（{currentModel}）的价格。
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 最终错误信息 */}
           {errorMessage && (
             <div className="space-y-2">
@@ -226,95 +303,29 @@ export function ErrorDetailsDialog({
             </div>
           )}
 
-          {/* 供应商决策链（带错误信息） */}
+          {/* 供应商决策链时间线 */}
           {providerChain && providerChain.length > 0 && (
             <div className="space-y-2">
-              <h4 className="font-semibold text-sm">供应商决策链</h4>
-              <div className="text-xs text-muted-foreground mb-2">
-                共尝试 {providerChain.length} 个供应商
-              </div>
+              <h4 className="font-semibold text-sm">供应商决策链时间线</h4>
 
-              <div className="space-y-3">
-                {providerChain.map((item, index) => (
-                  <div key={index} className="space-y-2">
-                    {/* 箭头连接符 */}
-                    {index > 0 && (
-                      <div className="flex items-center justify-center">
-                        <ChevronRight className="h-4 w-4 text-muted-foreground rotate-90" />
+              {(() => {
+                const { timeline, totalDuration } = formatProviderTimeline(providerChain);
+                return (
+                  <>
+                    <div className="rounded-md border bg-muted/50 p-4 max-h-[500px] overflow-y-auto">
+                      <pre className="text-xs whitespace-pre-wrap font-mono leading-relaxed">
+                        {timeline}
+                      </pre>
+                    </div>
+
+                    {totalDuration > 0 && (
+                      <div className="text-xs text-muted-foreground text-right">
+                        总耗时: {totalDuration}ms
                       </div>
                     )}
-
-                    {/* 供应商信息卡片 */}
-                    <div className="rounded-md border p-4 space-y-3 bg-muted/50">
-                      {/* 标题行 */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{item.name}</span>
-                          {item.attemptNumber && (
-                            <Badge variant="outline" className="text-xs">
-                              第 {item.attemptNumber} 次尝试
-                            </Badge>
-                          )}
-                        </div>
-                        {item.circuitState && circuitStateLabels[item.circuitState] && (
-                          <Badge
-                            variant={circuitStateLabels[item.circuitState].variant}
-                            className="text-xs"
-                          >
-                            {circuitStateLabels[item.circuitState].label}
-                          </Badge>
-                        )}
-                      </div>
-
-                      {/* 供应商配置信息 */}
-                      <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
-                        {item.reason && (
-                          <div>
-                            <span className="font-medium">原因:</span>{" "}
-                            {reasonLabels[item.reason] || item.reason}
-                          </div>
-                        )}
-                        {item.weight !== undefined && (
-                          <div>
-                            <span className="font-medium">权重:</span> {item.weight}
-                          </div>
-                        )}
-                        {item.priority !== undefined && (
-                          <div>
-                            <span className="font-medium">优先级:</span> {item.priority}
-                          </div>
-                        )}
-                        {item.costMultiplier !== undefined && (
-                          <div>
-                            <span className="font-medium">成本系数:</span>{" "}
-                            {item.costMultiplier}x
-                          </div>
-                        )}
-                        {item.groupTag && (
-                          <div className="col-span-2">
-                            <span className="font-medium">分组:</span> {item.groupTag}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* 错误信息（如果有） */}
-                      {item.errorMessage && (
-                        <div className="space-y-1">
-                          <div className="text-xs font-medium text-destructive flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            失败原因
-                          </div>
-                          <div className="rounded-md bg-destructive/10 p-2 border border-destructive/20">
-                            <pre className="text-xs text-destructive whitespace-pre-wrap break-words font-mono">
-                              {item.errorMessage}
-                            </pre>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  </>
+                );
+              })()}
             </div>
           )}
 

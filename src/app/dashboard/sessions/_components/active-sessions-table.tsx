@@ -85,19 +85,18 @@ export function ActiveSessionsTable({
               <TableHead>密钥</TableHead>
               <TableHead>供应商</TableHead>
               <TableHead>模型</TableHead>
-              <TableHead>类型</TableHead>
-              <TableHead className="text-right">持续时长</TableHead>
-              <TableHead className="text-right">输入</TableHead>
-              <TableHead className="text-right">输出</TableHead>
-              <TableHead className="text-right">成本</TableHead>
-              <TableHead>状态</TableHead>
+              <TableHead className="text-center">请求数</TableHead>
+              <TableHead className="text-right">总输入</TableHead>
+              <TableHead className="text-right">总输出</TableHead>
+              <TableHead className="text-right">总成本</TableHead>
+              <TableHead className="text-right">总耗时</TableHead>
               <TableHead className="text-center">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedSessions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={12} className="text-center text-muted-foreground">
+                <TableCell colSpan={11} className="text-center text-muted-foreground">
                   暂无活跃 Session
                 </TableCell>
               </TableRow>
@@ -109,15 +108,16 @@ export function ActiveSessionsTable({
                   </TableCell>
                   <TableCell>{session.userName}</TableCell>
                   <TableCell className="font-mono text-xs">{session.keyName}</TableCell>
-                  <TableCell>{session.providerName || "-"}</TableCell>
-                  <TableCell className="font-mono text-xs">{session.model || "-"}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs">
-                      {session.apiType === "codex" ? "Codex" : "Chat"}
-                    </Badge>
+                  <TableCell className="max-w-[120px] truncate" title={session.providerName || undefined}>
+                    {session.providerName || "-"}
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs">
-                    {formatDuration(session.durationMs)}
+                  <TableCell className="font-mono text-xs max-w-[150px] truncate" title={session.model || undefined}>
+                    {session.model || "-"}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="secondary" className="font-mono">
+                      {session.requestCount || 1}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs">
                     {session.inputTokens?.toLocaleString() || "-"}
@@ -128,7 +128,9 @@ export function ActiveSessionsTable({
                   <TableCell className="text-right font-mono text-xs">
                     {session.costUsd ? `$${parseFloat(session.costUsd).toFixed(6)}` : "-"}
                   </TableCell>
-                  <TableCell>{getStatusBadge(session.status, session.statusCode)}</TableCell>
+                  <TableCell className="text-right font-mono text-xs">
+                    {formatDuration(session.durationMs)}
+                  </TableCell>
                   <TableCell className="text-center">
                     <Link href={`/dashboard/sessions/${session.sessionId}/messages`}>
                       <Button variant="ghost" size="sm">

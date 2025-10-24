@@ -23,8 +23,11 @@ export class ProxyMessageService {
       user_id: authState.user.id,
       key: authState.apiKey,
       model: session.request.model ?? undefined,
-      session_id: session.sessionId ?? undefined, // 新增：传入 session_id
-      cost_multiplier: provider.costMultiplier, // 新增：传入 cost_multiplier
+      session_id: session.sessionId ?? undefined, // 传入 session_id
+      cost_multiplier: provider.costMultiplier, // 传入 cost_multiplier
+      user_agent: session.userAgent ?? undefined, // 传入 user_agent
+      original_model: session.getOriginalModel() ?? undefined, // 传入原始模型（用户请求的模型）
+      messages_count: session.getMessagesLength(), // 传入 messages 数量
     });
 
     session.setMessageContext({

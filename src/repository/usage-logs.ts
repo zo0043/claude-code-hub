@@ -21,11 +21,12 @@ export interface UsageLogFilters {
 export interface UsageLogRow {
   id: number;
   createdAt: Date | null;
-  sessionId: string | null; // 新增：Session ID
+  sessionId: string | null; // Session ID
   userName: string;
   keyName: string;
   providerName: string | null; // 改为可选：被拦截的请求没有 provider
   model: string | null;
+  originalModel: string | null; // 原始模型（重定向前）
   statusCode: number | null;
   inputTokens: number | null;
   outputTokens: number | null;
@@ -33,12 +34,14 @@ export interface UsageLogRow {
   cacheReadInputTokens: number | null;
   totalTokens: number;
   costUsd: string | null;
-  costMultiplier: string | null; // 新增：供应商倍率
+  costMultiplier: string | null; // 供应商倍率
   durationMs: number | null;
   errorMessage: string | null;
   providerChain: ProviderChainItem[] | null;
-  blockedBy: string | null; // 新增：拦截类型（如 'sensitive_word'）
-  blockedReason: string | null; // 新增：拦截原因（JSON 字符串）
+  blockedBy: string | null; // 拦截类型（如 'sensitive_word'）
+  blockedReason: string | null; // 拦截原因（JSON 字符串）
+  userAgent: string | null; // User-Agent（客户端信息）
+  messagesCount: number | null; // Messages 数量
 }
 
 export interface UsageLogSummary {
@@ -180,23 +183,26 @@ export async function findUsageLogsWithDetails(filters: UsageLogFilters): Promis
     .select({
       id: messageRequest.id,
       createdAt: messageRequest.createdAt,
-      sessionId: messageRequest.sessionId, // 新增：Session ID
+      sessionId: messageRequest.sessionId, // Session ID
       userName: users.name,
       keyName: keysTable.name,
       providerName: providers.name, // 被拦截的请求为 null
       model: messageRequest.model,
+      originalModel: messageRequest.originalModel, // 原始模型（重定向前）
       statusCode: messageRequest.statusCode,
       inputTokens: messageRequest.inputTokens,
       outputTokens: messageRequest.outputTokens,
       cacheCreationInputTokens: messageRequest.cacheCreationInputTokens,
       cacheReadInputTokens: messageRequest.cacheReadInputTokens,
       costUsd: messageRequest.costUsd,
-      costMultiplier: messageRequest.costMultiplier, // 新增：供应商倍率
+      costMultiplier: messageRequest.costMultiplier, // 供应商倍率
       durationMs: messageRequest.durationMs,
       errorMessage: messageRequest.errorMessage,
       providerChain: messageRequest.providerChain,
-      blockedBy: messageRequest.blockedBy, // 新增：拦截类型
-      blockedReason: messageRequest.blockedReason, // 新增：拦截原因
+      blockedBy: messageRequest.blockedBy, // 拦截类型
+      blockedReason: messageRequest.blockedReason, // 拦截原因
+      userAgent: messageRequest.userAgent, // User-Agent
+      messagesCount: messageRequest.messagesCount, // Messages 数量
     })
     .from(messageRequest)
     .innerJoin(users, eq(messageRequest.userId, users.id))

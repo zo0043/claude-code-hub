@@ -45,7 +45,7 @@ export class ProxyForwarder {
 
         // 记录失败的供应商和错误信息到决策链
         session.addProviderToChain(currentProvider, {
-          reason: "retry_attempt",
+          reason: "retry_failed",
           circuitState: getCircuitState(currentProvider.id),
           attemptNumber: attemptCount,
           errorMessage: errorMessage, // 记录完整上游错误

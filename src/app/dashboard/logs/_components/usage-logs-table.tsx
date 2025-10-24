@@ -15,6 +15,8 @@ import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { ProviderChainPopover } from "./provider-chain-popover";
 import { ErrorDetailsDialog } from "./error-details-dialog";
+import { formatProviderSummary } from "@/lib/utils/provider-chain-formatter";
+import { ModelDisplayWithRedirect } from "./model-display-with-redirect";
 
 /**
  * 格式化时间显示
@@ -125,10 +127,18 @@ export function UsageLogsTable({
                     ) : (
                       <div className="flex items-center gap-2">
                         {log.providerChain && log.providerChain.length > 0 ? (
-                          <ProviderChainPopover
-                            chain={log.providerChain}
-                            finalProvider={log.providerName || "未知"}
-                          />
+                          <div className="flex flex-col gap-0.5">
+                            <ProviderChainPopover
+                              chain={log.providerChain}
+                              finalProvider={log.providerName || "未知"}
+                            />
+                            {/* 摘要文字（仅在有决策链时显示） */}
+                            {formatProviderSummary(log.providerChain) && (
+                              <span className="text-xs text-muted-foreground">
+                                {formatProviderSummary(log.providerChain)}
+                              </span>
+                            )}
+                          </div>
                         ) : (
                           <span>{log.providerName || "-"}</span>
                         )}
@@ -152,7 +162,12 @@ export function UsageLogsTable({
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="font-mono text-xs">{log.model || "-"}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    <ModelDisplayWithRedirect
+                      originalModel={log.originalModel}
+                      currentModel={log.model}
+                    />
+                  </TableCell>
                   <TableCell className="text-right font-mono text-xs">
                     {log.inputTokens?.toLocaleString() || "-"}
                   </TableCell>
@@ -179,6 +194,10 @@ export function UsageLogsTable({
                       sessionId={log.sessionId}
                       blockedBy={log.blockedBy}
                       blockedReason={log.blockedReason}
+                      originalModel={log.originalModel}
+                      currentModel={log.model}
+                      userAgent={log.userAgent}
+                      messagesCount={log.messagesCount}
                     />
                   </TableCell>
                 </TableRow>

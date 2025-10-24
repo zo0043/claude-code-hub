@@ -11,6 +11,7 @@ import { ProxyForwarder } from "./proxy/forwarder";
 import { ProxyResponseHandler } from "./proxy/response-handler";
 import { ProxyErrorHandler } from "./proxy/error-handler";
 import { ProxyStatusTracker } from "@/lib/proxy-status-tracker";
+import { SessionTracker } from "@/lib/session-tracker";
 
 export async function handleProxyRequest(c: Context): Promise<Response> {
   const session = await ProxySession.fromContext(c);
@@ -45,6 +46,11 @@ export async function handleProxyRequest(c: Context): Promise<Response> {
 
     await ProxyMessageService.ensureContext(session);
 
+    // 6. 增加并发计数（在所有检查通过后，请求开始前）
+    if (session.sessionId) {
+      await SessionTracker.incrementConcurrentCount(session.sessionId);
+    }
+
     // 记录请求开始
     if (session.messageContext && session.provider) {
       const tracker = ProxyStatusTracker.getInstance();
@@ -64,5 +70,10 @@ export async function handleProxyRequest(c: Context): Promise<Response> {
   } catch (error) {
     logger.error("Proxy handler error:", error);
     return await ProxyErrorHandler.handle(session, error);
+  } finally {
+    // 7. 减少并发计数（确保无论成功失败都执行）
+    if (session.sessionId) {
+      await SessionTracker.decrementConcurrentCount(session.sessionId);
+    }
   }
 }

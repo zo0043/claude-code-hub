@@ -29,7 +29,7 @@ export interface CreateKeyData {
   key: string;
   is_enabled?: boolean;
   expires_at?: Date;
-  // 新增：金额限流配置
+  // 金额限流配置
   limit_5h_usd?: number | null;
   limit_weekly_usd?: number | null;
   limit_monthly_usd?: number | null;
@@ -43,7 +43,7 @@ export interface UpdateKeyData {
   name?: string;
   is_enabled?: boolean;
   expires_at?: Date;
-  // 新增：金额限流配置
+  // 金额限流配置
   limit_5h_usd?: number | null;
   limit_weekly_usd?: number | null;
   limit_monthly_usd?: number | null;
