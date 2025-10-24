@@ -97,6 +97,73 @@ export function executePgDump(): ReadableStream<Uint8Array> {
  * @param cleanFirst 是否清除现有数据
  * @returns ReadableStream SSE 格式的进度流
  */
+/**
+ * 分析 pg_restore 错误类型
+ *
+ * @param errors - 错误信息数组
+ * @returns 错误分析结果
+ */
+function analyzeRestoreErrors(errors: string[]): {
+  hasFatalErrors: boolean;
+  ignorableCount: number;
+  fatalCount: number;
+  summary: string;
+} {
+  // 可忽略的错误模式（对象已存在）
+  const ignorablePatterns = [
+    /already exists/i,
+    /multiple primary keys/i,
+    /duplicate key value/i,
+  ];
+
+  // 致命错误模式
+  const fatalPatterns = [
+    /could not connect/i,
+    /authentication failed/i,
+    /permission denied/i,
+    /database .* does not exist/i,
+    /out of memory/i,
+    /disk full/i,
+  ];
+
+  let ignorableCount = 0;
+  let fatalCount = 0;
+  const fatalErrors: string[] = [];
+
+  for (const error of errors) {
+    const isIgnorable = ignorablePatterns.some((pattern) => pattern.test(error));
+    const isFatal = fatalPatterns.some((pattern) => pattern.test(error));
+
+    if (isFatal) {
+      fatalCount++;
+      fatalErrors.push(error);
+    } else if (isIgnorable) {
+      ignorableCount++;
+    } else {
+      // 未知错误，保守处理为致命错误
+      fatalCount++;
+      fatalErrors.push(error);
+    }
+  }
+
+  let summary = "";
+  if (fatalCount > 0) {
+    summary = `发现 ${fatalCount} 个致命错误`;
+    if (fatalErrors.length > 0) {
+      summary += `：${fatalErrors[0]}`;
+    }
+  } else if (ignorableCount > 0) {
+    summary = `数据导入完成，跳过了 ${ignorableCount} 个已存在的对象`;
+  }
+
+  return {
+    hasFatalErrors: fatalCount > 0,
+    ignorableCount,
+    fatalCount,
+    summary,
+  };
+}
+
 export function executePgRestore(
   filePath: string,
   cleanFirst: boolean
@@ -140,6 +207,7 @@ export function executePgRestore(
   });
 
   const encoder = new TextEncoder();
+  const errorLines: string[] = []; // 收集所有错误信息
 
   return new ReadableStream({
     start(controller) {
@@ -147,6 +215,11 @@ export function executePgRestore(
       pgProcess.stderr.on("data", (chunk: Buffer) => {
         const message = chunk.toString().trim();
         logger.info(`[pg_restore] ${message}`);
+
+        // 收集错误信息用于后续分析
+        if (message.toLowerCase().includes("error:")) {
+          errorLines.push(message);
+        }
 
         // 发送 SSE 格式的进度消息
         const sseMessage = `data: ${JSON.stringify({ type: "progress", message })}\n\n`;
@@ -163,6 +236,9 @@ export function executePgRestore(
 
       // 进程结束
       pgProcess.on("close", (code: number | null) => {
+        // 智能错误分析
+        const analysis = analyzeRestoreErrors(errorLines);
+
         if (code === 0) {
           logger.info({
             action: "pg_restore_complete",
@@ -175,17 +251,38 @@ export function executePgRestore(
             exitCode: code,
           })}\n\n`;
           controller.enqueue(encoder.encode(completeMessage));
+        } else if (code === 1 && !analysis.hasFatalErrors && analysis.ignorableCount > 0) {
+          // 特殊处理：退出代码 1 但只有可忽略错误（对象已存在）
+          logger.warn({
+            action: "pg_restore_complete_with_warnings",
+            database: dbConfig.database,
+            exitCode: code,
+            ignorableErrors: analysis.ignorableCount,
+            analysis: analysis.summary,
+          });
+
+          const completeMessage = `data: ${JSON.stringify({
+            type: "complete",
+            message: analysis.summary,
+            exitCode: code,
+            warningCount: analysis.ignorableCount,
+          })}\n\n`;
+          controller.enqueue(encoder.encode(completeMessage));
         } else {
+          // 真正的失败
           logger.error({
             action: "pg_restore_error",
             database: dbConfig.database,
             exitCode: code,
+            fatalErrors: analysis.fatalCount,
+            analysis: analysis.summary,
           });
 
           const errorMessage = `data: ${JSON.stringify({
             type: "error",
-            message: `数据导入失败，退出代码: ${code}`,
+            message: analysis.summary || `数据导入失败，退出代码: ${code}`,
             exitCode: code,
+            errorCount: analysis.fatalCount || errorLines.length,
           })}\n\n`;
           controller.enqueue(encoder.encode(errorMessage));
         }

@@ -28,9 +28,14 @@ ENV PORT=3000
 ENV HOST=0.0.0.0
 WORKDIR /app
 
-# 安装 PostgreSQL 客户端工具（用于数据库备份/恢复功能）
+# 安装 PostgreSQL 18 客户端工具（用于数据库备份/恢复功能）
+# 需要使用官方 PostgreSQL APT 仓库以获取最新版本
 RUN apt-get update && \
-    apt-get install -y postgresql-client && \
+    apt-get install -y gnupg curl ca-certificates && \
+    curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-archive-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
+    apt-get update && \
+    apt-get install -y postgresql-client-18 && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=build --chown=node:node /app/public ./public

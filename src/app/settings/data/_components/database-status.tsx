@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Database, Server, AlertCircle, CheckCircle } from "lucide-react";
+import { Database, Table, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { DatabaseStatus } from "@/types/database-backup";
 
@@ -66,22 +66,54 @@ export function DatabaseStatusDisplay() {
   }
 
   return (
-    <div className="space-y-4">
-      {/* 连接状态 */}
-      <div className="flex items-center gap-2">
-        {status.isAvailable ? (
+    <div className="space-y-3">
+      {/* 紧凑的横向状态栏 */}
+      <div className="flex items-center gap-6 rounded-lg border border-border bg-muted/30 px-4 py-3">
+        {/* 连接状态 */}
+        <div className="flex items-center gap-2">
+          {status.isAvailable ? (
+            <>
+              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-sm font-medium">数据库连接正常</span>
+            </>
+          ) : (
+            <>
+              <div className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
+              <span className="text-sm font-medium text-orange-500">数据库不可用</span>
+            </>
+          )}
+        </div>
+
+        {/* 分隔符 */}
+        {status.isAvailable && (
           <>
-            <CheckCircle className="h-5 w-5 text-green-500" />
-            <span className="text-sm font-medium">数据库连接正常</span>
-          </>
-        ) : (
-          <>
-            <AlertCircle className="h-5 w-5 text-orange-500" />
-            <span className="text-sm font-medium text-orange-500">数据库不可用</span>
+            <div className="h-4 w-px bg-border" />
+
+            {/* 数据库大小 */}
+            <div className="flex items-center gap-2">
+              <Database className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-semibold">{status.databaseSize}</span>
+            </div>
+
+            {/* 分隔符 */}
+            <div className="h-4 w-px bg-border" />
+
+            {/* 表数量 */}
+            <div className="flex items-center gap-2">
+              <Table className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-semibold">{status.tableCount} 个表</span>
+            </div>
           </>
         )}
-        <Button variant="ghost" size="sm" onClick={fetchStatus} className="ml-auto">
-          刷新
+
+        {/* 刷新按钮 */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={fetchStatus}
+          className="ml-auto h-8"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
         </Button>
       </div>
 
@@ -91,41 +123,6 @@ export function DatabaseStatusDisplay() {
           {status.error}
         </div>
       )}
-
-      {/* 数据库信息 */}
-      {status.isAvailable && (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div className="rounded-md border border-border bg-muted/30 p-3">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Database className="h-4 w-4" />
-              <span className="text-xs font-medium">数据库大小</span>
-            </div>
-            <p className="text-lg font-semibold">{status.databaseSize}</p>
-          </div>
-
-          <div className="rounded-md border border-border bg-muted/30 p-3">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Server className="h-4 w-4" />
-              <span className="text-xs font-medium">表数量</span>
-            </div>
-            <p className="text-lg font-semibold">{status.tableCount} 个</p>
-          </div>
-
-          <div className="rounded-md border border-border bg-muted/30 p-3 col-span-2">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Server className="h-4 w-4" />
-              <span className="text-xs font-medium">PostgreSQL 版本</span>
-            </div>
-            <p className="text-sm font-semibold">{status.postgresVersion}</p>
-          </div>
-        </div>
-      )}
-
-      {/* 详细信息 */}
-      <div className="text-xs text-muted-foreground space-y-1">
-        <p>数据库地址: <span className="font-mono">{status.containerName}</span></p>
-        <p>数据库名称: <span className="font-mono">{status.databaseName}</span></p>
-      </div>
     </div>
   );
 }
