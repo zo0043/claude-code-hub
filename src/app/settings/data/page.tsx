@@ -1,0 +1,69 @@
+import { Section } from "@/components/section";
+import { SettingsPageHeader } from "../_components/settings-page-header";
+import { DatabaseStatusDisplay } from "./_components/database-status";
+import { DatabaseExport } from "./_components/database-export";
+import { DatabaseImport } from "./_components/database-import";
+
+export const dynamic = "force-dynamic";
+
+export default async function SettingsDataPage() {
+  return (
+    <>
+      <SettingsPageHeader
+        title="数据管理"
+        description="管理数据库的备份与恢复，支持完整数据导入导出。"
+      />
+
+      <Section
+        title="数据库状态"
+        description="查看当前数据库的连接状态和基本信息。"
+      >
+        <DatabaseStatusDisplay />
+      </Section>
+
+      <Section
+        title="数据导出"
+        description="将数据库导出为备份文件，用于数据迁移或灾难恢复。"
+      >
+        <DatabaseExport />
+      </Section>
+
+      <Section
+        title="数据导入"
+        description="从备份文件恢复数据库，支持覆盖和合并两种模式。"
+      >
+        <DatabaseImport />
+      </Section>
+
+      <Section
+        title="使用说明"
+        description="数据备份与恢复的注意事项"
+      >
+        <div className="prose prose-sm dark:prose-invert max-w-none">
+          <ul className="text-sm text-muted-foreground space-y-2">
+            <li>
+              <strong>备份格式</strong>: 使用 PostgreSQL custom format (.dump)，
+              自动压缩且能够兼容不同版本的数据库结构。
+            </li>
+            <li>
+              <strong>覆盖模式</strong>: 导入前会删除所有现有数据，确保数据库与备份文件完全一致。
+              适合完整恢复场景。
+            </li>
+            <li>
+              <strong>合并模式</strong>: 保留现有数据，尝试插入备份中的数据。
+              如果存在主键冲突可能导致导入失败。
+            </li>
+            <li>
+              <strong>安全建议</strong>: 在执行导入操作前，建议先导出当前数据库作为备份，
+              避免数据丢失。
+            </li>
+            <li>
+              <strong>环境要求</strong>: 此功能需要 Docker Compose 部署环境。
+              本地开发环境可能无法使用。
+            </li>
+          </ul>
+        </div>
+      </Section>
+    </>
+  );
+}
