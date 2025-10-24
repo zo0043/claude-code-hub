@@ -380,4 +380,80 @@ export class SessionTracker {
       return 0;
     }
   }
+
+  /**
+   * 增加 session 并发计数
+   *
+   * 调用时机：请求开始时（在 proxy-handler.ts 中）
+   *
+   * @param sessionId - Session ID
+   */
+  static async incrementConcurrentCount(sessionId: string): Promise<void> {
+    const redis = getRedisClient();
+    if (!redis || redis.status !== "ready") return;
+
+    try {
+      const key = `session:${sessionId}:concurrent_count`;
+      await redis.incr(key);
+      await redis.expire(key, 600); // 10 分钟 TTL（比 session TTL 长一倍，防止计数泄漏）
+
+      logger.trace("SessionTracker: Incremented concurrent count", { sessionId });
+    } catch (error) {
+      logger.error("SessionTracker: Failed to increment concurrent count", { error, sessionId });
+    }
+  }
+
+  /**
+   * 减少 session 并发计数
+   *
+   * 调用时机：请求结束时（在 proxy-handler.ts 的 finally 块中）
+   *
+   * @param sessionId - Session ID
+   */
+  static async decrementConcurrentCount(sessionId: string): Promise<void> {
+    const redis = getRedisClient();
+    if (!redis || redis.status !== "ready") return;
+
+    try {
+      const key = `session:${sessionId}:concurrent_count`;
+      const newCount = await redis.decr(key);
+
+      // 如果计数降到 0 或负数，删除 key（避免无用 key 堆积）
+      if (newCount <= 0) {
+        await redis.del(key);
+      }
+
+      logger.trace("SessionTracker: Decremented concurrent count", { sessionId, newCount });
+    } catch (error) {
+      logger.error("SessionTracker: Failed to decrement concurrent count", { error, sessionId });
+    }
+  }
+
+  /**
+   * 获取 session 当前并发计数
+   *
+   * 调用时机：SessionManager 分配 session ID 时
+   *
+   * @param sessionId - Session ID
+   * @returns 并发请求数量
+   */
+  static async getConcurrentCount(sessionId: string): Promise<number> {
+    const redis = getRedisClient();
+    if (!redis || redis.status !== "ready") {
+      logger.trace("SessionTracker: Redis not ready, returning 0 for concurrent count");
+      return 0;
+    }
+
+    try {
+      const key = `session:${sessionId}:concurrent_count`;
+      const count = await redis.get(key);
+
+      const result = count ? parseInt(count, 10) : 0;
+      logger.trace("SessionTracker: Got concurrent count", { sessionId, count: result });
+      return result;
+    } catch (error) {
+      logger.error("SessionTracker: Failed to get concurrent count", { error, sessionId });
+      return 0; // Fail Open（降级策略）
+    }
+  }
 }

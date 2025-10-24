@@ -41,6 +41,7 @@ export class ProxySession {
   readonly headers: Headers;
   readonly headerLog: string;
   readonly request: ProxyRequestPayload;
+  readonly userAgent: string | null; // User-Agent（用于客户端类型分析）
   userName: string;
   authState: AuthState | null;
   provider: Provider | null;
@@ -59,6 +60,9 @@ export class ProxySession {
   // 上游决策链（记录尝试的供应商列表）
   private providerChain: ProviderChainItem[];
 
+  // 上次选择的决策上下文（用于记录到 providerChain）
+  private _lastSelectionContext?: ProviderChainItem["decisionContext"];
+
   private constructor(init: {
     startTime: number;
     method: string;
@@ -66,6 +70,7 @@ export class ProxySession {
     headers: Headers;
     headerLog: string;
     request: ProxyRequestPayload;
+    userAgent: string | null;
   }) {
     this.startTime = init.startTime;
     this.method = init.method;
@@ -73,6 +78,7 @@ export class ProxySession {
     this.headers = init.headers;
     this.headerLog = init.headerLog;
     this.request = init.request;
+    this.userAgent = init.userAgent;
     this.userName = "unknown";
     this.authState = null;
     this.provider = null;
@@ -89,6 +95,9 @@ export class ProxySession {
     const headerLog = formatHeadersForLog(headers);
     const bodyResult = await parseRequestBody(c);
 
+    // 提取 User-Agent
+    const userAgent = headers.get("user-agent") || null;
+
     const request: ProxyRequestPayload = {
       message: bodyResult.requestMessage,
       buffer: bodyResult.requestBodyBuffer,
@@ -100,7 +109,7 @@ export class ProxySession {
           : null,
     };
 
-    return new ProxySession({ startTime, method, requestUrl, headers, headerLog, request });
+    return new ProxySession({ startTime, method, requestUrl, headers, headerLog, request, userAgent });
   }
 
   setAuthState(state: AuthState): void {
@@ -166,11 +175,12 @@ export class ProxySession {
   addProviderToChain(
     provider: Provider,
     metadata?: {
-      reason?: "initial_selection" | "retry_attempt" | "retry_fallback" | "reuse";
-      selectionMethod?: "reuse" | "random" | "group_filter" | "fallback";
+      reason?: "session_reuse" | "initial_selection" | "concurrent_limit_failed" | "retry_success" | "retry_failed";
+      selectionMethod?: "session_reuse" | "weighted_random" | "group_filtered" | "fail_open_fallback";
       circuitState?: "closed" | "open" | "half-open";
       attemptNumber?: number;
       errorMessage?: string; // 错误信息（失败时记录）
+      decisionContext?: ProviderChainItem["decisionContext"];
     }
   ): void {
     const item: ProviderChainItem = {
@@ -187,6 +197,7 @@ export class ProxySession {
       timestamp: Date.now(),
       attemptNumber: metadata?.attemptNumber,
       errorMessage: metadata?.errorMessage, // 记录错误信息
+      decisionContext: metadata?.decisionContext,
     };
 
     // 避免重复添加同一个供应商（除非是重试，即有 attemptNumber）
@@ -237,6 +248,20 @@ export class ProxySession {
    */
   isModelRedirected(): boolean {
     return this.originalModelName !== null && this.originalModelName !== this.request.model;
+  }
+
+  /**
+   * 设置上次选择的决策上下文（用于记录到 providerChain）
+   */
+  setLastSelectionContext(context: ProviderChainItem["decisionContext"]): void {
+    this._lastSelectionContext = context;
+  }
+
+  /**
+   * 获取上次选择的决策上下文
+   */
+  getLastSelectionContext(): ProviderChainItem["decisionContext"] | undefined {
+    return this._lastSelectionContext;
   }
 }
 

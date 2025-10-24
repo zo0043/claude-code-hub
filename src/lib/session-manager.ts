@@ -21,6 +21,11 @@ import type {
 export class SessionManager {
   private static readonly SESSION_TTL = parseInt(process.env.SESSION_TTL || "300"); // 5 分钟
   private static readonly STORE_MESSAGES = process.env.STORE_SESSION_MESSAGES === "true";
+  private static readonly SHORT_CONTEXT_THRESHOLD = parseInt(
+    process.env.SHORT_CONTEXT_THRESHOLD || "2"
+  ); // 短上下文阈值
+  private static readonly ENABLE_SHORT_CONTEXT_DETECTION =
+    process.env.ENABLE_SHORT_CONTEXT_DETECTION !== "false"; // 默认启用
 
   /**
    * 从客户端请求中提取 session_id（支持 metadata 或 header）
@@ -167,13 +172,44 @@ export class SessionManager {
   ): Promise<string> {
     const redis = getRedisClient();
 
+    const messagesLength = Array.isArray(messages) ? messages.length : 0;
+
     logger.trace("SessionManager: getOrCreateSessionId called", {
       keyId,
       hasClientSession: !!clientSessionId,
+      messagesLength,
     });
 
     // 1. 优先使用客户端传递的 session_id (来自 metadata.user_id 或 metadata.session_id)
     if (clientSessionId) {
+      // 2. 短上下文并发检测（方案E）
+      if (
+        this.ENABLE_SHORT_CONTEXT_DETECTION &&
+        messagesLength <= this.SHORT_CONTEXT_THRESHOLD
+      ) {
+        // 检查该 session 是否有其他请求正在运行
+        const concurrentCount = await SessionTracker.getConcurrentCount(clientSessionId);
+
+        if (concurrentCount > 0) {
+          // 场景B：有并发请求 → 这是并发短任务 → 强制新建 session
+          const newId = this.generateSessionId();
+          logger.info("SessionManager: 检测到并发短任务，强制新建 session", {
+            originalSessionId: clientSessionId,
+            newSessionId: newId,
+            messagesLength,
+            existingConcurrentCount: concurrentCount,
+          });
+          return newId;
+        }
+
+        // 场景A：无并发 → 这可能是长对话的开始 → 允许复用
+        logger.debug("SessionManager: 短上下文但 session 空闲，允许复用（长对话开始）", {
+          sessionId: clientSessionId,
+          messagesLength,
+        });
+      }
+
+      // 3. 长上下文 or 无并发 → 正常复用
       logger.debug("SessionManager: Using client-provided session", { sessionId: clientSessionId });
       // 刷新 TTL（滑动窗口）
       if (redis && redis.status === "ready") {
@@ -725,6 +761,47 @@ export class SessionManager {
       return JSON.parse(messagesJson);
     } catch (error) {
       logger.error("SessionManager: Failed to get session messages", { error });
+      return null;
+    }
+  }
+
+  /**
+   * 存储 session 响应体（临时存储，5分钟过期）
+   *
+   * @param sessionId - Session ID
+   * @param response - 响应体内容（字符串或对象）
+   */
+  static async storeSessionResponse(sessionId: string, response: string | object): Promise<void> {
+    const redis = getRedisClient();
+    if (!redis || redis.status !== "ready") return;
+
+    try {
+      const responseString = typeof response === "string" ? response : JSON.stringify(response);
+      await redis.setex(`session:${sessionId}:response`, this.SESSION_TTL, responseString);
+      logger.trace("SessionManager: Stored session response", {
+        sessionId,
+        size: responseString.length,
+      });
+    } catch (error) {
+      logger.error("SessionManager: Failed to store session response", { error });
+    }
+  }
+
+  /**
+   * 获取 session 响应体
+   *
+   * @param sessionId - Session ID
+   * @returns 响应体内容（字符串）
+   */
+  static async getSessionResponse(sessionId: string): Promise<string | null> {
+    const redis = getRedisClient();
+    if (!redis || redis.status !== "ready") return null;
+
+    try {
+      const response = await redis.get(`session:${sessionId}:response`);
+      return response;
+    } catch (error) {
+      logger.error("SessionManager: Failed to get session response", { error });
       return null;
     }
   }
