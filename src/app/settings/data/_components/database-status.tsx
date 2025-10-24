@@ -123,7 +123,7 @@ export function DatabaseStatusDisplay() {
 
       {/* 详细信息 */}
       <div className="text-xs text-muted-foreground space-y-1">
-        <p>容器名称: <span className="font-mono">{status.containerName}</span></p>
+        <p>数据库地址: <span className="font-mono">{status.containerName}</span></p>
         <p>数据库名称: <span className="font-mono">{status.databaseName}</span></p>
       </div>
     </div>

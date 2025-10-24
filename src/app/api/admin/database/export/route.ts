@@ -1,9 +1,6 @@
-import { executePgDump, checkDockerContainer } from "@/lib/database-backup/docker-executor";
+import { executePgDump, checkDatabaseConnection } from "@/lib/database-backup/docker-executor";
 import { logger } from "@/lib/logger";
 import { getSession } from "@/lib/auth";
-
-const CONTAINER_NAME = process.env.POSTGRES_CONTAINER_NAME || "claude-code-hub-db";
-const DATABASE_NAME = process.env.DB_NAME || "claude_code_hub";
 
 /**
  * 导出数据库备份
@@ -21,21 +18,20 @@ export async function GET() {
       return new Response("Unauthorized", { status: 401 });
     }
 
-    // 2. 检查 Docker 容器是否可用
-    const isAvailable = await checkDockerContainer(CONTAINER_NAME);
+    // 2. 检查数据库连接
+    const isAvailable = await checkDatabaseConnection();
     if (!isAvailable) {
       logger.error({
-        action: "database_export_container_unavailable",
-        containerName: CONTAINER_NAME,
+        action: "database_export_connection_unavailable",
       });
       return Response.json(
-        { error: `Docker 容器 ${CONTAINER_NAME} 不可用，请确保使用 docker compose 部署` },
+        { error: "数据库连接不可用，请检查数据库服务状态" },
         { status: 503 }
       );
     }
 
     // 3. 执行 pg_dump
-    const stream = executePgDump(CONTAINER_NAME, DATABASE_NAME);
+    const stream = executePgDump();
 
     // 4. 生成文件名（带时间戳）
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
@@ -44,7 +40,6 @@ export async function GET() {
     logger.info({
       action: "database_export_initiated",
       filename,
-      databaseName: DATABASE_NAME,
     });
 
     // 5. 返回流式响应

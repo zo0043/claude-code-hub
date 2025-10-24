@@ -1,10 +1,8 @@
-import { checkDockerContainer, getDatabaseInfo } from "@/lib/database-backup/docker-executor";
+import { checkDatabaseConnection, getDatabaseInfo } from "@/lib/database-backup/docker-executor";
+import { getDatabaseConfig } from "@/lib/database-backup/db-config";
 import { logger } from "@/lib/logger";
 import { getSession } from "@/lib/auth";
 import type { DatabaseStatus } from "@/types/database-backup";
-
-const CONTAINER_NAME = process.env.POSTGRES_CONTAINER_NAME || "claude-code-hub-db";
-const DATABASE_NAME = process.env.DB_NAME || "claude_code_hub";
 
 /**
  * 获取数据库状态信息
@@ -22,36 +20,40 @@ export async function GET() {
       return new Response("Unauthorized", { status: 401 });
     }
 
-    // 2. 检查 Docker 容器是否可用
-    const isAvailable = await checkDockerContainer(CONTAINER_NAME);
+    // 2. 获取数据库配置
+    const dbConfig = getDatabaseConfig();
+
+    // 3. 检查数据库连接
+    const isAvailable = await checkDatabaseConnection();
 
     if (!isAvailable) {
       const status: DatabaseStatus = {
         isAvailable: false,
-        containerName: CONTAINER_NAME,
-        databaseName: DATABASE_NAME,
+        containerName: `${dbConfig.host}:${dbConfig.port}`,
+        databaseName: dbConfig.database,
         databaseSize: "N/A",
         tableCount: 0,
         postgresVersion: "N/A",
-        error: `Docker 容器 ${CONTAINER_NAME} 不可用，请确保使用 docker compose 部署`,
+        error: "数据库连接不可用，请检查数据库服务状态",
       };
 
       logger.warn({
-        action: "database_status_container_unavailable",
-        containerName: CONTAINER_NAME,
+        action: "database_status_connection_unavailable",
+        host: dbConfig.host,
+        port: dbConfig.port,
       });
 
       return Response.json(status, { status: 200 });
     }
 
-    // 3. 获取数据库详细信息
+    // 4. 获取数据库详细信息
     try {
-      const info = await getDatabaseInfo(CONTAINER_NAME, DATABASE_NAME);
+      const info = await getDatabaseInfo();
 
       const status: DatabaseStatus = {
         isAvailable: true,
-        containerName: CONTAINER_NAME,
-        databaseName: DATABASE_NAME,
+        containerName: `${dbConfig.host}:${dbConfig.port}`,
+        databaseName: dbConfig.database,
         databaseSize: info.size,
         tableCount: info.tableCount,
         postgresVersion: info.version,
@@ -66,8 +68,8 @@ export async function GET() {
     } catch (infoError) {
       const status: DatabaseStatus = {
         isAvailable: true,
-        containerName: CONTAINER_NAME,
-        databaseName: DATABASE_NAME,
+        containerName: `${dbConfig.host}:${dbConfig.port}`,
+        databaseName: dbConfig.database,
         databaseSize: "Unknown",
         tableCount: 0,
         postgresVersion: "Unknown",

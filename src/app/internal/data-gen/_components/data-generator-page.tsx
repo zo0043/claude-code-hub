@@ -284,7 +284,7 @@ export function DataGeneratorPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>生成的日志数据</CardTitle>
+              <CardTitle>使用日志</CardTitle>
               <CardDescription>共 {result.logs.length} 条记录</CardDescription>
             </CardHeader>
             <CardContent>

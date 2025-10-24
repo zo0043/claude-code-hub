@@ -28,6 +28,11 @@ ENV PORT=3000
 ENV HOST=0.0.0.0
 WORKDIR /app
 
+# 安装 PostgreSQL 客户端工具（用于数据库备份/恢复功能）
+RUN apt-get update && \
+    apt-get install -y postgresql-client && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY --from=build --chown=node:node /app/public ./public
 COPY --from=build --chown=node:node /app/drizzle ./drizzle
 COPY --from=build --chown=node:node /app/.next/standalone ./

@@ -1,78 +1,70 @@
-import { spawn, type ChildProcessWithoutNullStreams } from "child_process";
+import { spawn } from "child_process";
 import { createReadStream } from "fs";
 import { logger } from "@/lib/logger";
-
-/**
- * 检查 Docker 容器是否可用
- */
-export async function checkDockerContainer(containerName: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    const process = spawn("docker", ["inspect", containerName]);
-
-    process.on("close", (code) => {
-      resolve(code === 0);
-    });
-
-    process.on("error", () => {
-      resolve(false);
-    });
-  });
-}
+import { getDatabaseConfig } from "./db-config";
 
 /**
  * 执行 pg_dump 导出数据库
  *
- * @param containerName Docker 容器名称
- * @param databaseName 数据库名称
  * @returns ReadableStream 数据流
  */
-export function executePgDump(
-  containerName: string,
-  databaseName: string
-): ReadableStream<Uint8Array> {
-  const process = spawn("docker", [
-    "exec",
-    containerName,
+export function executePgDump(): ReadableStream<Uint8Array> {
+  const dbConfig = getDatabaseConfig();
+
+  const pgProcess = spawn(
     "pg_dump",
-    "-Fc", // Custom format (compressed)
-    "-v", // Verbose
-    "-d",
-    databaseName,
-  ]);
+    [
+      "-h",
+      dbConfig.host,
+      "-p",
+      dbConfig.port.toString(),
+      "-U",
+      dbConfig.user,
+      "-d",
+      dbConfig.database,
+      "-Fc", // Custom format (compressed)
+      "-v", // Verbose
+    ],
+    {
+      env: {
+        ...process.env,
+        PGPASSWORD: dbConfig.password,
+      },
+    }
+  );
 
   logger.info({
     action: "pg_dump_start",
-    containerName,
-    databaseName,
+    host: dbConfig.host,
+    port: dbConfig.port,
+    database: dbConfig.database,
   });
 
   return new ReadableStream({
     start(controller) {
       // 监听 stdout (数据输出)
-      process.stdout.on("data", (chunk: Buffer) => {
+      pgProcess.stdout.on("data", (chunk: Buffer) => {
         controller.enqueue(new Uint8Array(chunk));
       });
 
       // 监听 stderr (日志输出)
-      process.stderr.on("data", (chunk: Buffer) => {
+      pgProcess.stderr.on("data", (chunk: Buffer) => {
         logger.info(`[pg_dump] ${chunk.toString().trim()}`);
       });
 
       // 进程结束
-      process.on("close", (code) => {
+      pgProcess.on("close", (code: number | null) => {
         if (code === 0) {
           logger.info({
             action: "pg_dump_complete",
-            containerName,
-            databaseName,
+            database: dbConfig.database,
           });
           controller.close();
         } else {
           const error = `pg_dump 失败，退出代码: ${code}`;
           logger.error({
             action: "pg_dump_error",
-            containerName,
-            databaseName,
+            database: dbConfig.database,
             exitCode: code,
           });
           controller.error(new Error(error));
@@ -80,7 +72,7 @@ export function executePgDump(
       });
 
       // 进程错误
-      process.on("error", (err) => {
+      pgProcess.on("error", (err: Error) => {
         logger.error({
           action: "pg_dump_spawn_error",
           error: err.message,
@@ -90,11 +82,10 @@ export function executePgDump(
     },
 
     cancel() {
-      process.kill();
+      pgProcess.kill();
       logger.warn({
         action: "pg_dump_cancelled",
-        containerName,
-        databaseName,
+        database: dbConfig.database,
       });
     },
   });
@@ -103,26 +94,23 @@ export function executePgDump(
 /**
  * 执行 pg_restore 导入数据库
  *
- * @param containerName Docker 容器名称
- * @param databaseName 数据库名称
  * @param filePath 备份文件路径
  * @param cleanFirst 是否清除现有数据
  * @returns ReadableStream SSE 格式的进度流
  */
-export function executePgRestore(
-  containerName: string,
-  databaseName: string,
-  filePath: string,
-  cleanFirst: boolean
-): ReadableStream<Uint8Array> {
+export function executePgRestore(filePath: string, cleanFirst: boolean): ReadableStream<Uint8Array> {
+  const dbConfig = getDatabaseConfig();
+
   const args = [
-    "exec",
-    "-i", // 交互模式（接收 stdin）
-    containerName,
-    "pg_restore",
-    "-v", // Verbose（输出详细进度）
+    "-h",
+    dbConfig.host,
+    "-p",
+    dbConfig.port.toString(),
+    "-U",
+    dbConfig.user,
     "-d",
-    databaseName,
+    dbConfig.database,
+    "-v", // Verbose（输出详细进度）
   ];
 
   // 覆盖模式：清除现有数据
@@ -130,26 +118,32 @@ export function executePgRestore(
     args.push("--clean", "--if-exists");
   }
 
-  const process = spawn("docker", args);
+  const pgProcess = spawn("pg_restore", args, {
+    env: {
+      ...process.env,
+      PGPASSWORD: dbConfig.password,
+    },
+  });
 
   logger.info({
     action: "pg_restore_start",
-    containerName,
-    databaseName,
+    host: dbConfig.host,
+    port: dbConfig.port,
+    database: dbConfig.database,
     cleanFirst,
     filePath,
   });
 
   // 将备份文件通过 stdin 传给 pg_restore
   const fileStream = createReadStream(filePath);
-  fileStream.pipe(process.stdin);
+  fileStream.pipe(pgProcess.stdin);
 
   const encoder = new TextEncoder();
 
   return new ReadableStream({
     start(controller) {
       // 监听 stderr（pg_restore 的进度信息都输出到 stderr）
-      process.stderr.on("data", (chunk: Buffer) => {
+      pgProcess.stderr.on("data", (chunk: Buffer) => {
         const message = chunk.toString().trim();
         logger.info(`[pg_restore] ${message}`);
 
@@ -159,7 +153,7 @@ export function executePgRestore(
       });
 
       // 监听 stdout（一般为空，但为了完整性还是处理）
-      process.stdout.on("data", (chunk: Buffer) => {
+      pgProcess.stdout.on("data", (chunk: Buffer) => {
         const message = chunk.toString().trim();
         if (message) {
           logger.info(`[pg_restore stdout] ${message}`);
@@ -167,12 +161,11 @@ export function executePgRestore(
       });
 
       // 进程结束
-      process.on("close", (code) => {
+      pgProcess.on("close", (code: number | null) => {
         if (code === 0) {
           logger.info({
             action: "pg_restore_complete",
-            containerName,
-            databaseName,
+            database: dbConfig.database,
           });
 
           const completeMessage = `data: ${JSON.stringify({
@@ -184,8 +177,7 @@ export function executePgRestore(
         } else {
           logger.error({
             action: "pg_restore_error",
-            containerName,
-            databaseName,
+            database: dbConfig.database,
             exitCode: code,
           });
 
@@ -201,7 +193,7 @@ export function executePgRestore(
       });
 
       // 进程错误
-      process.on("error", (err) => {
+      pgProcess.on("error", (err: Error) => {
         logger.error({
           action: "pg_restore_spawn_error",
           error: err.message,
@@ -217,12 +209,11 @@ export function executePgRestore(
     },
 
     cancel() {
-      process.kill();
+      pgProcess.kill();
       fileStream.destroy();
       logger.warn({
         action: "pg_restore_cancelled",
-        containerName,
-        databaseName,
+        database: dbConfig.database,
       });
     },
   });
@@ -231,50 +222,59 @@ export function executePgRestore(
 /**
  * 获取数据库信息
  */
-export async function getDatabaseInfo(
-  containerName: string,
-  databaseName: string
-): Promise<{
+export async function getDatabaseInfo(): Promise<{
   size: string;
   tableCount: number;
   version: string;
 }> {
+  const dbConfig = getDatabaseConfig();
+
   return new Promise((resolve, reject) => {
     // 查询数据库大小和表数量
     const query = `
       SELECT
-        pg_size_pretty(pg_database_size('${databaseName}')) as size,
+        pg_size_pretty(pg_database_size('${dbConfig.database}')) as size,
         (SELECT count(*) FROM information_schema.tables
          WHERE table_schema = 'public' AND table_type = 'BASE TABLE') as table_count,
         version() as version;
     `;
 
-    const process = spawn("docker", [
-      "exec",
-      containerName,
+    const pgProcess = spawn(
       "psql",
-      "-U",
-      "postgres",
-      "-d",
-      databaseName,
-      "-t", // 不显示列名
-      "-A", // 不对齐
-      "-c",
-      query,
-    ]);
+      [
+        "-h",
+        dbConfig.host,
+        "-p",
+        dbConfig.port.toString(),
+        "-U",
+        dbConfig.user,
+        "-d",
+        dbConfig.database,
+        "-t", // 不显示列名
+        "-A", // 不对齐
+        "-c",
+        query,
+      ],
+      {
+        env: {
+          ...process.env,
+          PGPASSWORD: dbConfig.password,
+        },
+      }
+    );
 
     let output = "";
     let error = "";
 
-    process.stdout.on("data", (chunk) => {
+    pgProcess.stdout.on("data", (chunk: Buffer) => {
       output += chunk.toString();
     });
 
-    process.stderr.on("data", (chunk) => {
+    pgProcess.stderr.on("data", (chunk: Buffer) => {
       error += chunk.toString();
     });
 
-    process.on("close", (code) => {
+    pgProcess.on("close", (code: number | null) => {
       if (code === 0) {
         const lines = output.trim().split("\n");
         if (lines.length > 0) {
@@ -292,8 +292,36 @@ export async function getDatabaseInfo(
       }
     });
 
-    process.on("error", (err) => {
+    pgProcess.on("error", (err: Error) => {
       reject(err);
+    });
+  });
+}
+
+/**
+ * 检查数据库连接是否可用
+ */
+export async function checkDatabaseConnection(): Promise<boolean> {
+  const dbConfig = getDatabaseConfig();
+
+  return new Promise((resolve) => {
+    const pgProcess = spawn(
+      "pg_isready",
+      ["-h", dbConfig.host, "-p", dbConfig.port.toString(), "-U", dbConfig.user, "-d", dbConfig.database],
+      {
+        env: {
+          ...process.env,
+          PGPASSWORD: dbConfig.password,
+        },
+      }
+    );
+
+    pgProcess.on("close", (code: number | null) => {
+      resolve(code === 0);
+    });
+
+    pgProcess.on("error", () => {
+      resolve(false);
     });
   });
 }

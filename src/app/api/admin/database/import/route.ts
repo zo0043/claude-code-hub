@@ -1,10 +1,7 @@
 import { writeFile, unlink } from "fs/promises";
-import { executePgRestore, checkDockerContainer } from "@/lib/database-backup/docker-executor";
+import { executePgRestore, checkDatabaseConnection } from "@/lib/database-backup/docker-executor";
 import { logger } from "@/lib/logger";
 import { getSession } from "@/lib/auth";
-
-const CONTAINER_NAME = process.env.POSTGRES_CONTAINER_NAME || "claude-code-hub-db";
-const DATABASE_NAME = process.env.DB_NAME || "claude_code_hub";
 
 /**
  * 导入数据库备份
@@ -28,15 +25,14 @@ export async function POST(request: Request) {
       return new Response("Unauthorized", { status: 401 });
     }
 
-    // 2. 检查 Docker 容器是否可用
-    const isAvailable = await checkDockerContainer(CONTAINER_NAME);
+    // 2. 检查数据库连接
+    const isAvailable = await checkDatabaseConnection();
     if (!isAvailable) {
       logger.error({
-        action: "database_import_container_unavailable",
-        containerName: CONTAINER_NAME,
+        action: "database_import_connection_unavailable",
       });
       return Response.json(
-        { error: `Docker 容器 ${CONTAINER_NAME} 不可用，请确保使用 docker compose 部署` },
+        { error: "数据库连接不可用，请检查数据库服务状态" },
         { status: 503 }
       );
     }
@@ -60,7 +56,6 @@ export async function POST(request: Request) {
       filename: file.name,
       fileSize: file.size,
       cleanFirst,
-      databaseName: DATABASE_NAME,
     });
 
     // 5. 保存上传文件到临时目录
@@ -74,7 +69,7 @@ export async function POST(request: Request) {
     });
 
     // 6. 执行 pg_restore，返回 SSE 流
-    const stream = executePgRestore(CONTAINER_NAME, DATABASE_NAME, tempFilePath, cleanFirst);
+    const stream = executePgRestore(tempFilePath, cleanFirst);
 
     // 7. 清理临时文件的逻辑（在流结束后执行）
     const cleanupStream = new TransformStream({
