@@ -24,8 +24,7 @@ function calculateMeanAndStddev(values: number[]): { mean: number; stddev: numbe
   }
 
   const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
-  const variance =
-    values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+  const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
   const stddev = Math.sqrt(variance);
 
   return { mean, stddev };

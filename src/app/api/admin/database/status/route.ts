@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { checkDockerContainer, getDatabaseInfo } from '@/lib/database-backup/docker-executor';
-import { logger } from '@/lib/logger';
-import type { DatabaseStatus } from '@/types/database-backup';
+import { NextRequest, NextResponse } from "next/server";
+import { checkDockerContainer, getDatabaseInfo } from "@/lib/database-backup/docker-executor";
+import { logger } from "@/lib/logger";
+import type { DatabaseStatus } from "@/types/database-backup";
 
-const CONTAINER_NAME = process.env.POSTGRES_CONTAINER_NAME || 'claude-code-hub-db';
-const DATABASE_NAME = process.env.DB_NAME || 'claude_code_hub';
+const CONTAINER_NAME = process.env.POSTGRES_CONTAINER_NAME || "claude-code-hub-db";
+const DATABASE_NAME = process.env.DB_NAME || "claude_code_hub";
 
 /**
  * 获取数据库状态信息
@@ -16,13 +16,10 @@ const DATABASE_NAME = process.env.DB_NAME || 'claude_code_hub';
 export async function GET(request: NextRequest) {
   try {
     // 1. 验证管理员权限
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    const token = request.headers.get("authorization")?.replace("Bearer ", "");
     if (token !== process.env.ADMIN_TOKEN) {
-      logger.warn({ action: 'database_status_unauthorized' });
-      return NextResponse.json(
-        { error: '未授权访问' },
-        { status: 401 }
-      );
+      logger.warn({ action: "database_status_unauthorized" });
+      return NextResponse.json({ error: "未授权访问" }, { status: 401 });
     }
 
     // 2. 检查 Docker 容器是否可用
@@ -33,14 +30,14 @@ export async function GET(request: NextRequest) {
         isAvailable: false,
         containerName: CONTAINER_NAME,
         databaseName: DATABASE_NAME,
-        databaseSize: 'N/A',
+        databaseSize: "N/A",
         tableCount: 0,
-        postgresVersion: 'N/A',
+        postgresVersion: "N/A",
         error: `Docker 容器 ${CONTAINER_NAME} 不可用，请确保使用 docker compose 部署`,
       };
 
       logger.warn({
-        action: 'database_status_container_unavailable',
+        action: "database_status_container_unavailable",
         containerName: CONTAINER_NAME,
       });
 
@@ -61,7 +58,7 @@ export async function GET(request: NextRequest) {
       };
 
       logger.info({
-        action: 'database_status_retrieved',
+        action: "database_status_retrieved",
         ...status,
       });
 
@@ -71,14 +68,14 @@ export async function GET(request: NextRequest) {
         isAvailable: true,
         containerName: CONTAINER_NAME,
         databaseName: DATABASE_NAME,
-        databaseSize: 'Unknown',
+        databaseSize: "Unknown",
         tableCount: 0,
-        postgresVersion: 'Unknown',
+        postgresVersion: "Unknown",
         error: infoError instanceof Error ? infoError.message : String(infoError),
       };
 
       logger.error({
-        action: 'database_status_info_error',
+        action: "database_status_info_error",
         error: infoError instanceof Error ? infoError.message : String(infoError),
       });
 
@@ -86,13 +83,13 @@ export async function GET(request: NextRequest) {
     }
   } catch (error) {
     logger.error({
-      action: 'database_status_error',
+      action: "database_status_error",
       error: error instanceof Error ? error.message : String(error),
     });
 
     return NextResponse.json(
       {
-        error: '获取数据库状态失败',
+        error: "获取数据库状态失败",
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }

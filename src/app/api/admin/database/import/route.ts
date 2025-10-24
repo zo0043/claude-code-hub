@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, unlink } from 'fs/promises';
-import { executePgRestore, checkDockerContainer } from '@/lib/database-backup/docker-executor';
-import { logger } from '@/lib/logger';
+import { NextRequest, NextResponse } from "next/server";
+import { writeFile, unlink } from "fs/promises";
+import { executePgRestore, checkDockerContainer } from "@/lib/database-backup/docker-executor";
+import { logger } from "@/lib/logger";
 
-const CONTAINER_NAME = process.env.POSTGRES_CONTAINER_NAME || 'claude-code-hub-db';
-const DATABASE_NAME = process.env.DB_NAME || 'claude_code_hub';
+const CONTAINER_NAME = process.env.POSTGRES_CONTAINER_NAME || "claude-code-hub-db";
+const DATABASE_NAME = process.env.DB_NAME || "claude_code_hub";
 
 /**
  * 导入数据库备份
@@ -22,20 +22,17 @@ export async function POST(request: NextRequest) {
 
   try {
     // 1. 验证管理员权限
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    const token = request.headers.get("authorization")?.replace("Bearer ", "");
     if (token !== process.env.ADMIN_TOKEN) {
-      logger.warn({ action: 'database_import_unauthorized' });
-      return NextResponse.json(
-        { error: '未授权访问' },
-        { status: 401 }
-      );
+      logger.warn({ action: "database_import_unauthorized" });
+      return NextResponse.json({ error: "未授权访问" }, { status: 401 });
     }
 
     // 2. 检查 Docker 容器是否可用
     const isAvailable = await checkDockerContainer(CONTAINER_NAME);
     if (!isAvailable) {
       logger.error({
-        action: 'database_import_container_unavailable',
+        action: "database_import_container_unavailable",
         containerName: CONTAINER_NAME,
       });
       return NextResponse.json(
@@ -46,26 +43,23 @@ export async function POST(request: NextRequest) {
 
     // 3. 解析表单数据
     const formData = await request.formData();
-    const file = formData.get('file') as File | null;
-    const cleanFirst = formData.get('cleanFirst') === 'true';
+    const file = formData.get("file") as File | null;
+    const cleanFirst = formData.get("cleanFirst") === "true";
 
     if (!file) {
-      return NextResponse.json(
-        { error: '缺少备份文件' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "缺少备份文件" }, { status: 400 });
     }
 
     // 4. 验证文件类型
-    if (!file.name.endsWith('.dump')) {
+    if (!file.name.endsWith(".dump")) {
       return NextResponse.json(
-        { error: '文件格式错误，仅支持 .dump 格式的备份文件' },
+        { error: "文件格式错误，仅支持 .dump 格式的备份文件" },
         { status: 400 }
       );
     }
 
     logger.info({
-      action: 'database_import_initiated',
+      action: "database_import_initiated",
       filename: file.name,
       fileSize: file.size,
       cleanFirst,
@@ -78,17 +72,12 @@ export async function POST(request: NextRequest) {
     await writeFile(tempFilePath, Buffer.from(bytes));
 
     logger.info({
-      action: 'database_import_file_saved',
+      action: "database_import_file_saved",
       tempFilePath,
     });
 
     // 6. 执行 pg_restore，返回 SSE 流
-    const stream = executePgRestore(
-      CONTAINER_NAME,
-      DATABASE_NAME,
-      tempFilePath,
-      cleanFirst
-    );
+    const stream = executePgRestore(CONTAINER_NAME, DATABASE_NAME, tempFilePath, cleanFirst);
 
     // 7. 清理临时文件的逻辑（在流结束后执行）
     const cleanupStream = new TransformStream({
@@ -97,13 +86,13 @@ export async function POST(request: NextRequest) {
           unlink(tempFilePath)
             .then(() => {
               logger.info({
-                action: 'database_import_temp_file_cleaned',
+                action: "database_import_temp_file_cleaned",
                 tempFilePath,
               });
             })
             .catch((err) => {
               logger.error({
-                action: 'database_import_temp_file_cleanup_error',
+                action: "database_import_temp_file_cleanup_error",
                 tempFilePath,
                 error: err.message,
               });
@@ -116,14 +105,14 @@ export async function POST(request: NextRequest) {
     return new Response(stream.pipeThrough(cleanupStream), {
       status: 200,
       headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
       },
     });
   } catch (error) {
     logger.error({
-      action: 'database_import_error',
+      action: "database_import_error",
       error: error instanceof Error ? error.message : String(error),
     });
 
@@ -131,7 +120,7 @@ export async function POST(request: NextRequest) {
     if (tempFilePath) {
       unlink(tempFilePath).catch((err) => {
         logger.error({
-          action: 'database_import_temp_file_cleanup_error',
+          action: "database_import_temp_file_cleanup_error",
           tempFilePath,
           error: err.message,
         });
@@ -140,7 +129,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        error: '导入数据库失败',
+        error: "导入数据库失败",
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }

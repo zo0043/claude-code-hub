@@ -13,21 +13,10 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const {
-      startDate,
-      endDate,
-      totalRecords,
-      totalCostCny,
-      models,
-      userIds,
-      providerIds,
-    } = body;
+    const { startDate, endDate, totalRecords, totalCostCny, models, userIds, providerIds } = body;
 
     if (!startDate || !endDate) {
-      return NextResponse.json(
-        { error: "startDate and endDate are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "startDate and endDate are required" }, { status: 400 });
     }
 
     const params: GeneratorParams = {

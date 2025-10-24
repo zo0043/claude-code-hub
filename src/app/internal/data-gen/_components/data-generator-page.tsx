@@ -49,13 +49,22 @@ export function DataGeneratorPage() {
         payload.totalRecords = parseInt(totalRecords, 10);
       }
       if (models) {
-        payload.models = models.split(",").map((m) => m.trim()).filter(Boolean);
+        payload.models = models
+          .split(",")
+          .map((m) => m.trim())
+          .filter(Boolean);
       }
       if (userIds) {
-        payload.userIds = userIds.split(",").map((id) => parseInt(id.trim(), 10)).filter(Number.isInteger);
+        payload.userIds = userIds
+          .split(",")
+          .map((id) => parseInt(id.trim(), 10))
+          .filter(Number.isInteger);
       }
       if (providerIds) {
-        payload.providerIds = providerIds.split(",").map((id) => parseInt(id.trim(), 10)).filter(Number.isInteger);
+        payload.providerIds = providerIds
+          .split(",")
+          .map((id) => parseInt(id.trim(), 10))
+          .filter(Number.isInteger);
       }
 
       const response = await fetch("/api/internal/data-gen", {
@@ -130,11 +139,7 @@ export function DataGeneratorPage() {
     <div className="space-y-6 p-6">
       {!showParams && result && (
         <div className="flex justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowParams(true)}
-          >
+          <Button variant="outline" size="sm" onClick={() => setShowParams(true)}>
             <Settings className="mr-2 h-4 w-4" />
             重新配置参数
           </Button>
@@ -143,85 +148,85 @@ export function DataGeneratorPage() {
 
       {showParams && (
         <Card>
-        <CardHeader>
-          <CardTitle>生成参数</CardTitle>
-          <CardDescription>配置生成参数以创建模拟日志数据</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="startDate">起始时间 *</Label>
-              <Input
-                id="startDate"
-                type="datetime-local"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
+          <CardHeader>
+            <CardTitle>生成参数</CardTitle>
+            <CardDescription>配置生成参数以创建模拟日志数据</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startDate">起始时间 *</Label>
+                <Input
+                  id="startDate"
+                  type="datetime-local"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="endDate">结束时间 *</Label>
+                <Input
+                  id="endDate"
+                  type="datetime-local"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="totalCostCny">总金额（人民币）</Label>
+                <Input
+                  id="totalCostCny"
+                  type="number"
+                  placeholder="如：1000"
+                  value={totalCostCny}
+                  onChange={(e) => setTotalCostCny(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="totalRecords">总记录数</Label>
+                <Input
+                  id="totalRecords"
+                  type="number"
+                  placeholder="如：500（不填则根据金额计算）"
+                  value={totalRecords}
+                  onChange={(e) => setTotalRecords(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="models">包含模型（逗号分隔）</Label>
+                <Input
+                  id="models"
+                  placeholder="如：claude-3-5-sonnet,gpt-4（留空则全部）"
+                  value={models}
+                  onChange={(e) => setModels(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="userIds">用户ID（逗号分隔）</Label>
+                <Input
+                  id="userIds"
+                  placeholder="如：1,2,3（留空则全部）"
+                  value={userIds}
+                  onChange={(e) => setUserIds(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="providerIds">供应商ID（逗号分隔）</Label>
+                <Input
+                  id="providerIds"
+                  placeholder="如：1,2（留空则全部）"
+                  value={providerIds}
+                  onChange={(e) => setProviderIds(e.target.value)}
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="endDate">结束时间 *</Label>
-              <Input
-                id="endDate"
-                type="datetime-local"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="totalCostCny">总金额（人民币）</Label>
-              <Input
-                id="totalCostCny"
-                type="number"
-                placeholder="如：1000"
-                value={totalCostCny}
-                onChange={(e) => setTotalCostCny(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="totalRecords">总记录数</Label>
-              <Input
-                id="totalRecords"
-                type="number"
-                placeholder="如：500（不填则根据金额计算）"
-                value={totalRecords}
-                onChange={(e) => setTotalRecords(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="models">包含模型（逗号分隔）</Label>
-              <Input
-                id="models"
-                placeholder="如：claude-3-5-sonnet,gpt-4（留空则全部）"
-                value={models}
-                onChange={(e) => setModels(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="userIds">用户ID（逗号分隔）</Label>
-              <Input
-                id="userIds"
-                placeholder="如：1,2,3（留空则全部）"
-                value={userIds}
-                onChange={(e) => setUserIds(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="providerIds">供应商ID（逗号分隔）</Label>
-              <Input
-                id="providerIds"
-                placeholder="如：1,2（留空则全部）"
-                value={providerIds}
-                onChange={(e) => setProviderIds(e.target.value)}
-              />
-            </div>
-          </div>
 
-          <Button onClick={handleGenerate} disabled={loading || !startDate || !endDate}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            生成数据
-          </Button>
-        </CardContent>
-      </Card>
+            <Button onClick={handleGenerate} disabled={loading || !startDate || !endDate}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              生成数据
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {error && (
@@ -248,7 +253,9 @@ export function DataGeneratorPage() {
             <Card>
               <CardHeader className="pb-2">
                 <CardDescription>总记录数</CardDescription>
-                <CardTitle className="text-2xl">{result.summary.totalRecords.toLocaleString()}</CardTitle>
+                <CardTitle className="text-2xl">
+                  {result.summary.totalRecords.toLocaleString()}
+                </CardTitle>
               </CardHeader>
             </Card>
             <Card>
@@ -260,13 +267,17 @@ export function DataGeneratorPage() {
             <Card>
               <CardHeader className="pb-2">
                 <CardDescription>总成本（人民币）</CardDescription>
-                <CardTitle className="text-2xl">¥{(result.summary.totalCost * 7.1).toFixed(2)}</CardTitle>
+                <CardTitle className="text-2xl">
+                  ¥{(result.summary.totalCost * 7.1).toFixed(2)}
+                </CardTitle>
               </CardHeader>
             </Card>
             <Card>
               <CardHeader className="pb-2">
                 <CardDescription>总 Token</CardDescription>
-                <CardTitle className="text-2xl">{result.summary.totalTokens.toLocaleString()}</CardTitle>
+                <CardTitle className="text-2xl">
+                  {result.summary.totalTokens.toLocaleString()}
+                </CardTitle>
               </CardHeader>
             </Card>
           </div>
@@ -274,9 +285,7 @@ export function DataGeneratorPage() {
           <Card>
             <CardHeader>
               <CardTitle>生成的日志数据</CardTitle>
-              <CardDescription>
-                共 {result.logs.length} 条记录
-              </CardDescription>
+              <CardDescription>共 {result.logs.length} 条记录</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="rounded-md border max-h-[600px] overflow-auto">

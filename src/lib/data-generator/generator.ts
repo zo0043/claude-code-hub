@@ -115,14 +115,14 @@ export async function generateLogs(params: GeneratorParams): Promise<GeneratorRe
     distribution.providerWeights.length === 0 ||
     distribution.modelWeights.length === 0
   ) {
-    throw new Error("Insufficient data to generate logs. Please ensure users, providers, and model prices are configured.");
+    throw new Error(
+      "Insufficient data to generate logs. Please ensure users, providers, and model prices are configured."
+    );
   }
 
   let filteredUsers = distribution.userWeights;
   if (params.userIds && params.userIds.length > 0) {
-    filteredUsers = distribution.userWeights.filter((w) =>
-      params.userIds!.includes(w.item.id)
-    );
+    filteredUsers = distribution.userWeights.filter((w) => params.userIds!.includes(w.item.id));
   }
 
   let filteredProviders = distribution.providerWeights;
@@ -134,16 +134,10 @@ export async function generateLogs(params: GeneratorParams): Promise<GeneratorRe
 
   let filteredModels = distribution.modelWeights;
   if (params.models && params.models.length > 0) {
-    filteredModels = distribution.modelWeights.filter((w) =>
-      params.models!.includes(w.item.name)
-    );
+    filteredModels = distribution.modelWeights.filter((w) => params.models!.includes(w.item.name));
   }
 
-  if (
-    filteredUsers.length === 0 ||
-    filteredProviders.length === 0 ||
-    filteredModels.length === 0
-  ) {
+  if (filteredUsers.length === 0 || filteredProviders.length === 0 || filteredModels.length === 0) {
     throw new Error("No data matches the filter criteria");
   }
 
@@ -219,10 +213,7 @@ export async function generateLogs(params: GeneratorParams): Promise<GeneratorRe
         inputTokens = inputTokens - cacheReadInputTokens;
       }
 
-      durationMs = normalRandom(
-        distribution.durationStats.mean,
-        distribution.durationStats.stddev
-      );
+      durationMs = normalRandom(distribution.durationStats.mean, distribution.durationStats.stddev);
 
       costUsd = calculateCost(
         inputTokens,
@@ -233,10 +224,7 @@ export async function generateLogs(params: GeneratorParams): Promise<GeneratorRe
       );
     } else {
       durationMs = Math.floor(Math.random() * 2000) + 500;
-      errorMessage =
-        statusCode === 429
-          ? "Rate limit exceeded"
-          : "Internal server error";
+      errorMessage = statusCode === 429 ? "Rate limit exceeded" : "Internal server error";
     }
 
     const providerChain = generateProviderChain(provider, distribution);

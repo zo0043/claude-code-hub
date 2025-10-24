@@ -25,7 +25,7 @@ export interface ImportOptions {
  * 导入进度事件
  */
 export interface ImportProgressEvent {
-  type: 'progress' | 'complete' | 'error';
+  type: "progress" | "complete" | "error";
   message: string;
   exitCode?: number;
 }
