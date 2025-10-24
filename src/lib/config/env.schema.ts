@@ -12,6 +12,7 @@ export const EnvSchema = z.object({
   PORT: z.coerce.number().default(23000),
   REDIS_URL: z.string().optional(),
   ENABLE_RATE_LIMIT: z.coerce.boolean().default(true),
+  ENABLE_SECURE_COOKIES: z.coerce.boolean().default(true),
   SESSION_TTL: z.coerce.number().default(300),
   DEBUG_MODE: z.coerce.boolean().default(false),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),

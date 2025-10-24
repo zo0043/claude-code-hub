@@ -1,13 +1,13 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Key, Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Key, Loader2, AlertTriangle } from "lucide-react";
 
 export default function LoginPage() {
   return (
@@ -25,6 +25,17 @@ function LoginPageContent() {
   const [apiKey, setApiKey] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showHttpWarning, setShowHttpWarning] = useState(false);
+
+  // 检测是否为 HTTP（非 localhost）
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const isHttp = window.location.protocol === "http:";
+      const isLocalhost =
+        window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      setShowHttpWarning(isHttp && !isLocalhost);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +87,28 @@ function LoginPageContent() {
             </div>
           </CardHeader>
           <CardContent>
+            {showHttpWarning ? (
+              <Alert variant="destructive" className="mb-6">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Cookie 安全警告</AlertTitle>
+                <AlertDescription className="mt-2 space-y-2 text-sm">
+                  <p>您正在使用 HTTP 访问系统，浏览器安全策略可能阻止 Cookie 设置导致登录失败。</p>
+                  <div className="mt-3">
+                    <p className="font-medium">解决方案：</p>
+                    <ol className="ml-4 mt-1 list-decimal space-y-1">
+                      <li>使用 HTTPS 访问（推荐）</li>
+                      <li>
+                        在 .env 中设置{" "}
+                        <code className="rounded bg-muted px-1 py-0.5 text-xs">
+                          ENABLE_SECURE_COOKIES=false
+                        </code>{" "}
+                        （会降低安全性）
+                      </li>
+                    </ol>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            ) : null}
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-3">
                 <div className="space-y-2">

@@ -55,4 +55,4 @@ logs/
 # docker volumes data
 /data/*
 !/data/.gitkeep
-!/data/README.md
+!/data/README.mddev/

@@ -306,6 +306,37 @@ Redis 不可用时，限流功能会自动降级，所有请求仍然正常通�
 </details>
 
 <details>
+<summary><b>❓ HTTP 访问时无法登录怎么办？</b></summary>
+
+**问题现象**：使用 HTTP 访问系统（非 localhost）时，登录页面显示 Cookie 安全警告，无法登录。
+
+**原因**：默认情况下，系统启用了 Cookie 安全策略（`ENABLE_SECURE_COOKIES=true`），仅允许 HTTPS 传输 Cookie。浏览器会自动放行 localhost 的 HTTP 访问，但拒绝远程 HTTP。
+
+**解决方案**：
+
+**方案 1：使用 HTTPS 访问（推荐）**
+
+配置反向代理（如 Nginx）并启用 HTTPS，参见下方 [如何配置反向代理（Nginx + HTTPS）](#-如何配置反向代理nginx--https) 部分。
+
+**方案 2：允许 HTTP Cookie（降低安全性）**
+
+编辑 `.env` 文件，添加或修改：
+
+```bash
+ENABLE_SECURE_COOKIES=false
+```
+
+重启应用：
+
+```bash
+docker compose restart app
+```
+
+⚠️ **安全警告**：设置为 `false` 会允许 HTTP 传输 Cookie，仅推荐用于内网部署或测试环境。
+
+</details>
+
+<details>
 <summary><b>❓ 支持哪些 AI 服务提供商？</b></summary>
 
 **本服务仅支持 Claude Code 格式的 API 接口。**
@@ -347,6 +378,8 @@ server {
     }
 }
 ```
+
+配置 HTTPS 后，确保 `.env` 中 `ENABLE_SECURE_COOKIES=true`（默认值），以启用 Cookie 安全传输。
 
 </details>
 

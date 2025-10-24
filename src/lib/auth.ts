@@ -1,4 +1,5 @@
 import { config } from "@/lib/config/config";
+import { getEnvConfig } from "@/lib/config/env.schema";
 import { cookies } from "next/headers";
 import { findActiveKeyByKeyString } from "@/repository/key";
 import { findUserById } from "@/repository/user";
@@ -61,9 +62,10 @@ export async function validateKey(keyString: string): Promise<AuthSession | null
 
 export async function setAuthCookie(keyString: string) {
   const cookieStore = await cookies();
+  const env = getEnvConfig();
   cookieStore.set(AUTH_COOKIE_NAME, keyString, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: env.ENABLE_SECURE_COOKIES,
     sameSite: "lax",
     maxAge: AUTH_COOKIE_MAX_AGE,
     path: "/",
