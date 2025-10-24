@@ -199,7 +199,9 @@ export function UploadPriceDialog({
               </div>
 
               <div className="text-xs text-muted-foreground space-y-1">
-                <p>• 系统已内置 LiteLLM 价格表，如需更新可使用左侧&quot;同步 LiteLLM 价格&quot;按钮</p>
+                <p>
+                  • 系统已内置 LiteLLM 价格表，如需更新可使用左侧&quot;同步 LiteLLM 价格&quot;按钮
+                </p>
                 <p>
                   • 也可以手动下载{" "}
                   <a

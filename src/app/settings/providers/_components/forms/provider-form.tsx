@@ -248,7 +248,6 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
 
         {/* Codex 支持：供应商类型和模型重定向 */}
         <div className="space-y-4 pt-2 border-t">
-
           <div className="space-y-2">
             <Label htmlFor={isEdit ? "edit-provider-type" : "provider-type"}>
               供应商类型

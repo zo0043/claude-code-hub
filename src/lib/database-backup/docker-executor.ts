@@ -110,11 +110,7 @@ function analyzeRestoreErrors(errors: string[]): {
   summary: string;
 } {
   // 可忽略的错误模式（对象已存在）
-  const ignorablePatterns = [
-    /already exists/i,
-    /multiple primary keys/i,
-    /duplicate key value/i,
-  ];
+  const ignorablePatterns = [/already exists/i, /multiple primary keys/i, /duplicate key value/i];
 
   // 致命错误模式
   const fatalPatterns = [
