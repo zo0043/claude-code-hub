@@ -248,6 +248,7 @@ export class ProxyForwarder {
       authorization: `Bearer ${outboundKey}`,
       "x-api-key": outboundKey,
       "content-type": "application/json", // 确保 Content-Type
+      "accept-encoding": "identity", // 禁用压缩：避免 undici ZlibError（代理应透传原始数据）
     };
 
     // Codex 特殊处理：强制设置 User-Agent
