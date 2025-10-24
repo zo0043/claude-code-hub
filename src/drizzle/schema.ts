@@ -42,7 +42,7 @@ export const keys = pgTable('keys', {
   isEnabled: boolean('is_enabled').default(true),
   expiresAt: timestamp('expires_at'),
 
-  // 新增：金额限流配置
+  // 金额限流配置
   limit5hUsd: numeric('limit_5h_usd', { precision: 10, scale: 2 }),
   limitWeeklyUsd: numeric('limit_weekly_usd', { precision: 10, scale: 2 }),
   limitMonthlyUsd: numeric('limit_monthly_usd', { precision: 10, scale: 2 }),
@@ -68,7 +68,7 @@ export const providers = pgTable('providers', {
   isEnabled: boolean('is_enabled').notNull().default(true),
   weight: integer('weight').notNull().default(1),
 
-  // 新增：优先级和分组配置
+  // 优先级和分组配置
   priority: integer('priority').notNull().default(0),
   costMultiplier: numeric('cost_multiplier', { precision: 10, scale: 4 }).default('1.0'),
   groupTag: varchar('group_tag', { length: 50 }),
@@ -77,7 +77,7 @@ export const providers = pgTable('providers', {
   providerType: varchar('provider_type', { length: 20 }).notNull().default('claude'),
   modelRedirects: jsonb('model_redirects').$type<Record<string, string>>(),
 
-  // 新增：金额限流配置
+  // 金额限流配置
   limit5hUsd: numeric('limit_5h_usd', { precision: 10, scale: 2 }),
   limitWeeklyUsd: numeric('limit_weekly_usd', { precision: 10, scale: 2 }),
   limitMonthlyUsd: numeric('limit_monthly_usd', { precision: 10, scale: 2 }),
@@ -127,6 +127,9 @@ export const messageRequest = pgTable('message_request', {
   // Codex 支持：API 类型（'response' 或 'openai'）
   apiType: varchar('api_type', { length: 20 }),
 
+  // 模型重定向：原始模型名称（用户请求的模型，用于前端显示和计费）
+  originalModel: varchar('original_model', { length: 128 }),
+
   // Token 使用信息
   inputTokens: integer('input_tokens'),
   outputTokens: integer('output_tokens'),
@@ -139,6 +142,12 @@ export const messageRequest = pgTable('message_request', {
   // 拦截原因（用于记录被敏感词等规则拦截的请求）
   blockedBy: varchar('blocked_by', { length: 50 }),
   blockedReason: text('blocked_reason'),
+
+  // User-Agent（用于客户端类型分析）
+  userAgent: varchar('user_agent', { length: 512 }),
+
+  // Messages 数量（用于短请求检测和分析）
+  messagesCount: integer('messages_count'),
 
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
