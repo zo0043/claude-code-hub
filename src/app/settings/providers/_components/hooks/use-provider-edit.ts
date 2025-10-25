@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { logger } from "@/lib/logger";
 import { toast } from "sonner";
 import { editProvider } from "@/actions/providers";
@@ -7,6 +8,7 @@ import { clampWeight } from "@/lib/utils/validation";
 import { PROVIDER_LIMITS } from "@/lib/constants/provider.constants";
 
 export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
+  const router = useRouter();
   // 基本状态
   const [enabled, setEnabled] = useState<boolean>(item.isEnabled);
   const [togglePending, setTogglePending] = useState(false);
@@ -68,6 +70,8 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
       if (!res.ok) {
         throw new Error(res.error);
       }
+      // 刷新页面数据以同步所有字段
+      router.refresh();
     } catch (e) {
       logger.error("切换服务商启用状态失败", { context: e });
       setEnabled(prev);
@@ -92,6 +96,8 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
       editProvider(item.id, { weight: next })
         .then((res) => {
           if (!res.ok) throw new Error(res.error);
+          // 刷新页面数据以同步所有字段
+          router.refresh();
         })
         .catch((e) => {
           logger.error("更新权重失败", { context: e });
@@ -118,6 +124,8 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
       editProvider(item.id, { limit_5h_usd: nextValue })
         .then((res) => {
           if (!res.ok) throw new Error(res.error);
+          // 刷新页面数据以同步所有字段
+          router.refresh();
         })
         .catch((e) => {
           logger.error("更新5小时消费上限失败", { context: e });
@@ -145,6 +153,8 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
       editProvider(item.id, { limit_weekly_usd: nextValue })
         .then((res) => {
           if (!res.ok) throw new Error(res.error);
+          // 刷新页面数据以同步所有字段
+          router.refresh();
         })
         .catch((e) => {
           logger.error("更新周消费上限失败", { context: e });
@@ -172,6 +182,8 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
       editProvider(item.id, { limit_monthly_usd: nextValue })
         .then((res) => {
           if (!res.ok) throw new Error(res.error);
+          // 刷新页面数据以同步所有字段
+          router.refresh();
         })
         .catch((e) => {
           logger.error("更新月消费上限失败", { context: e });
@@ -199,6 +211,8 @@ export function useProviderEdit(item: ProviderDisplay, canEdit: boolean) {
       editProvider(item.id, { limit_concurrent_sessions: nextValue })
         .then((res) => {
           if (!res.ok) throw new Error(res.error);
+          // 刷新页面数据以同步所有字段
+          router.refresh();
         })
         .catch((e) => {
           logger.error("更新并发Session上限失败", { context: e });
