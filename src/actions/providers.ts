@@ -110,6 +110,7 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
         groupTag: provider.groupTag,
         providerType: provider.providerType,
         modelRedirects: provider.modelRedirects,
+        allowedModels: provider.allowedModels,
         limit5hUsd: provider.limit5hUsd,
         limitWeeklyUsd: provider.limitWeeklyUsd,
         limitMonthlyUsd: provider.limitMonthlyUsd,

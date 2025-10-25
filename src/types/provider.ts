@@ -17,6 +17,9 @@ export interface Provider {
   providerType: string;
   modelRedirects: Record<string, string> | null;
 
+  // 模型白名单：限制供应商可调度的模型列表（null/空数组 = 允许所有模型）
+  allowedModels: string[] | null;
+
   // 金额限流配置
   limit5hUsd: number | null;
   limitWeeklyUsd: number | null;
@@ -53,6 +56,8 @@ export interface ProviderDisplay {
   // Codex 支持：供应商类型和模型重定向
   providerType: string;
   modelRedirects: Record<string, string> | null;
+  // 模型白名单：限制供应商可调度的模型列表（null/空数组 = 允许所有模型）
+  allowedModels: string[] | null;
   // 金额限流配置
   limit5hUsd: number | null;
   limitWeeklyUsd: number | null;
@@ -89,6 +94,7 @@ export interface CreateProviderData {
   // Codex 支持：供应商类型和模型重定向
   provider_type?: string;
   model_redirects?: Record<string, string> | null;
+  allowed_models?: string[] | null;
 
   // 金额限流配置
   limit_5h_usd?: number | null;
@@ -124,6 +130,7 @@ export interface UpdateProviderData {
   // Codex 支持：供应商类型和模型重定向
   provider_type?: string;
   model_redirects?: Record<string, string> | null;
+  allowed_models?: string[] | null;
 
   // 金额限流配置
   limit_5h_usd?: number | null;
