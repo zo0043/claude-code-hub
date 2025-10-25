@@ -17,6 +17,7 @@ export async function findKeyById(id: number): Promise<Key | null> {
       name: keys.name,
       isEnabled: keys.isEnabled,
       expiresAt: keys.expiresAt,
+      canLoginWebUi: keys.canLoginWebUi,
       limit5hUsd: keys.limit5hUsd,
       limitWeeklyUsd: keys.limitWeeklyUsd,
       limitMonthlyUsd: keys.limitMonthlyUsd,
@@ -41,6 +42,7 @@ export async function findKeyList(userId: number): Promise<Key[]> {
       name: keys.name,
       isEnabled: keys.isEnabled,
       expiresAt: keys.expiresAt,
+      canLoginWebUi: keys.canLoginWebUi,
       limit5hUsd: keys.limit5hUsd,
       limitWeeklyUsd: keys.limitWeeklyUsd,
       limitMonthlyUsd: keys.limitMonthlyUsd,
@@ -63,6 +65,7 @@ export async function createKey(keyData: CreateKeyData): Promise<Key> {
     name: keyData.name,
     isEnabled: keyData.is_enabled,
     expiresAt: keyData.expires_at,
+    canLoginWebUi: keyData.can_login_web_ui ?? true,
     limit5hUsd: keyData.limit_5h_usd != null ? keyData.limit_5h_usd.toString() : null,
     limitWeeklyUsd: keyData.limit_weekly_usd != null ? keyData.limit_weekly_usd.toString() : null,
     limitMonthlyUsd:
@@ -77,6 +80,7 @@ export async function createKey(keyData: CreateKeyData): Promise<Key> {
     name: keys.name,
     isEnabled: keys.isEnabled,
     expiresAt: keys.expiresAt,
+    canLoginWebUi: keys.canLoginWebUi,
     limit5hUsd: keys.limit5hUsd,
     limitWeeklyUsd: keys.limitWeeklyUsd,
     limitMonthlyUsd: keys.limitMonthlyUsd,
@@ -101,6 +105,7 @@ export async function updateKey(id: number, keyData: UpdateKeyData): Promise<Key
   if (keyData.name !== undefined) dbData.name = keyData.name;
   if (keyData.is_enabled !== undefined) dbData.isEnabled = keyData.is_enabled;
   if (keyData.expires_at !== undefined) dbData.expiresAt = keyData.expires_at;
+  if (keyData.can_login_web_ui !== undefined) dbData.canLoginWebUi = keyData.can_login_web_ui;
   if (keyData.limit_5h_usd !== undefined)
     dbData.limit5hUsd = keyData.limit_5h_usd != null ? keyData.limit_5h_usd.toString() : null;
   if (keyData.limit_weekly_usd !== undefined)
@@ -123,6 +128,7 @@ export async function updateKey(id: number, keyData: UpdateKeyData): Promise<Key
       name: keys.name,
       isEnabled: keys.isEnabled,
       expiresAt: keys.expiresAt,
+      canLoginWebUi: keys.canLoginWebUi,
       limit5hUsd: keys.limit5hUsd,
       limitWeeklyUsd: keys.limitWeeklyUsd,
       limitMonthlyUsd: keys.limitMonthlyUsd,
@@ -148,6 +154,7 @@ export async function findActiveKeyByUserIdAndName(
       name: keys.name,
       isEnabled: keys.isEnabled,
       expiresAt: keys.expiresAt,
+      canLoginWebUi: keys.canLoginWebUi,
       limit5hUsd: keys.limit5hUsd,
       limitWeeklyUsd: keys.limitWeeklyUsd,
       limitMonthlyUsd: keys.limitMonthlyUsd,
@@ -234,6 +241,7 @@ export async function findActiveKeyByKeyString(keyString: string): Promise<Key |
       name: keys.name,
       isEnabled: keys.isEnabled,
       expiresAt: keys.expiresAt,
+      canLoginWebUi: keys.canLoginWebUi,
       limit5hUsd: keys.limit5hUsd,
       limitWeeklyUsd: keys.limitWeeklyUsd,
       limitMonthlyUsd: keys.limitMonthlyUsd,
@@ -269,6 +277,7 @@ export async function validateApiKeyAndGetUser(
       keyName: keys.name,
       keyIsEnabled: keys.isEnabled,
       keyExpiresAt: keys.expiresAt,
+      keyCanLoginWebUi: keys.canLoginWebUi,
       keyLimit5hUsd: keys.limit5hUsd,
       keyLimitWeeklyUsd: keys.limitWeeklyUsd,
       keyLimitMonthlyUsd: keys.limitMonthlyUsd,
@@ -324,6 +333,7 @@ export async function validateApiKeyAndGetUser(
     name: row.keyName,
     isEnabled: row.keyIsEnabled,
     expiresAt: row.keyExpiresAt,
+    canLoginWebUi: row.keyCanLoginWebUi,
     limit5hUsd: row.keyLimit5hUsd,
     limitWeeklyUsd: row.keyLimitWeeklyUsd,
     limitMonthlyUsd: row.keyLimitMonthlyUsd,

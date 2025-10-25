@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { addKey } from "@/actions/keys";
 import { DialogFormLayout } from "@/components/form/form-layout";
 import { TextField, DateField, NumberField } from "@/components/form/form-field";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useZodForm } from "@/lib/hooks/use-zod-form";
 import { KeyFormSchema } from "@/lib/validation/schemas";
 
@@ -22,6 +24,7 @@ export function AddKeyForm({ userId, onSuccess }: AddKeyFormProps) {
     defaultValues: {
       name: "",
       expiresAt: "",
+      canLoginWebUi: true,
       limit5hUsd: null,
       limitWeeklyUsd: null,
       limitMonthlyUsd: null,
@@ -91,6 +94,22 @@ export function AddKeyForm({ userId, onSuccess }: AddKeyFormProps) {
         description="留空表示永不过期"
         {...form.getFieldProps("expiresAt")}
       />
+
+      <div className="flex items-start justify-between gap-4 rounded-lg border border-dashed border-border px-4 py-3">
+        <div>
+          <Label htmlFor="can-login-web-ui" className="text-sm font-medium">
+            允许登录 Web UI
+          </Label>
+          <p className="text-xs text-muted-foreground mt-1">
+            关闭后，此 Key 仅可用于 API 调用，无法登录管理后台
+          </p>
+        </div>
+        <Switch
+          id="can-login-web-ui"
+          checked={form.values.canLoginWebUi}
+          onCheckedChange={(checked) => form.setValue("canLoginWebUi", checked)}
+        />
+      </div>
 
       <NumberField
         label="5小时消费上限 (USD)"

@@ -58,6 +58,8 @@ export const KeyFormSchema = z.object({
     .optional()
     .default("")
     .transform((val) => (val === "" ? undefined : val)),
+  // Web UI 登录权限控制
+  canLoginWebUi: z.boolean().optional().default(true),
   // 金额限流配置
   limit5hUsd: z.coerce
     .number()

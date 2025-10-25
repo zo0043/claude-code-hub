@@ -9,6 +9,9 @@ export interface Key {
   isEnabled: boolean;
   expiresAt?: Date;
 
+  // Web UI 登录权限控制
+  canLoginWebUi: boolean;
+
   // 金额限流配置
   limit5hUsd: number | null;
   limitWeeklyUsd: number | null;
@@ -29,6 +32,8 @@ export interface CreateKeyData {
   key: string;
   is_enabled?: boolean;
   expires_at?: Date;
+  // Web UI 登录权限控制
+  can_login_web_ui?: boolean;
   // 金额限流配置
   limit_5h_usd?: number | null;
   limit_weekly_usd?: number | null;
@@ -43,6 +48,8 @@ export interface UpdateKeyData {
   name?: string;
   is_enabled?: boolean;
   expires_at?: Date;
+  // Web UI 登录权限控制
+  can_login_web_ui?: boolean;
   // 金额限流配置
   limit_5h_usd?: number | null;
   limit_weekly_usd?: number | null;

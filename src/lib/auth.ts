@@ -36,6 +36,7 @@ export async function validateKey(keyString: string): Promise<AuthSession | null
       name: "ADMIN_TOKEN",
       key: keyString,
       isEnabled: true,
+      canLoginWebUi: true, // Admin Token 始终可以登录 Web UI
       limit5hUsd: null,
       limitWeeklyUsd: null,
       limitMonthlyUsd: null,
@@ -49,6 +50,11 @@ export async function validateKey(keyString: string): Promise<AuthSession | null
 
   const key = await findActiveKeyByKeyString(keyString);
   if (!key) {
+    return null;
+  }
+
+  // 检查 Web UI 登录权限
+  if (!key.canLoginWebUi) {
     return null;
   }
 

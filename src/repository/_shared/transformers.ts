@@ -25,6 +25,7 @@ export function toKey(dbKey: any): Key {
   return {
     ...dbKey,
     isEnabled: dbKey?.isEnabled ?? true,
+    canLoginWebUi: dbKey?.canLoginWebUi ?? true,
     limit5hUsd: dbKey?.limit5hUsd ? parseFloat(dbKey.limit5hUsd) : null,
     limitWeeklyUsd: dbKey?.limitWeeklyUsd ? parseFloat(dbKey.limitWeeklyUsd) : null,
     limitMonthlyUsd: dbKey?.limitMonthlyUsd ? parseFloat(dbKey.limitMonthlyUsd) : null,

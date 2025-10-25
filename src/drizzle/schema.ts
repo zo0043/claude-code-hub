@@ -42,6 +42,9 @@ export const keys = pgTable('keys', {
   isEnabled: boolean('is_enabled').default(true),
   expiresAt: timestamp('expires_at'),
 
+  // Web UI 登录权限控制
+  canLoginWebUi: boolean('can_login_web_ui').default(true),
+
   // 金额限流配置
   limit5hUsd: numeric('limit_5h_usd', { precision: 10, scale: 2 }),
   limitWeeklyUsd: numeric('limit_weekly_usd', { precision: 10, scale: 2 }),

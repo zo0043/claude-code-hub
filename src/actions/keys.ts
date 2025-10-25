@@ -58,6 +58,7 @@ export async function addKey(data: {
       key: generatedKey,
       is_enabled: true,
       expires_at: validatedData.expiresAt ? new Date(validatedData.expiresAt) : undefined,
+      can_login_web_ui: validatedData.canLoginWebUi,
       limit_5h_usd: validatedData.limit5hUsd,
       limit_weekly_usd: validatedData.limitWeeklyUsd,
       limit_monthly_usd: validatedData.limitMonthlyUsd,
@@ -101,6 +102,7 @@ export async function editKey(
     await updateKey(keyId, {
       name: validatedData.name,
       expires_at: validatedData.expiresAt ? new Date(validatedData.expiresAt) : undefined,
+      can_login_web_ui: validatedData.canLoginWebUi,
       limit_5h_usd: validatedData.limit5hUsd,
       limit_weekly_usd: validatedData.limitWeeklyUsd,
       limit_monthly_usd: validatedData.limitMonthlyUsd,
