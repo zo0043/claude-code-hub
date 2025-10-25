@@ -117,7 +117,7 @@ export function UsageLogsTable({
                   </TableCell>
                   <TableCell>{log.userName}</TableCell>
                   <TableCell className="font-mono text-xs">{log.keyName}</TableCell>
-                  <TableCell>
+                  <TableCell className="text-left">
                     {log.blockedBy ? (
                       // 被拦截的请求显示拦截标记
                       <span className="inline-flex items-center gap-1 rounded-md bg-orange-100 dark:bg-orange-950 px-2 py-1 text-xs font-medium text-orange-700 dark:text-orange-300">
