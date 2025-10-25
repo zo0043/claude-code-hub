@@ -52,6 +52,9 @@ jobs:
           # 添加所有更改（格式化后的代码）
           git add -A
 
+          # 排除 .github/ 目录的更改（workflow 文件不需要自动提交，且需要特殊权限）
+          git restore --staged .github/ 2>/dev/null || true
+
           # 检查是否有更改需要提交
           if git diff --cached --quiet; then
             echo "No changes to commit"
