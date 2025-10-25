@@ -1,5 +1,6 @@
 "use client";
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +40,7 @@ interface ProviderListItemProps {
 }
 
 export function ProviderListItem({ item, currentUser, healthStatus }: ProviderListItemProps) {
+  const router = useRouter();
   const [openEdit, setOpenEdit] = useState(false);
   const [resetPending, startResetTransition] = useTransition();
   const canEdit = currentUser?.role === "admin";
@@ -86,6 +88,8 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
           toast.success("熔断器已重置", {
             description: `供应商 "${item.name}" 的熔断状态已解除`,
           });
+          // 刷新页面数据以同步熔断器状态
+          router.refresh();
         } else {
           toast.error("重置熔断器失败", {
             description: res.error || "未知错误",
@@ -191,7 +195,11 @@ export function ProviderListItem({ item, currentUser, healthStatus }: ProviderLi
                     <ProviderForm
                       mode="edit"
                       provider={item}
-                      onSuccess={() => setOpenEdit(false)}
+                      onSuccess={() => {
+                        setOpenEdit(false);
+                        // 刷新页面数据以同步所有字段
+                        router.refresh();
+                      }}
                     />
                   </FormErrorBoundary>
                 </DialogContent>

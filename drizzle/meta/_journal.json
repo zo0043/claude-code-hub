@@ -64,6 +64,13 @@
       "when": 1761401066526,
       "tag": "0008_talented_molten_man",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1761404190737,
+      "tag": "0009_many_amazoness",
+      "breakpoints": true
     }
   ]
 }

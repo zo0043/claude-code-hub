@@ -80,6 +80,9 @@ export const providers = pgTable('providers', {
   providerType: varchar('provider_type', { length: 20 }).notNull().default('claude'),
   modelRedirects: jsonb('model_redirects').$type<Record<string, string>>(),
 
+  // 模型白名单：限制供应商可调度的模型列表（null/空数组 = 允许所有模型）
+  allowedModels: jsonb('allowed_models').$type<string[] | null>().default(null),
+
   // 金额限流配置
   limit5hUsd: numeric('limit_5h_usd', { precision: 10, scale: 2 }),
   limitWeeklyUsd: numeric('limit_weekly_usd', { precision: 10, scale: 2 }),
