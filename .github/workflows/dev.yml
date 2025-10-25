@@ -1,0 +1,113 @@
+name: Dev Branch CI/CD
+
+on:
+  push:
+    branches:
+      - dev
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  dev-build-deploy:
+    runs-on: ubuntu-latest
+    # 跳过由GitHub Actions创建的提交，避免死循环
+    if: github.event.pusher.name != 'github-actions[bot]' && !contains(github.event.head_commit.message, '[skip ci]')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get commit hash
+        id: commit
+        run: |
+          SHORT_SHA=$(git rev-parse --short=7 HEAD)
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+          echo "Dev build version: dev-$SHORT_SHA"
+
+      - name: Setup Node.js for formatting
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - name: Install dependencies and format code
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm format
+
+      - name: Commit formatted code
+        run: |
+          # 配置git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # 添加所有更改（格式化后的代码）
+          git add -A
+
+          # 检查是否有更改需要提交
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            # 提交格式化后的代码 - 添加 [skip ci] 以避免再次触发
+            git commit -m "chore: format code (dev-${{ steps.commit.outputs.short_sha }}) [skip ci]"
+            git push origin dev
+          fi
+
+      - name: Prepare image names
+        id: image_names
+        run: |
+          GHCR_IMAGE=$(echo "ghcr.io/${{ github.repository_owner }}/claude-code-hub" | tr '[:upper:]' '[:lower:]')
+          echo "ghcr_image=${GHCR_IMAGE}" >> "$GITHUB_OUTPUT"
+
+      # Docker构建步骤
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./deploy/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            APP_VERSION=dev-${{ steps.commit.outputs.short_sha }}
+          tags: |
+            ${{ steps.image_names.outputs.ghcr_image }}:dev-${{ steps.commit.outputs.short_sha }}
+            ${{ steps.image_names.outputs.ghcr_image }}:dev
+          labels: |
+            org.opencontainers.image.version=dev-${{ steps.commit.outputs.short_sha }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build summary
+        run: |
+          echo "✅ Dev build completed successfully!"
+          echo ""
+          echo "📦 Docker Images:"
+          echo "  - ${{ steps.image_names.outputs.ghcr_image }}:dev-${{ steps.commit.outputs.short_sha }}"
+          echo "  - ${{ steps.image_names.outputs.ghcr_image }}:dev"
+          echo ""
+          echo "🚀 Usage:"
+          echo "  docker pull ${{ steps.image_names.outputs.ghcr_image }}:dev"
+          echo "  docker pull ${{ steps.image_names.outputs.ghcr_image }}:dev-${{ steps.commit.outputs.short_sha }}"

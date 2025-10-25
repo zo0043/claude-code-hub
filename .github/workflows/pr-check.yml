@@ -1,10 +1,11 @@
 name: PR Build Check
 
-# 仅在向 main 分支提交 PR 时触发
+# 在向 main 或 dev 分支提交 PR 时触发
 on:
   pull_request:
     branches:
-      - main # 所有 PR 都合并到 main 分支
+      - main # 稳定版本分支
+      - dev  # 开发版本分支
     types: [opened, synchronize, reopened]
 
 env:
