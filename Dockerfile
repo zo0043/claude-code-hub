@@ -3,7 +3,7 @@ FROM node:18-alpine AS base
 
 # 安装依赖
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat postgresql-client
 WORKDIR /app
 COPY package.json pnpm-lock.yaml* ./
 RUN corepack enable pnpm && pnpm install --frozen-lockfile
@@ -20,6 +20,9 @@ FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV production
+
+# 安装运行时依赖
+RUN apk add --no-cache libc6-compat postgresql-client
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
