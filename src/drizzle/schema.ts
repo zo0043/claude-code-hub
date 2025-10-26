@@ -37,7 +37,7 @@ export const users = pgTable('users', {
 export const keys = pgTable('keys', {
   id: serial('id').primaryKey(),
   userId: integer('user_id').notNull(),
-  key: varchar('key').notNull(),
+  key: varchar('key', { length: 1000 }).notNull(),
   name: varchar('name').notNull(),
   isEnabled: boolean('is_enabled').default(true),
   expiresAt: timestamp('expires_at'),
@@ -67,7 +67,7 @@ export const providers = pgTable('providers', {
   name: varchar('name').notNull(),
   description: text('description'),
   url: varchar('url').notNull(),
-  key: varchar('key').notNull(),
+  key: varchar('key', { length: 1000 }).notNull(),
   isEnabled: boolean('is_enabled').notNull().default(true),
   weight: integer('weight').notNull().default(1),
 
@@ -113,7 +113,7 @@ export const messageRequest = pgTable('message_request', {
   id: serial('id').primaryKey(),
   providerId: integer('provider_id').notNull(),
   userId: integer('user_id').notNull(),
-  key: varchar('key').notNull(),
+  key: varchar('key', { length: 1000 }).notNull(),
   model: varchar('model', { length: 128 }),
   durationMs: integer('duration_ms'),
   costUsd: numeric('cost_usd', { precision: 21, scale: 15 }).default('0'),

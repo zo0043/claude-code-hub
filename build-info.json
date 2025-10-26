@@ -1,0 +1,12 @@
+{
+  "buildTime": "2025-10-26T14:44:15Z",
+  "gitCommit": "8e79e01",
+  "gitBranch": "main",
+  "nodeVersion": "v23.3.0",
+  "buildMode": "production",
+  "features": {
+    "keyLengthLimit": 1000,
+    "databaseSchema": "latest",
+    "apiVersion": "v1"
+  }
+}

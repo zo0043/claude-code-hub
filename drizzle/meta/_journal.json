@@ -71,6 +71,13 @@
       "when": 1761404190737,
       "tag": "0009_many_amazoness",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1761485498984,
+      "tag": "0010_smooth_madame_hydra",
+      "breakpoints": true
     }
   ]
 }

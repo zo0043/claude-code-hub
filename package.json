@@ -5,6 +5,12 @@
   "scripts": {
     "dev": "next dev --port 13500 --turbo",
     "build": "next build && cp VERSION .next/standalone/VERSION",
+    "build:full": "./build.sh",
+    "build:clean": "./build.sh --clean",
+    "build:deep": "./build.sh --deep-clean",
+    "build:docker": "./build.sh --docker",
+    "build:all": "./build.sh --all",
+    "build:dev": "./build.sh --dev",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -14,7 +20,11 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "docker:up": "./build.sh --docker-up",
+    "docker:down": "./build.sh --docker-down",
+    "docker:restart": "./build.sh --docker-restart",
+    "docker:logs": "./build.sh --docker-logs"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",

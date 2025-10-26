@@ -18,7 +18,7 @@ services:
       PGTZ: Asia/Shanghai
     volumes:
       # 持久化数据库数据到本地 ./data/postgres 目录
-      # 挂载到 /data 而不是 /var/lib/postgresql/data 避免权限冲突
+      # 挂载到 /data/postgres 而不是 /var/lib/postgresql/data 避免权限冲突
       - ./data/postgres:/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-claude_code_hub}"]
@@ -33,7 +33,6 @@ services:
     restart: unless-stopped
     volumes:
       # 持久化 Redis 数据到本地 ./data/redis 目录
-      # 使用 AOF 持久化模式,确保数据不丢失
       - ./data/redis:/data
     command: redis-server --appendonly yes
     healthcheck:
@@ -43,4 +42,30 @@ services:
       retries: 5
       start_period: 5s
 
-  # app服务将在本地运行，此处注释掉
+  app:
+    image: claude-code-hub:latest
+    container_name: claude-code-hub-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - ./.env
+    environment:
+      NODE_ENV: production
+      PORT: ${APP_PORT:-23000}
+      DSN: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-claude_code_hub}
+      REDIS_URL: redis://redis:6379
+      AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
+      ENABLE_RATE_LIMIT: ${ENABLE_RATE_LIMIT:-true}
+      SESSION_TTL: ${SESSION_TTL:-300}
+      STORE_SESSION_MESSAGES: ${STORE_SESSION_MESSAGES:-false}
+      # 设置时区为上海
+      TZ: Asia/Shanghai
+      # Cookie 安全策略
+      ENABLE_SECURE_COOKIES: ${ENABLE_SECURE_COOKIES:-true}
+    ports:
+      - "${APP_PORT:-23000}:${APP_PORT:-23000}"
+    command: ["sh", "-c", "node server.js"]

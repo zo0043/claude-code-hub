@@ -240,6 +240,7 @@ export function ProviderForm({ mode, onSuccess, provider }: ProviderFormProps) {
             placeholder={isEdit ? "留空则不更改密钥" : "输入 API 密钥"}
             disabled={isPending}
             required={!isEdit}
+            maxLength={1000}
           />
           {isEdit && provider ? (
             <div className="text-xs text-muted-foreground">当前密钥: {provider.maskedKey}</div>
