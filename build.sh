@@ -273,50 +273,71 @@ start_docker_services() {
     fi
 }
 
-# 检查并清理指定端口
-check_and_cleanup_port() {
-    local port=${1:-23000}
-    print_info "检查端口 $port 占用情况..."
+# 停止当前运行的 Docker Compose 服务并重新构建启动
+rebuild_and_restart_docker() {
+    print_info "停止当前 Docker Compose 服务..."
 
-    # 检查端口占用
-    local pid=$(lsof -ti:$port 2>/dev/null || true)
-    if [[ -n "$pid" ]]; then
-        print_warning "端口 $port 被进程 $pid 占用，尝试清理..."
-
-        # 获取进程信息用于日志
-        local process_info=$(ps -p $pid -o comm= 2>/dev/null || echo "unknown")
-        print_info "占用进程: $process_info (PID: $pid)"
-
-        # 温和终止
-        if kill -TERM $pid 2>/dev/null; then
-            print_info "已发送 SIGTERM 信号，等待进程优雅退出..."
-            sleep 3
-
-            # 检查是否已退出
-            local remaining_pid=$(lsof -ti:$port 2>/dev/null || true)
-            if [[ -n "$remaining_pid" ]]; then
-                print_warning "进程仍在运行，强制终止..."
-                kill -KILL $remaining_pid 2>/dev/null || true
-                sleep 1
-            fi
-        else
-            print_warning "无法发送信号给进程 $pid，尝试强制终止..."
-            kill -KILL $pid 2>/dev/null || true
-        fi
-
-        # 最终验证
-        local final_check=$(lsof -ti:$port 2>/dev/null || true)
-        if [[ -z "$final_check" ]]; then
-            print_success "端口 $port 已清理完成"
-        else
-            print_error "端口 $port 清理失败，仍有进程占用"
-            return 1
-        fi
+    # 获取docker compose命令
+    if command -v docker-compose &> /dev/null; then
+        DOCKER_COMPOSE="docker-compose"
+    elif command -v docker &> /dev/null; then
+        DOCKER_COMPOSE="docker compose"
     else
-        print_info "端口 $port 可用"
+        print_error "未找到 Docker 或 Docker Compose"
+        return 1
     fi
 
-    return 0
+    # 停止所有服务
+    if $DOCKER_COMPOSE down; then
+        print_success "Docker Compose 服务已停止"
+    else
+        print_warning "Docker Compose 服务停止时遇到问题，继续执行..."
+    fi
+
+    # 等待容器完全停止
+    print_info "等待容器完全停止..."
+    sleep 3
+
+    # 重新构建镜像
+    print_info "重新构建 Docker 镜像..."
+    if $DOCKER_COMPOSE build; then
+        print_success "Docker 镜像重新构建完成"
+    else
+        print_error "Docker 镜像重新构建失败"
+        return 1
+    fi
+
+    # 重新启动所有服务
+    print_info "重新启动 Docker Compose 服务..."
+    if $DOCKER_COMPOSE up -d; then
+        print_success "Docker Compose 服务重新启动完成"
+
+        # 等待服务就绪
+        sleep 5
+        print_info "等待服务完全启动..."
+
+        # 检查服务状态
+        local retry_count=0
+        local max_retries=30
+
+        while [ $retry_count -lt $max_retries ]; do
+            if curl -s http://localhost:23000 > /dev/null 2>&1; then
+                print_success "应用服务已就绪并响应请求"
+                break
+            fi
+
+            retry_count=$((retry_count + 1))
+            if [ $retry_count -eq $max_retries ]; then
+                print_warning "应用服务可能仍在启动中，请稍后手动检查"
+            fi
+            sleep 2
+        done
+
+        return 0
+    else
+        print_error "Docker Compose 服务重新启动失败"
+        return 1
+    fi
 }
 
 # 停止 Docker Compose 服务
@@ -518,12 +539,10 @@ wait_for_services_ready() {
     return 0
 }
 
-# 重启 Docker Compose 服务
+# 重启 Docker Compose 服务（使用新的重建重启逻辑）
 restart_docker_services() {
     print_info "重启 Docker Compose 服务..."
-    stop_docker_services
-    sleep 2
-    start_docker_services
+    rebuild_and_restart_docker
 }
 
 # 查看 Docker Compose 日志
@@ -565,7 +584,7 @@ show_help() {
     echo "Docker Compose 管理选项:"
     echo "  --docker-up        启动 Docker Compose 服务"
     echo "  --docker-down      停止 Docker Compose 服务"
-    echo "  --docker-restart   重启 Docker Compose 服务"
+    echo "  --docker-restart   重启 Docker Compose 服务（包含重新构建）"
     echo "  --docker-logs     显示 Docker Compose 日志"
     echo ""
     echo "示例:"
@@ -707,30 +726,15 @@ main() {
     if [[ "$start_services_flag" == true ]]; then
         print_info "开始启动完整服务栈..."
 
-        # 检查并清理端口
-        if check_and_cleanup_port 23000; then
-            # 启动服务
-            if start_full_services; then
-                # 等待服务就绪
-                if wait_for_services_ready 60; then
-                    print_success "所有服务启动完成！"
-                    print_info "服务访问地址: http://localhost:23000"
-                    print_info "查看服务状态: docker compose -f docker-compose.full.yaml ps"
-                else
-                    print_warning "服务已启动但健康检查未完全通过"
-                    print_info "请手动检查服务状态: docker compose -f docker-compose.full.yaml ps"
-                    print_info "查看服务日志: docker compose -f docker-compose.full.yaml logs"
-                fi
-            else
-                print_error "服务启动失败，但构建流程已完成"
-                print_info "构建的镜像已可用，可以尝试手动启动服务"
-                print_info "手动启动命令: docker compose -f docker-compose.full.yaml up -d"
-                # 不exit 1，允许构建流程成功完成
-            fi
+        # 使用新的重建重启逻辑
+        if rebuild_and_restart_docker; then
+            print_success "所有服务启动完成！"
+            print_info "服务访问地址: http://localhost:23000"
+            print_info "查看服务状态: docker compose ps"
         else
-            print_error "端口清理失败，但构建流程已完成"
-            print_info "构建的镜像已可用，请手动处理端口问题后启动服务"
-            print_info "手动启动命令: docker compose -f docker-compose.full.yaml up -d"
+            print_error "服务启动失败，但构建流程已完成"
+            print_info "构建的镜像已可用，可以尝试手动启动服务"
+            print_info "手动启动命令: docker compose up -d"
             # 不exit 1，允许构建流程成功完成
         fi
     fi

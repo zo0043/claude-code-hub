@@ -7,6 +7,8 @@ import { SettingsPageHeader } from "../_components/settings-page-header";
 import { DatabaseStatusDisplay } from "./_components/database-status";
 import { DatabaseExport } from "./_components/database-export";
 import { DatabaseImport } from "./_components/database-import";
+import { DatabaseExportJson } from "./_components/database-export-json";
+import { DatabaseImportJson } from "./_components/database-import-json";
 import {
   Collapsible,
   CollapsibleContent,
@@ -43,6 +45,20 @@ export default function SettingsDataPage() {
         description="从备份文件恢复数据库，支持覆盖和合并两种模式。"
       >
         <DatabaseImport />
+      </Section>
+
+      <Section
+        title="JSON 数据导出"
+        description="将数据库导出为 JSON 格式，支持选择性导出和数据转换。"
+      >
+        <DatabaseExportJson />
+      </Section>
+
+      <Section
+        title="JSON 数据导入"
+        description="从 JSON 备份文件导入数据，支持灵活的导入配置和数据验证。"
+      >
+        <DatabaseImportJson />
       </Section>
 
       {/* 折叠式使用说明 */}
