@@ -304,7 +304,7 @@ export class SessionManager {
   /**
    * 刷新 session TTL（滑动窗口）
    */
-  private static async refreshSessionTTL(sessionId: string, _keyId: number): Promise<void> {
+  private static async refreshSessionTTL(sessionId: string, keyId: number): Promise<void> {
     const redis = getRedisClient();
     if (!redis || redis.status !== "ready") return;
 

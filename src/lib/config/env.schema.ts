@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { logger } from "@/lib/logger";
+// import { logger } from "@/lib/logger"; // 暂时未使用，注释掉
 
 /**
  * 环境变量验证schema

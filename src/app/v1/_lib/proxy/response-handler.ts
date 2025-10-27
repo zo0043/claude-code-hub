@@ -79,13 +79,13 @@ export class ProxyResponseHandler {
     void (async () => {
       try {
         const responseText = await responseForLog.text();
-        let responseLogContent = responseText;
+        // let responseLogContent = responseText; // 暂时未使用，注释掉
         let usageRecord: Record<string, unknown> | null = null;
         let usageMetrics: UsageMetrics | null = null;
 
         try {
           const parsed = JSON.parse(responseText) as Record<string, unknown>;
-          responseLogContent = JSON.stringify(parsed, null, 2);
+          // responseLogContent = JSON.stringify(parsed, null, 2); // 用于日志记录，暂时禁用
           const usageValue = parsed.usage;
           if (usageValue && typeof usageValue === "object") {
             usageRecord = usageValue as Record<string, unknown>;

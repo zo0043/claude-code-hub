@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/drizzle/db";
-import { logger } from "@/lib/logger";
+// import { logger } from "@/lib/logger"; // 暂时未使用，注释掉
 import { messageRequest, users, keys as keysTable, providers } from "@/drizzle/schema";
 import { eq, isNull, and, desc, sql } from "drizzle-orm";
 import type { MessageRequest, CreateMessageRequestData } from "@/types/message";
